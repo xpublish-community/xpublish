@@ -4,7 +4,7 @@ Publish Xarray Datasets via a Zarr compatible REST API
 
 **Publish a xarray dataset as a rest API**
 ```python
-ds.publish.rest_api()
+ds.rest.serve()
 ```
 
 **Connect to a published dataset**

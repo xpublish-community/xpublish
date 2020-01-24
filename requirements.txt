@@ -1,0 +1,6 @@
+xarray
+dask
+zarr
+numcodecs
+flask
+fsspec
