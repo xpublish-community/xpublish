@@ -2,12 +2,12 @@
 
 Publish Xarray Datasets via a Zarr compatible REST API
 
-**Publish a xarray dataset as a rest API**
+**Server side: Publish a xarray dataset as a rest API**
 ```python
-ds.rest.serve()
+ds.rest.serve(host="0.0.0.0", port=9000)
 ```
 
-**Connect to a published dataset**
+**Client side: Connect to a published dataset**
 ```python
 
 import xarray as xr
@@ -35,10 +35,9 @@ We are exploring applications of xpublish that include:
 
 ### How?
 
-Under the hood, xpublish is using a web app (Flask) that is exposing a minimal Zarr compatible REST-like API.
+Under the hood, xpublish is using a web app (FastAPI) that is exposing a minimal Zarr compatible REST-like API.
 Key attributes of the API are:
 
 - serves a Zarr store API from the root of the dataset
-- provides Zarr metadata keys (`.zmetadata`, `.zgroup`, '.zattrs`) as json strings.
-- provides access to data keys (e.g. `var/0.0.0`) as binary strings. 
-
+- provides Zarr metadata keys (`.zmetadata`, `.zgroup`, `.zattrs`) as json strings.
+- provides access to data keys (e.g. `var/0.0.0`) as binary strings.
