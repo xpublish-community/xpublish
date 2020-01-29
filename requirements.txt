@@ -2,5 +2,6 @@ xarray
 dask
 zarr
 numcodecs
-flask
+fastapi
 fsspec
+uvicorn
