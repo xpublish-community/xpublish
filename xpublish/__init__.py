@@ -1,1 +1,1 @@
-from .rest import RestAccessor
+from .rest import RestAccessor  # noqa: F401

@@ -1,51 +1,57 @@
-import dask
-import numpy as np
-import xarray as xr
-from fastapi import FastAPI
-from numcodecs import get_codec
-from numcodecs.compat import ensure_ndarray
-from xarray.backends.zarr import _DIMENSION_KEY, _encode_zarr_attr_value
-from xarray.core.pycompat import dask_array_type
-from zarr.storage import array_meta_key, attrs_key, group_meta_key
-from zarr.util import json_dumps, normalize_shape, is_total_slice
-
-from starlette.responses import Response
-import uvicorn
-
 import logging
 
+import numpy as np
+import uvicorn
+import xarray as xr
+from fastapi import FastAPI
+from numcodecs.compat import ensure_ndarray
+from starlette.responses import HTMLResponse, Response
+from xarray.backends.zarr import (
+    _DIMENSION_KEY,
+    _encode_zarr_attr_value,
+    _extract_zarr_variable_encoding,
+    encode_zarr_variable,
+)
+from xarray.core.pycompat import dask_array_type
+from zarr.storage import array_meta_key, attrs_key, group_meta_key
+from zarr.util import normalize_shape
 
 zarr_format = 2
 zarr_consolidated_format = 1
 zarr_metadata_key = ".zmetadata"
 
+logger = logging.getLogger("api")
+
 
 @xr.register_dataset_accessor("rest")
 class RestAccessor:
-    def __init__(self, xarray_obj, name=None, encoding=None):
+    def __init__(self, xarray_obj, name=None):
         self._obj = xarray_obj
 
         self._name = name if name is not None else "<Dataset rest app>"
-        self._encoding = encoding if encoding is not None else {}
 
-        self._metadata = self.get_zmetadata()
-        self.make_app()
+        self._app = None
+        self._zmetadata = None
 
-    def get_zmetadata(self):
+        self._attributes = {}
+        self._variables = {}
+        self._encoding = {}
+
+    def _get_zmetadata(self):
         zmeta = {"zarr_consolidated_format": zarr_consolidated_format, "metadata": {}}
-
+        zmeta["metadata"][group_meta_key] = {"zarr_format": zarr_format}
         zmeta["metadata"][attrs_key] = self.get_zattrs()
-        zmeta["metadata"][group_meta_key] = self.get_zgroup()
 
         for key, da in self._obj.variables.items():
+            # encode variable
+            self._variables[key] = encode_zarr_variable(da)
+            self._encoding[key] = _extract_zarr_variable_encoding(da)
+
             zmeta["metadata"][f"{key}/{attrs_key}"] = extract_zattrs(da)
             zmeta["metadata"][f"{key}/{array_meta_key}"] = extract_zarray(
                 da, self._encoding.get(key, {})
             )
         return zmeta
-
-    def get_zgroup(self):
-        return {"zarr_format": zarr_format}
 
     def get_zattrs(self):
         zattrs = {}
@@ -53,63 +59,78 @@ class RestAccessor:
             zattrs[k] = _encode_zarr_attr_value(v)
         return zattrs
 
-    def make_app(self):
+    @property
+    def zmetadata(self):
+        if self._zmetadata is None:
+            self._zmetadata = self._get_zmetadata()
+        return self._zmetadata
 
-        self._app = FastAPI()
+    @property
+    def app(self):
+        if self._app is None:
 
-        logger = logging.getLogger("api")
+            self._app = FastAPI()
 
-        @self._app.get(f"/{group_meta_key}")
-        def get_zgroup():
-            return json_dumps(self.get_zgroup())
+            # @self._app.get(f"/{group_meta_key}")
+            # def get_zgroup():
+            #     return json_dumps(self.get_zgroup())
 
-        @self._app.get(f"/{attrs_key}")
-        def get_zattrs():
-            return json_dumps(self.get_zattrs())
+            # @self._app.get(f"/{attrs_key}")
+            # def get_zattrs():
+            #     return json_dumps(self.get_zattrs())
 
-        @self._app.get(f"/{zarr_metadata_key}")
-        def get_zmetadata():
-            return self._metadata
+            @self._app.get(f"/{zarr_metadata_key}")
+            def get_zmetadata():
+                return self.zmetadata
 
-        @self._app.get("/keys")
-        def list_keys():
-            return json_dumps(list(self._obj.variables))
+            @self._app.get("/keys")
+            def list_keys():
+                return list(self._obj.variables)
 
-        @self._app.get("/{var}/{chunk}")
-        def get_key(var, chunk):
-            logger.debug('var is %s', var)
-            logger.debug('chunk is %s', chunk)
+            @self._app.get("/")
+            def repr():
+                with xr.set_options(display_style="html"):
+                    return HTMLResponse(self._obj._repr_html_())
 
-            da = self._obj[var]
-            arr_meta = self._metadata["metadata"][f"{var}/{array_meta_key}"]
+            @self._app.get("/info")
+            def info():
+                import io
 
-            index = get_indexers(chunk, arr_meta["chunks"])
-            logger.debug(index)
+                with io.StringIO() as buffer:
+                    self._obj.info(buf=buffer)
+                    info = buffer.getvalue()
+                return info
 
-            data_chunk = da.data[index]
-            # TODO: need special handling here for edge chunks
+            @self._app.get("/dict")
+            def to_dict(data: bool = False):
+                return self._obj.to_dict(data=data)
 
-            logger.debug('data_chunk.size is %s', data_chunk.size)
-            logger.debug('data_chunk.shape is %s', data_chunk.shape)
+            @self._app.get("/{var}/{chunk}")
+            def get_key(var, chunk):
+                logger.debug("var is %s", var)
+                logger.debug("chunk is %s", chunk)
 
-            if isinstance(data_chunk, dask_array_type):
-                data_chunk = data_chunk.compute()
+                da = self._variables[var].data
+                arr_meta = self._zmetadata["metadata"][f"{var}/{array_meta_key}"]
 
-            # Things we need to test here:
-            # 1. Using filters/compressors
-            # 2. Unpacking filters/compressors from dict metadata
-            # 3. Handling edge chunks (is that done here on read or by the reader client)
-            # 4. Is tobytes on the numpy array the right thing to do?
-            echunk = _encode_chunk(
-                data_chunk.tobytes(),
-                filters=arr_meta["filters"],
-                compressor=arr_meta["compressor"],
-            )
-            return Response(echunk, media_type='application/octet-stream')
+                data_chunk = get_data_chunk(da, chunk, out_shape=arr_meta["chunks"])
 
-    def serve(self, host="0.0.0.0", port=9000, log_level='debug', **kwargs):
-        uvicorn.run(self._app, host=host, port=port, log_level=log_level,
-                    **kwargs)
+                # Things we need to test here:
+                # 1. Using filters/compressors
+                # 2. Unpacking filters/compressors from dict metadata
+                # 3. Handling edge chunks (is that done here on read or by the reader client)
+                # 4. Is tobytes on the numpy array the right thing to do?
+                echunk = _encode_chunk(
+                    data_chunk.tobytes(),
+                    filters=arr_meta["filters"],
+                    compressor=arr_meta["compressor"],
+                )
+                return Response(echunk, media_type="application/octet-stream")
+
+        return self._app
+
+    def serve(self, host="0.0.0.0", port=9000, log_level="debug", **kwargs):
+        uvicorn.run(self.app, host=host, port=port, log_level=log_level, **kwargs)
 
 
 def extract_zattrs(da):
@@ -117,6 +138,7 @@ def extract_zattrs(da):
     for k, v in da.attrs.items():
         zattrs[k] = _encode_zarr_attr_value(v)
     zattrs[_DIMENSION_KEY] = list(da.dims)
+
     return zattrs
 
 
@@ -168,3 +190,25 @@ def _encode_chunk(chunk, filters=None, compressor=None):
         cdata = chunk
 
     return cdata
+
+
+def get_data_chunk(da, chunk_id, out_shape):
+    ikeys = tuple(map(int, chunk_id.split(".")))
+    try:
+        chunk_data = da.blocks[ikeys]
+    except:
+        chunk_data = np.asarray(da)
+
+    logger.debug("checking chunk output size, %s == %s" % (chunk_data.shape, out_shape))
+
+    if isinstance(chunk_data, dask_array_type):
+        chunk_data = chunk_data.compute()
+
+    # zarr expects full edge chunks, contents out of bounds for the array are undefined
+    if chunk_data.shape != tuple(out_shape):
+        new_chunk = np.empty_like(chunk_data, shape=out_shape)
+        write_slice = tuple([slice(0, s) for s in chunk_data.shape])
+        new_chunk[write_slice] = chunk_data
+        return new_chunk
+    else:
+        return chunk_data
