@@ -71,14 +71,6 @@ class RestAccessor:
 
             self._app = FastAPI()
 
-            # @self._app.get(f"/{group_meta_key}")
-            # def get_zgroup():
-            #     return json_dumps(self.get_zgroup())
-
-            # @self._app.get(f"/{attrs_key}")
-            # def get_zattrs():
-            #     return json_dumps(self.get_zattrs())
-
             @self._app.get(f"/{zarr_metadata_key}")
             def get_zmetadata():
                 return self.zmetadata
@@ -151,7 +143,7 @@ def extract_zarray(da, encoding):
         "dtype": da.dtype.str,
         "fill_value": None,  # TODO: figure out how to handle NaNs
         "order": "C",
-        "shape": normalize_shape(da.shape),
+        "shape": list(normalize_shape(da.shape)),
         "zarr_format": zarr_format,
     }
     if meta["chunks"] is None:
