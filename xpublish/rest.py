@@ -4,6 +4,7 @@ import numpy as np
 import uvicorn
 import xarray as xr
 from fastapi import FastAPI
+from numcodecs import Blosc
 from numcodecs.compat import ensure_ndarray
 from starlette.responses import HTMLResponse, Response
 from xarray.backends.zarr import (
@@ -13,7 +14,7 @@ from xarray.backends.zarr import (
     encode_zarr_variable,
 )
 from xarray.core.pycompat import dask_array_type
-from zarr.storage import array_meta_key, attrs_key, group_meta_key
+from zarr.storage import array_meta_key, attrs_key, group_meta_key, default_compressor
 from zarr.util import normalize_shape
 
 zarr_format = 2
@@ -65,6 +66,15 @@ class RestAccessor:
             self._zmetadata = self._get_zmetadata()
         return self._zmetadata
 
+    def zmetadata_json(self):
+        zjson = self.zmetadata.copy()
+        for key in list(self._obj.variables):
+            # convert compressor to dict
+            zjson["metadata"][f"{key}/{array_meta_key}"]["compressor"] = zjson[
+                "metadata"
+            ][f"{key}/{array_meta_key}"]["compressor"].get_config()
+        return zjson
+
     @property
     def app(self):
         if self._app is None:
@@ -73,7 +83,7 @@ class RestAccessor:
 
             @self._app.get(f"/{zarr_metadata_key}")
             def get_zmetadata():
-                return self.zmetadata
+                return self.zmetadata_json()
 
             @self._app.get("/keys")
             def list_keys():
@@ -103,15 +113,10 @@ class RestAccessor:
                 logger.debug("chunk is %s", chunk)
 
                 da = self._variables[var].data
-                arr_meta = self._zmetadata["metadata"][f"{var}/{array_meta_key}"]
+                arr_meta = self.zmetadata["metadata"][f"{var}/{array_meta_key}"]
 
                 data_chunk = get_data_chunk(da, chunk, out_shape=arr_meta["chunks"])
 
-                # Things we need to test here:
-                # 1. Using filters/compressors
-                # 2. Unpacking filters/compressors from dict metadata
-                # 3. Handling edge chunks (is that done here on read or by the reader client)
-                # 4. Is tobytes on the numpy array the right thing to do?
                 echunk = _encode_chunk(
                     data_chunk.tobytes(),
                     filters=arr_meta["filters"],
@@ -137,7 +142,9 @@ def extract_zattrs(da):
 def extract_zarray(da, encoding):
     # TODO: do a better job of validating some of these
     meta = {
-        "compressor": encoding.get("compressor", da.encoding.get("compressor", None)),
+        "compressor": encoding.get(
+            "compressor", da.encoding.get("compressor", default_compressor)
+        ),
         "filters": encoding.get("filters", da.encoding.get("filters", None)),
         "chunks": encoding.get("chunks", None),
         "dtype": da.dtype.str,
@@ -177,6 +184,7 @@ def _encode_chunk(chunk, filters=None, compressor=None):
 
     # compress
     if compressor:
+        logger.debug(compressor)
         cdata = compressor.encode(chunk)
     else:
         cdata = chunk

@@ -44,7 +44,7 @@ def test_repr(airtemp_ds, airtemp_app):
 def test_zmetadata(airtemp_ds, airtemp_app):
     response = airtemp_app.get("/.zmetadata")
     assert response.status_code == 200
-    assert response.json() == airtemp_ds.rest.zmetadata
+    assert response.json() == airtemp_ds.rest.zmetadata_json()
 
 
 def test_bad_key(airtemp_app):

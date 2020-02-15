@@ -21,7 +21,7 @@ def airtemp_ds():
 def test_get_zmetadata_key(airtemp_ds):
     mapper = TestMapper(airtemp_ds.rest.app)
     actual = json.loads(mapper[".zmetadata"].decode())
-    assert actual == airtemp_ds.rest.zmetadata
+    assert actual == airtemp_ds.rest.zmetadata_json()
 
 
 def test_missing_key_raises_keyerror(airtemp_ds):
