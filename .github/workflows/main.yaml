@@ -71,7 +71,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x64
-        run: |
+      - run: |
           python -m pip install -r dev-requirements.txt
           python -m pip install --no-deps -e .
           python -m pip list
