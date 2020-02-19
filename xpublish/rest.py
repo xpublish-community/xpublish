@@ -1,3 +1,4 @@
+import copy
 import logging
 
 import numpy as np
@@ -5,7 +6,6 @@ import uvicorn
 import xarray as xr
 from fastapi import FastAPI
 from numcodecs.compat import ensure_ndarray
-from numcodecs.registry import codec_registry
 from starlette.responses import HTMLResponse, Response
 from xarray.backends.zarr import (
     _DIMENSION_KEY,
@@ -67,12 +67,12 @@ class RestAccessor:
         return self._zmetadata
 
     def zmetadata_json(self):
-        zjson = self.zmetadata.copy()
+        zjson = copy.deepcopy(self.zmetadata)
         for key in list(self._obj.variables):
             # convert compressor to dict
-            compressor_config = zjson['metadata'][f'{key}/{array_meta_key}']['compressor']
-            if not isinstance(compressor_config, dict):
-                compressor_config = compressor_config.get_config()
+            compressor_config = zjson['metadata'][f'{key}/{array_meta_key}'][
+                'compressor'
+            ].get_config()
             zjson['metadata'][f'{key}/{array_meta_key}']['compressor'] = compressor_config
         return zjson
 
@@ -183,16 +183,8 @@ def _encode_chunk(chunk, filters=None, compressor=None):
 
     # compress
     if compressor:
-        # Check if we have dictionary representation of the compressor
-        if isinstance(compressor, dict):
-            compressor_config = compressor.copy()
-            _compressor = codec_registry[compressor_config['id']]
-            compressor_config.pop('id', None)
-            _compressor = _compressor.from_config(compressor_config)
-        else:
-            _compressor = compressor
-        logger.debug(_compressor)
-        cdata = _compressor.encode(chunk)
+        logger.debug(compressor)
+        cdata = compressor.encode(chunk)
     else:
         cdata = chunk
 

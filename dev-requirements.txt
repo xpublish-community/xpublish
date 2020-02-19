@@ -1,4 +1,5 @@
 pytest
 pytest-sugar
 pytest-cov
+netcdf4
 -r requirements.txt
