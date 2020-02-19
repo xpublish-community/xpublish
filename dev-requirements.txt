@@ -1,4 +1,4 @@
 pytest
 pytest-sugar
 pytest-cov
--r requirements
+-r requirements.txt
