@@ -1,7 +1,8 @@
-xarray
 dask
-zarr
-numcodecs
 fastapi
 fsspec
+numcodecs
+requests
 uvicorn
+xarray
+zarr

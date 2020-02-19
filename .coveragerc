@@ -1,0 +1,5 @@
+[report]
+omit =
+    tests/*.py
+    setup.py
+    test.py
