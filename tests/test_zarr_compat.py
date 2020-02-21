@@ -11,12 +11,11 @@ from .utils import TestMapper
 @pytest.fixture(scope='module')
 def airtemp_ds():
     ds = xr.tutorial.open_dataset('air_temperature')
-    return ds
+    return ds.chunk(dict(ds.dims))
 
 
 def test_zmetadata_identical(airtemp_ds):
     zarr_dict = {}
-    airtemp_ds = airtemp_ds.chunk(dict(airtemp_ds.dims))
     airtemp_ds.to_zarr(zarr_dict, consolidated=True)
     mapper = TestMapper(airtemp_ds.rest.app)
     actual = json.loads(mapper['.zmetadata'].decode())
