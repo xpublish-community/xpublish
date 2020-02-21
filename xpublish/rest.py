@@ -14,6 +14,7 @@ from xarray.backends.zarr import (
     encode_zarr_variable,
 )
 from xarray.core.pycompat import dask_array_type
+from zarr.meta import encode_fill_value
 from zarr.storage import array_meta_key, attrs_key, default_compressor, group_meta_key
 from zarr.util import normalize_shape
 
@@ -45,13 +46,14 @@ class RestAccessor:
 
         for key, da in self._obj.variables.items():
             # encode variable
-            self._variables[key] = encode_zarr_variable(da)
+            encoded_da = encode_zarr_variable(da)
+            self._variables[key] = encoded_da
             self._encoding[key] = _extract_zarr_variable_encoding(da)
-
-            zmeta['metadata'][f'{key}/{attrs_key}'] = extract_zattrs(da)
+            zmeta['metadata'][f'{key}/{attrs_key}'] = extract_zattrs(encoded_da)
             zmeta['metadata'][f'{key}/{array_meta_key}'] = extract_zarray(
                 da, self._encoding.get(key, {})
             )
+
         return zmeta
 
     def get_zattrs(self):
@@ -74,6 +76,7 @@ class RestAccessor:
                 'compressor'
             ].get_config()
             zjson['metadata'][f'{key}/{array_meta_key}']['compressor'] = compressor_config
+
         return zjson
 
     @property
@@ -137,7 +140,17 @@ def extract_zattrs(da):
         zattrs[k] = _encode_zarr_attr_value(v)
     zattrs[_DIMENSION_KEY] = list(da.dims)
 
+    # We don't want `_FillValue` in `.zattrs`
+    # It should go in `fill_value` section of `.zarray`
+    _ = zattrs.pop('_FillValue', None)
+
     return zattrs
+
+
+def _extract_fill_value(da, dtype):
+    da = encode_zarr_variable(da)
+    fill_value = da.attrs.pop('_FillValue', None)
+    return encode_fill_value(fill_value, dtype)
 
 
 def extract_zarray(da, encoding):
@@ -146,8 +159,8 @@ def extract_zarray(da, encoding):
         'compressor': encoding.get('compressor', da.encoding.get('compressor', default_compressor)),
         'filters': encoding.get('filters', da.encoding.get('filters', None)),
         'chunks': encoding.get('chunks', None),
-        'dtype': da.dtype.str,
-        'fill_value': None,  # TODO: figure out how to handle NaNs
+        'dtype': da.encoding['dtype'].str,
+        'fill_value': _extract_fill_value(da, da.encoding['dtype']),
         'order': 'C',
         'shape': list(normalize_shape(da.shape)),
         'zarr_format': zarr_format,

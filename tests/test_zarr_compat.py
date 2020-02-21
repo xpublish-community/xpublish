@@ -14,9 +14,9 @@ def airtemp_ds():
     return ds
 
 
-@pytest.mark.xfail(reason='We are not populating the default compressors/filters yet.')
 def test_zmetadata_identical(airtemp_ds):
     zarr_dict = {}
+    airtemp_ds = airtemp_ds.chunk(dict(airtemp_ds.dims))
     airtemp_ds.to_zarr(zarr_dict, consolidated=True)
     mapper = TestMapper(airtemp_ds.rest.app)
     actual = json.loads(mapper['.zmetadata'].decode())
@@ -24,7 +24,6 @@ def test_zmetadata_identical(airtemp_ds):
     assert actual == expected
 
 
-@pytest.mark.xfail(reason='We are not populating the default compressors/filters yet.')
 def test_roundtrip(airtemp_ds):
     mapper = TestMapper(airtemp_ds.rest.app)
     actual = xr.open_zarr(mapper, consolidated=True)
