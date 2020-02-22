@@ -1,13 +1,17 @@
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/jhamman/xpublish/CI?logo=github&style=for-the-badge)](https://github.com/jhamman/xpublish/actions?query=workflow%3ACI)
+
 # xpublish
 
 Publish Xarray Datasets via a Zarr compatible REST API
 
 **Server side: Publish a xarray dataset as a rest API**
+
 ```python
 ds.rest.serve(host="0.0.0.0", port=9000)
 ```
 
 **Client side: Connect to a published dataset**
+
 ```python
 
 import xarray as xr
