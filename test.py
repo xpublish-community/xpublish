@@ -1,4 +1,3 @@
-import uvicorn
 import xarray as xr
 
 import xpublish
