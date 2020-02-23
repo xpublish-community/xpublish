@@ -1,4 +1,6 @@
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/jhamman/xpublish/CI?logo=github&style=for-the-badge)](https://github.com/jhamman/xpublish/actions?query=workflow%3ACI)
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/jhamman/xpublish/CI?logo=github)](https://github.com/jhamman/xpublish/actions?query=workflow%3ACI)
+[![Documentation Status](https://readthedocs.org/projects/xpublish/badge/?version=latest)](https://xpublish.readthedocs.io/en/latest/?badge=latest)
+
 
 # xpublish
 

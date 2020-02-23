@@ -8,9 +8,9 @@ import xpublish  # noqa: F401
 from .utils import TestMapper
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def airtemp_ds():
-    ds = xr.tutorial.open_dataset('air_temperature')
+    ds = xr.tutorial.open_dataset("air_temperature")
     return ds.chunk(dict(ds.dims))
 
 
@@ -18,8 +18,8 @@ def test_zmetadata_identical(airtemp_ds):
     zarr_dict = {}
     airtemp_ds.to_zarr(zarr_dict, consolidated=True)
     mapper = TestMapper(airtemp_ds.rest.app)
-    actual = json.loads(mapper['.zmetadata'].decode())
-    expected = json.loads(zarr_dict['.zmetadata'].decode())
+    actual = json.loads(mapper[".zmetadata"].decode())
+    expected = json.loads(zarr_dict[".zmetadata"].decode())
     assert actual == expected
 
 
