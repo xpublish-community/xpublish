@@ -1,3 +1,4 @@
 numpydoc
 sphinx_copybutton
 ipykernel
+netCDF4
