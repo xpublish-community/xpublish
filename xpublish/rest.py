@@ -51,7 +51,7 @@ class RestAccessor:
             self._encoding[key] = _extract_zarr_variable_encoding(da)
             zmeta['metadata'][f'{key}/{attrs_key}'] = extract_zattrs(encoded_da)
             zmeta['metadata'][f'{key}/{array_meta_key}'] = extract_zarray(
-                da, self._encoding.get(key, {})
+                encoded_da, self._encoding.get(key, {}), da.encoding['dtype']
             )
 
         return zmeta
@@ -148,19 +148,18 @@ def extract_zattrs(da):
 
 
 def _extract_fill_value(da, dtype):
-    da = encode_zarr_variable(da)
     fill_value = da.attrs.pop('_FillValue', None)
     return encode_fill_value(fill_value, dtype)
 
 
-def extract_zarray(da, encoding):
+def extract_zarray(da, encoding, dtype):
     # TODO: do a better job of validating some of these
     meta = {
         'compressor': encoding.get('compressor', da.encoding.get('compressor', default_compressor)),
         'filters': encoding.get('filters', da.encoding.get('filters', None)),
         'chunks': encoding.get('chunks', None),
-        'dtype': da.encoding['dtype'].str,
-        'fill_value': _extract_fill_value(da, da.encoding['dtype']),
+        'dtype': dtype.str,
+        'fill_value': _extract_fill_value(da, dtype),
         'order': 'C',
         'shape': list(normalize_shape(da.shape)),
         'zarr_format': zarr_format,
