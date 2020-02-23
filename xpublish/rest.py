@@ -73,7 +73,7 @@ class RestAccessor:
 
     @property
     def zmetadata(self):
-        """ Consolidated zmetadata dictionary (`str`, read-only)."""
+        """ Consolidated zmetadata dictionary (`dict`, read-only)."""
         if self._zmetadata is None:
             self._zmetadata = self._get_zmetadata()
         return self._zmetadata
