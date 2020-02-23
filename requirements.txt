@@ -6,3 +6,4 @@ requests
 uvicorn
 xarray
 zarr
+toolz
