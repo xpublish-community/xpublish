@@ -28,7 +28,7 @@ logger = logging.getLogger("api")
 @xr.register_dataset_accessor("rest")
 class RestAccessor:
     """ REST API Accessor
-    
+
     Parameters
     ----------
     xarray_obj : Dataset
@@ -144,7 +144,7 @@ class RestAccessor:
 
     def serve(self, host="0.0.0.0", port=9000, log_level="debug", **kwargs):
         """ Serve this app via ``uvicorn.run``.
-        
+
         Parameters
         ----------
         host : str
@@ -229,7 +229,7 @@ def _encode_chunk(chunk, filters=None, compressor=None):
 
 def get_data_chunk(da, chunk_id, out_shape):
     """ Get one chunk of data from this DataArray (da).
-    
+
     If this is an incomplete edge chunk, pad the returned array to match out_shape.
     """
     ikeys = tuple(map(int, chunk_id.split(".")))
