@@ -1,0 +1,6 @@
+numpydoc
+sphinx_copybutton
+ipykernel
+xarray
+fastapi
+zarr

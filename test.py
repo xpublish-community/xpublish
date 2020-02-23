@@ -1,4 +1,3 @@
-import uvicorn  # noqa: F401
 import xarray as xr
 
 import xpublish  # noqa: F401
