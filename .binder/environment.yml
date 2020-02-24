@@ -13,6 +13,7 @@ dependencies:
   - dask
   - distributed
   - dask-labextension
+  - jupyter-server-proxy
   - toolz
   - bokeh
   - ipytree
