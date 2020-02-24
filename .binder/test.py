@@ -1,6 +1,5 @@
-from dask.distributed import Client
-
 import xarray as xr
+from dask.distributed import Client
 
 import xpublish  # noqa: F401
 
