@@ -6,7 +6,7 @@ import xpublish  # noqa: F401
 
 if __name__ == "__main__":
 
-    client  = Client()
+    client  = Client(n_workers=4)
     print(client.cluster)
     print(client.cluster.dashboard_link)
 
