@@ -15,4 +15,5 @@ dependencies:
   - dask-labextension
   - toolz
   - bokeh
+  - ipytree
   - pip
