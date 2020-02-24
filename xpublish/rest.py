@@ -100,9 +100,7 @@ class RestAccessor:
         data_chunk = get_data_chunk(da, chunk, out_shape=arr_meta["chunks"])
 
         echunk = _encode_chunk(
-            data_chunk.tobytes(),
-            filters=arr_meta["filters"],
-            compressor=arr_meta["compressor"],
+            data_chunk.tobytes(), filters=arr_meta["filters"], compressor=arr_meta["compressor"],
         )
         return Response(echunk, media_type="application/octet-stream")
 
@@ -152,6 +150,7 @@ class RestAccessor:
                     xr.show_versions(f)
                     versions = f.getvalue()
                 return versions
+
         return self._app
 
     def serve(self, host="0.0.0.0", port=9000, log_level="debug", **kwargs):
