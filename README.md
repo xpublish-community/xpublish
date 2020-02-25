@@ -45,5 +45,5 @@ Under the hood, xpublish is using a web app (FastAPI) that is exposing a minimal
 Key attributes of the API are:
 
 - serves a Zarr store API from the root of the dataset
-- provides Zarr metadata keys (`.zmetadata`, `.zgroup`, `.zattrs`) as json strings.
+- provides Zarr metadata keys (`.zmetadata`) as json strings.
 - provides access to data keys (e.g. `var/0.0.0`) as binary strings.
