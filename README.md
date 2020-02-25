@@ -1,6 +1,6 @@
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/jhamman/xpublish/CI?logo=github)](https://github.com/jhamman/xpublish/actions?query=workflow%3ACI)
 [![Documentation Status](https://readthedocs.org/projects/xpublish/badge/?version=latest)](https://xpublish.readthedocs.io/en/latest/?badge=latest)
-
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/jhamman/xpublish/master)
 
 # xpublish
 
