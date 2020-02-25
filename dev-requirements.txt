@@ -1,5 +1,7 @@
+fsspec
+netcdf4
 pytest
 pytest-sugar
 pytest-cov
-netcdf4
+requests
 -r requirements.txt

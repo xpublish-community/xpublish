@@ -90,6 +90,20 @@ class RestAccessor:
 
         return zjson
 
+    async def get_key(self, var, chunk):
+        logger.debug("var is %s", var)
+        logger.debug("chunk is %s", chunk)
+
+        da = self._variables[var].data
+        arr_meta = self.zmetadata["metadata"][f"{var}/{array_meta_key}"]
+
+        data_chunk = get_data_chunk(da, chunk, out_shape=arr_meta["chunks"])
+
+        echunk = _encode_chunk(
+            data_chunk.tobytes(), filters=arr_meta["filters"], compressor=arr_meta["compressor"],
+        )
+        return Response(echunk, media_type="application/octet-stream")
+
     @property
     def app(self):
         """ FastAPI app """
@@ -124,21 +138,18 @@ class RestAccessor:
                 return self._obj.to_dict(data=data)
 
             @self._app.get("/{var}/{chunk}")
-            def get_key(var, chunk):
-                logger.debug("var is %s", var)
-                logger.debug("chunk is %s", chunk)
+            async def get_key(var, chunk):
+                result = await self.get_key(var, chunk)
+                return result
 
-                da = self._variables[var].data
-                arr_meta = self.zmetadata["metadata"][f"{var}/{array_meta_key}"]
+            @self._app.get("/versions")
+            def versions():
+                import io
 
-                data_chunk = get_data_chunk(da, chunk, out_shape=arr_meta["chunks"])
-
-                echunk = _encode_chunk(
-                    data_chunk.tobytes(),
-                    filters=arr_meta["filters"],
-                    compressor=arr_meta["compressor"],
-                )
-                return Response(echunk, media_type="application/octet-stream")
+                with io.StringIO() as f:
+                    xr.show_versions(f)
+                    versions = f.getvalue()
+                return versions
 
         return self._app
 

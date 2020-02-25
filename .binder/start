@@ -1,0 +1,5 @@
+#!/bin/bash
+
+python .binder/test.py > logfile.txt 2>&1 &
+
+exec "$@"

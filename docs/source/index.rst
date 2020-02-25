@@ -2,7 +2,12 @@
 xpublish
 ========
 
-Xpublish lets you publish Xarray datasets via a Zarr-compatible REST API.
+**Xpublish lets you publish Xarray datasets via a Zarr-compatible REST API.**
+
+*You can run a short example application in a live session here:* |Binder|
+
+.. |Binder| image:: https://mybinder.org/badge_logo.svg
+ :target: https://mybinder.org/v2/gh/jhamman/xpublish/master
 
 On the server-side, datasets are published using a simple Xarray accessor:
 

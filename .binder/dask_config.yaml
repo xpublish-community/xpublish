@@ -1,0 +1,25 @@
+distributed:
+  version: 2
+
+  dashboard:
+    link: /user/{JUPYTERHUB_USER}/proxy/{port}/status
+
+  scheduler:
+    idle-timeout: 3600s
+
+  admin:
+    tick:
+      limit: 5s
+
+logging:
+  distributed: warning
+  bokeh: critical
+  tornado: critical
+  tornado.application: error
+
+labextension:
+  factory:
+    module: distributed
+    class: LocalCluster
+    args: []
+    kwargs: {}

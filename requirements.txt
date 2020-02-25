@@ -1,9 +1,8 @@
 dask
 fastapi
-fsspec
 numcodecs
-requests
-uvicorn
-xarray
-zarr
+numpy>=1.17
 toolz
+uvicorn
+xarray>=0.15
+zarr

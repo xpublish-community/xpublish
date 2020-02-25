@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -euo pipefail
+
+pip install -e .
+
+# labextensions
+jupyter labextension install --clean dask-labextension \
+                             @jupyter-widgets/jupyterlab-manager \
+                             ipytree
+
+# dask config
+# ${KERNEL_PYTHON_PREFIX} is set by repo2docker to sys.prefix
+# of the python that the kernel is run in.
+mkdir -p ${KERNEL_PYTHON_PREFIX}/etc/dask
+cp .binder/dask_config.yaml ${KERNEL_PYTHON_PREFIX}/etc/dask/dask.yaml

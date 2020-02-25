@@ -1,0 +1,20 @@
+name: xpublish
+channels:
+  - conda-forge
+dependencies:
+  - python=3
+  - xarray
+  - netcdf4
+  - zarr
+  - numcodecs
+  - fastapi
+  - uvicorn
+  - fsspec
+  - dask
+  - distributed
+  - dask-labextension
+  - jupyter-server-proxy
+  - toolz
+  - bokeh
+  - ipytree
+  - pip
