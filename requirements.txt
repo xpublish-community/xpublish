@@ -2,7 +2,6 @@ dask
 fastapi
 numcodecs
 numpy>=1.17
-starlette
 toolz
 uvicorn
 xarray>=0.15
