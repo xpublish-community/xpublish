@@ -15,8 +15,27 @@ def airtemp_ds():
 
 @pytest.fixture(scope="module")
 def airtemp_app(airtemp_ds):
+    airtemp_ds.rest.init_app(
+        title="My Dataset",
+        description="Dataset Description",
+        version="1.0.0",
+        openapi_url="/dataset.json",
+        docs_url="/data-docs",
+    )
     client = TestClient(airtemp_ds.rest.app)
     yield client
+
+
+def test_init_app(airtemp_ds, airtemp_app):
+    assert airtemp_ds.rest.app.title == "My Dataset"
+    assert airtemp_ds.rest.app.description == "Dataset Description"
+    assert airtemp_ds.rest.app.version == "1.0.0"
+
+    response = airtemp_app.get('/dataset.json')
+    assert response.status_code == 200
+
+    response = airtemp_app.get('/data-docs')
+    assert response.status_code == 200
 
 
 def test_keys(airtemp_ds, airtemp_app):

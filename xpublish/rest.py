@@ -104,53 +104,99 @@ class RestAccessor:
         )
         return Response(echunk, media_type="application/octet-stream")
 
+    def init_app(
+        self,
+        debug=False,
+        title='FastAPI',
+        description='',
+        version='0.1.0',
+        openapi_url='/openapi.json',
+        docs_url='/docs',
+        openapi_prefix='',
+        **kwargs,
+    ):
+        """ Initiate FastAPI Application.
+
+        Parameters
+        ----------
+        debug : bool
+            Boolean indicating if debug tracebacks for
+            FastAPI application should be returned on errors.
+        title : str
+            API's title/name, in OpenAPI and the automatic API docs UIs.
+        description : str
+            API's description text, in OpenAPI and the automatic API docs UIs.
+        version : str
+            API's version, e.g. v2 or 2.5.0.
+        openapi_url: str
+            Set OpenAPI schema json url. Default at /openapi.json.
+        docs_url : str
+            Set Swagger UI API documentation URL. Set to ``None`` to disable.
+        openapi_prefix : str
+            Set root url of where application will be hosted.
+        kwargs :
+            Additional arguments to be passed to ``FastAPI``.
+            See https://tinyurl.com/fastapi for complete list.
+        """
+
+        self._app = FastAPI(
+            debug=debug,
+            title=title,
+            description=description,
+            version=version,
+            openapi_url=openapi_url,
+            docs_url=docs_url,
+            openapi_prefix=openapi_prefix,
+            **kwargs,
+        )
+
+        @self._app.get(f"/{zarr_metadata_key}")
+        def get_zmetadata():
+            return self.zmetadata_json()
+
+        @self._app.get("/keys")
+        def list_keys():
+            return list(self._obj.variables)
+
+        @self._app.get("/")
+        def repr():
+            with xr.set_options(display_style="html"):
+                return HTMLResponse(self._obj._repr_html_())
+
+        @self._app.get("/info")
+        def info():
+            import io
+
+            with io.StringIO() as buffer:
+                self._obj.info(buf=buffer)
+                info = buffer.getvalue()
+            return info
+
+        @self._app.get("/dict")
+        def to_dict(data: bool = False):
+            return self._obj.to_dict(data=data)
+
+        @self._app.get("/{var}/{chunk}")
+        async def get_key(var, chunk):
+            result = await self.get_key(var, chunk)
+            return result
+
+        @self._app.get("/versions")
+        def versions():
+            import io
+
+            with io.StringIO() as f:
+                xr.show_versions(f)
+                versions = f.getvalue()
+            return versions
+
+        return self._app
+
     @property
     def app(self):
         """ FastAPI app """
         if self._app is None:
-
-            self._app = FastAPI()
-
-            @self._app.get(f"/{zarr_metadata_key}")
-            def get_zmetadata():
-                return self.zmetadata_json()
-
-            @self._app.get("/keys")
-            def list_keys():
-                return list(self._obj.variables)
-
-            @self._app.get("/")
-            def repr():
-                with xr.set_options(display_style="html"):
-                    return HTMLResponse(self._obj._repr_html_())
-
-            @self._app.get("/info")
-            def info():
-                import io
-
-                with io.StringIO() as buffer:
-                    self._obj.info(buf=buffer)
-                    info = buffer.getvalue()
-                return info
-
-            @self._app.get("/dict")
-            def to_dict(data: bool = False):
-                return self._obj.to_dict(data=data)
-
-            @self._app.get("/{var}/{chunk}")
-            async def get_key(var, chunk):
-                result = await self.get_key(var, chunk)
-                return result
-
-            @self._app.get("/versions")
-            def versions():
-                import io
-
-                with io.StringIO() as f:
-                    xr.show_versions(f)
-                    versions = f.getvalue()
-                return versions
-
+            self.init_app()
         return self._app
 
     def serve(self, host="0.0.0.0", port=9000, log_level="debug", **kwargs):
@@ -172,7 +218,6 @@ class RestAccessor:
         -----
         This method is blocking and does not return.
         """
-
         uvicorn.run(self.app, host=host, port=port, log_level=log_level, **kwargs)
 
 
