@@ -104,53 +104,56 @@ class RestAccessor:
         )
         return Response(echunk, media_type="application/octet-stream")
 
+    def init_app(self, **kwargs):
+        
+        self._app = FastAPI(**kwargs)
+        
+        @self._app.get(f"/{zarr_metadata_key}")
+        def get_zmetadata():
+            return self.zmetadata_json()
+
+        @self._app.get("/keys")
+        def list_keys():
+            return list(self._obj.variables)
+
+        @self._app.get("/")
+        def repr():
+            with xr.set_options(display_style="html"):
+                return HTMLResponse(self._obj._repr_html_())
+
+        @self._app.get("/info")
+        def info():
+            import io
+
+            with io.StringIO() as buffer:
+                self._obj.info(buf=buffer)
+                info = buffer.getvalue()
+            return info
+
+        @self._app.get("/dict")
+        def to_dict(data: bool = False):
+            return self._obj.to_dict(data=data)
+
+        @self._app.get("/{var}/{chunk}")
+        async def get_key(var, chunk):
+            result = await self.get_key(var, chunk)
+            return result
+
+        @self._app.get("/versions")
+        def versions():
+            import io
+
+            with io.StringIO() as f:
+                xr.show_versions(f)
+                versions = f.getvalue()
+            return versions
+        return self._app
+
     @property
     def app(self):
         """ FastAPI app """
         if self._app is None:
-
-            self._app = FastAPI()
-
-            @self._app.get(f"/{zarr_metadata_key}")
-            def get_zmetadata():
-                return self.zmetadata_json()
-
-            @self._app.get("/keys")
-            def list_keys():
-                return list(self._obj.variables)
-
-            @self._app.get("/")
-            def repr():
-                with xr.set_options(display_style="html"):
-                    return HTMLResponse(self._obj._repr_html_())
-
-            @self._app.get("/info")
-            def info():
-                import io
-
-                with io.StringIO() as buffer:
-                    self._obj.info(buf=buffer)
-                    info = buffer.getvalue()
-                return info
-
-            @self._app.get("/dict")
-            def to_dict(data: bool = False):
-                return self._obj.to_dict(data=data)
-
-            @self._app.get("/{var}/{chunk}")
-            async def get_key(var, chunk):
-                result = await self.get_key(var, chunk)
-                return result
-
-            @self._app.get("/versions")
-            def versions():
-                import io
-
-                with io.StringIO() as f:
-                    xr.show_versions(f)
-                    versions = f.getvalue()
-                return versions
-
+            self.init_app()
         return self._app
 
     def serve(self, host="0.0.0.0", port=9000, log_level="debug", **kwargs):
@@ -172,7 +175,8 @@ class RestAccessor:
         -----
         This method is blocking and does not return.
         """
-
+        if self._app is None:
+            self.init_app()
         uvicorn.run(self.app, host=host, port=port, log_level=log_level, **kwargs)
 
 
