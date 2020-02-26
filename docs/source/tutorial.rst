@@ -18,6 +18,18 @@ To begin, import xpublish and open an xarray dataset:
         "air_temperature", chunks=dict(lat=5, lon=5),
     )
 
+Optional customization of the underlying FastAPI application is available by using the ``init_app`` method before running ``serve`` below:
+
+.. ipython:: python
+
+    ds.rest.init_app(
+        title="My Dataset",
+        description="Dataset Description",
+        version="1.0.0",
+        openapi_url="/dataset.json",
+        docs_url="/data-docs"
+    )
+
 Serving a dataset simply requires calling the `serve` method on the `rest`
 accessor:
 
@@ -48,7 +60,7 @@ Zarr API
 API Docs
 ~~~~~~~~
 
-* ``/docs``: Interactive Swagger UI API documentation
+* ``/docs``: Interactive Swagger UI API documentation. This can be set with ``docs_url`` parameter when initializing application.
 
 Client-Side
 -----------

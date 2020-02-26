@@ -104,9 +104,48 @@ class RestAccessor:
         )
         return Response(echunk, media_type="application/octet-stream")
 
-    def init_app(self, **kwargs):
+    def init_app(self,
+                 debug=False,
+                 title='FastAPI',
+                 description='',
+                 version='0.1.0',
+                 openapi_url='/openapi.json',
+                 docs_url='/docs',
+                 openapi_prefix='',
+                 **kwargs):
+        """ Initiate FastAPI Application.
 
-        self._app = FastAPI(**kwargs)
+        Parameters
+        ----------
+        debug : bool
+            Boolean indicating if debug tracebacks for
+            FastAPI application should be returned on errors.
+        title : str
+            API's title/name, in OpenAPI and the automatic API docs UIs.
+        description : str
+            API's description text, in OpenAPI and the automatic API docs UIs.
+        version : str
+            API's, e.g. v2 or 2.5.0.
+        openapi_url: str
+            Set OpenAPI schema json url. Default at /openapi.json.
+        docs_url : str
+            Set Swagger UI API documentation URL. Set to ``None`` to disable.
+        openapi_prefix : str
+            Set root url of where application will be hosted.
+        kwargs :
+            Additional arguments to be passed to ``FastAPI``.
+            See https://tinyurl.com/fastapi for complete list.
+        """
+
+        self._app = FastAPI(
+            debug=debug,
+            title=title,
+            description=description,
+            version=version,
+            openapi_url=openapi_url,
+            docs_url=docs_url,
+            openapi_prefix=openapi_prefix,
+            **kwargs)
 
         @self._app.get(f"/{zarr_metadata_key}")
         def get_zmetadata():
