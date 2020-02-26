@@ -86,9 +86,7 @@ class RestAccessor:
             compressor_config = zjson["metadata"][f"{key}/{array_meta_key}"][
                 "compressor"
             ].get_config()
-            zjson["metadata"][f"{key}/{array_meta_key}"][
-                "compressor"
-            ] = compressor_config
+            zjson["metadata"][f"{key}/{array_meta_key}"]["compressor"] = compressor_config
 
         return zjson
 
@@ -102,9 +100,7 @@ class RestAccessor:
         data_chunk = get_data_chunk(da, chunk, out_shape=arr_meta["chunks"])
 
         echunk = _encode_chunk(
-            data_chunk.tobytes(),
-            filters=arr_meta["filters"],
-            compressor=arr_meta["compressor"],
+            data_chunk.tobytes(), filters=arr_meta["filters"], compressor=arr_meta["compressor"],
         )
         return Response(echunk, media_type="application/octet-stream")
 
@@ -206,9 +202,7 @@ def _extract_fill_value(da, dtype):
 def extract_zarray(da, encoding, dtype):
     """ helper function to extract zarr array metadata. """
     meta = {
-        "compressor": encoding.get(
-            "compressor", da.encoding.get("compressor", default_compressor)
-        ),
+        "compressor": encoding.get("compressor", da.encoding.get("compressor", default_compressor)),
         "filters": encoding.get("filters", da.encoding.get("filters", None)),
         "chunks": encoding.get("chunks", None),
         "dtype": dtype.str,
