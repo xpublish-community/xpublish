@@ -127,7 +127,7 @@ class RestAccessor:
         description : str
             API's description text, in OpenAPI and the automatic API docs UIs.
         version : str
-            API's, e.g. v2 or 2.5.0.
+            API's version, e.g. v2 or 2.5.0.
         openapi_url: str
             Set OpenAPI schema json url. Default at /openapi.json.
         docs_url : str
