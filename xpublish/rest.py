@@ -104,15 +104,17 @@ class RestAccessor:
         )
         return Response(echunk, media_type="application/octet-stream")
 
-    def init_app(self,
-                 debug=False,
-                 title='FastAPI',
-                 description='',
-                 version='0.1.0',
-                 openapi_url='/openapi.json',
-                 docs_url='/docs',
-                 openapi_prefix='',
-                 **kwargs):
+    def init_app(
+        self,
+        debug=False,
+        title='FastAPI',
+        description='',
+        version='0.1.0',
+        openapi_url='/openapi.json',
+        docs_url='/docs',
+        openapi_prefix='',
+        **kwargs,
+    ):
         """ Initiate FastAPI Application.
 
         Parameters
@@ -145,7 +147,8 @@ class RestAccessor:
             openapi_url=openapi_url,
             docs_url=docs_url,
             openapi_prefix=openapi_prefix,
-            **kwargs)
+            **kwargs,
+        )
 
         @self._app.get(f"/{zarr_metadata_key}")
         def get_zmetadata():
