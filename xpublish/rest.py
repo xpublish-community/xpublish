@@ -180,8 +180,6 @@ class RestAccessor:
         -----
         This method is blocking and does not return.
         """
-        if self._app is None:
-            self.init_app()
         uvicorn.run(self.app, host=host, port=port, log_level=log_level, **kwargs)
 
 
