@@ -1,3 +1,7 @@
+xpublish
+========
+
+Publish Xarray Datasets via a Zarr compatible REST API
 
 .. image:: https://img.shields.io/github/workflow/status/jhamman/xpublish/CI?logo=github
    :target: https://github.com/jhamman/xpublish/actions?query=workflow%3ACI
@@ -11,19 +15,14 @@
    :target: https://mybinder.org/v2/gh/jhamman/xpublish/master
    :alt: Binder
 
-xpublish
-========
-
-Publish Xarray Datasets via a Zarr compatible REST API
-
-**Server side: Publish a xarray dataset as a rest API**
+**Serverside: Publish a xarray dataset as a rest API**
 
 .. code-block:: python
 
    ds.rest.serve(host="0.0.0.0", port=9000)
 
 
-**Client side: Connect to a published dataset**
+**Client-side: Connect to a published dataset**
 
 .. code-block:: python
 
@@ -38,7 +37,7 @@ Publish Xarray Datasets via a Zarr compatible REST API
    zg = zarr.open_consolidated(http_map, mode='r')
 
    # open as another xarray dataset
-   xr.open_zarr(http_map, consolidated=True)
+   ds = xr.open_zarr(http_map, consolidated=True)
 
 
 Why?

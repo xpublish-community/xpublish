@@ -48,13 +48,6 @@ def test_info(airtemp_ds, airtemp_app):
     response = airtemp_app.get("/info")
     assert response.status_code == 200
 
-    with io.StringIO() as buffer:
-        airtemp_ds.info(buf=buffer)
-        info = buffer.getvalue()
-
-    assert info == response.json()
-
-
 def test_repr(airtemp_ds, airtemp_app):
     response = airtemp_app.get("/")
     assert response.status_code == 200

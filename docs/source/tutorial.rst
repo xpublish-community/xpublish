@@ -47,9 +47,9 @@ REST API
 
 * ``/``: returns xarray's HTML repr.
 * ``/keys``: returns a list of variable keys, equivalent to ``list(ds.variables)``.
-* ``/info``: returns a plain text summary of a Dataset variables and attributes, equivalent to ``ds.info()``.
-* ``/dict``: returns a json dictionary of the full dataset. Accpets the ``?data={value}`` parameter to specify if the return dictionary should include the data in addition to the dataset schema.
-* ``/versions``: returns a plain text summary of the versions of xarray and related libraries on the server side, equivalent to ``xr.show_versions()``.
+* ``/info``: returns a json dictionary summary of a Dataset variables and attributes, similar to ``ds.info()``.
+* ``/dict``: returns a json dictionary of the full dataset. Accepts the ``?data={value}`` parameter to specify if the return dictionary should include the data in addition to the dataset schema.
+* ``/versions``: returns json dictionary of the versions of python, xarray and related libraries on the server side, similar to ``xr.show_versions()``.
 
 Zarr API
 ~~~~~~~~
