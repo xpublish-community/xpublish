@@ -1,7 +1,7 @@
 import copy
+import importlib
 import logging
 import sys
-import importlib
 
 import numpy as np
 import uvicorn
@@ -109,8 +109,18 @@ class RestAccessor:
 
     def _versions(self):
         versions = dict(get_sys_info() + netcdf_and_hdf5_versions())
-        modules = ['xarray', 'zarr', 'numcodecs', 'fastapi', 'starlette',
-                   'pandas', 'numpy', 'dask', 'distributed', 'uvicorn']
+        modules = [
+            'xarray',
+            'zarr',
+            'numcodecs',
+            'fastapi',
+            'starlette',
+            'pandas',
+            'numpy',
+            'dask',
+            'distributed',
+            'uvicorn',
+        ]
         for modname in modules:
             if modname in sys.modules:
                 mod = sys.modules[modname]
@@ -129,7 +139,7 @@ class RestAccessor:
                 name: {
                     'type': da.data.dtype.name,  # TODO: update this to match encoded variable
                     'dimensions': list(da.dims),
-                    'attributes': dict(**da.attrs)  # TODO: update this to match encoded variable
+                    'attributes': dict(**da.attrs),  # TODO: update this to match encoded variable
                 }
             }
         info["global_attributes"] = dict(self._obj.attrs)
