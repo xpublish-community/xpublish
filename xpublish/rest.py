@@ -92,7 +92,7 @@ class RestAccessor:
             ].get_config()
             zjson["metadata"][f"{key}/{array_meta_key}"]["compressor"] = compressor_config
 
-        return Response(json.dumps(zjson).encode('ascii'), media_type="application/json")
+        return zjson
 
     async def get_key(self, var, chunk):
         logger.debug("var is %s", var)
@@ -194,7 +194,9 @@ class RestAccessor:
 
         @self._app.get(f"/{zarr_metadata_key}")
         def get_zmetadata():
-            return self.zmetadata_json()
+            return Response(
+                json.dumps(self.zmetadata_json()).encode('ascii'), media_type="application/json"
+            )
 
         @self._app.get("/keys")
         def list_keys():
