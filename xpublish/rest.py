@@ -1,5 +1,6 @@
 import copy
 import importlib
+import json
 import logging
 import sys
 
@@ -91,7 +92,7 @@ class RestAccessor:
             ].get_config()
             zjson["metadata"][f"{key}/{array_meta_key}"]["compressor"] = compressor_config
 
-        return zjson
+        return Response(json.dumps(zjson).encode('ascii'), media_type="application/json")
 
     async def get_key(self, var, chunk):
         logger.debug("var is %s", var)
