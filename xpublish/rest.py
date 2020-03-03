@@ -1,5 +1,8 @@
 import copy
+import importlib
+import json
 import logging
+import sys
 
 import numpy as np
 import uvicorn
@@ -14,6 +17,7 @@ from xarray.backends.zarr import (
     encode_zarr_variable,
 )
 from xarray.core.pycompat import dask_array_type
+from xarray.util.print_versions import get_sys_info, netcdf_and_hdf5_versions
 from zarr.meta import encode_fill_value
 from zarr.storage import array_meta_key, attrs_key, default_compressor, group_meta_key
 from zarr.util import normalize_shape
@@ -104,6 +108,44 @@ class RestAccessor:
         )
         return Response(echunk, media_type='application/octet-stream')
 
+    def _versions(self):
+        versions = dict(get_sys_info() + netcdf_and_hdf5_versions())
+        modules = [
+            'xarray',
+            'zarr',
+            'numcodecs',
+            'fastapi',
+            'starlette',
+            'pandas',
+            'numpy',
+            'dask',
+            'distributed',
+            'uvicorn',
+        ]
+        for modname in modules:
+            if modname in sys.modules:
+                mod = sys.modules[modname]
+            else:
+                mod = importlib.import_module(modname)
+            versions[modname] = getattr(mod, '__version__', None)
+        return versions
+
+    def _info(self):
+        # TODO: make compatible with NCO-JSON?
+        info = {}
+        info["dimensions"] = dict(self._obj.dims.items())
+        info["variables"] = {}
+        for name, da in self._obj.variables.items():
+            info['variables'] = {
+                name: {
+                    'type': da.data.dtype.name,  # TODO: update this to match encoded variable
+                    'dimensions': list(da.dims),
+                    'attributes': dict(**da.attrs),  # TODO: update this to match encoded variable
+                }
+            }
+        info["global_attributes"] = dict(self._obj.attrs)
+        return info
+
     def init_app(
         self,
         debug=False,
@@ -152,7 +194,9 @@ class RestAccessor:
 
         @self._app.get(f'/{zarr_metadata_key}')
         def get_zmetadata():
-            return self.zmetadata_json()
+            return Response(
+                json.dumps(self.zmetadata_json()).encode('ascii'), media_type="application/json"
+            )
 
         @self._app.get('/keys')
         def list_keys():
@@ -165,12 +209,7 @@ class RestAccessor:
 
         @self._app.get('/info')
         def info():
-            import io
-
-            with io.StringIO() as buffer:
-                self._obj.info(buf=buffer)
-                info = buffer.getvalue()
-            return info
+            return self._info()
 
         @self._app.get('/dict')
         def to_dict(data: bool = False):
@@ -183,12 +222,7 @@ class RestAccessor:
 
         @self._app.get('/versions')
         def versions():
-            import io
-
-            with io.StringIO() as f:
-                xr.show_versions(f)
-                versions = f.getvalue()
-            return versions
+            return self._versions()
 
         return self._app
 
