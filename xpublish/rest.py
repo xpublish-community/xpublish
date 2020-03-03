@@ -93,7 +93,7 @@ class RestAccessor:
 
         return zjson
 
-    async def get_key(self, var, chunk):
+    def get_key(self, var, chunk):
         logger.debug("var is %s", var)
         logger.debug("chunk is %s", chunk)
 
@@ -213,8 +213,8 @@ class RestAccessor:
             return self._obj.to_dict(data=data)
 
         @self._app.get("/{var}/{chunk}")
-        async def get_key(var, chunk):
-            result = await self.get_key(var, chunk)
+        def get_key(var, chunk):
+            result = self.get_key(var, chunk)
             return result
 
         @self._app.get("/versions")
