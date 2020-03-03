@@ -94,7 +94,7 @@ class RestAccessor:
 
         return zjson
 
-    async def get_key(self, var, chunk):
+    def get_key(self, var, chunk):
         logger.debug('var is %s', var)
         logger.debug('chunk is %s', chunk)
 
@@ -133,8 +133,8 @@ class RestAccessor:
     def _info(self):
         # TODO: make compatible with NCO-JSON?
         info = {}
-        info["dimensions"] = dict(self._obj.dims.items())
-        info["variables"] = {}
+        info['dimensions'] = dict(self._obj.dims.items())
+        info['variables'] = {}
         for name, da in self._obj.variables.items():
             info['variables'] = {
                 name: {
@@ -143,7 +143,7 @@ class RestAccessor:
                     'attributes': dict(**da.attrs),  # TODO: update this to match encoded variable
                 }
             }
-        info["global_attributes"] = dict(self._obj.attrs)
+        info['global_attributes'] = dict(self._obj.attrs)
         return info
 
     def init_app(
@@ -195,7 +195,7 @@ class RestAccessor:
         @self._app.get(f'/{zarr_metadata_key}')
         def get_zmetadata():
             return Response(
-                json.dumps(self.zmetadata_json()).encode('ascii'), media_type="application/json"
+                json.dumps(self.zmetadata_json()).encode('ascii'), media_type='application/json'
             )
 
         @self._app.get('/keys')
@@ -216,8 +216,8 @@ class RestAccessor:
             return self._obj.to_dict(data=data)
 
         @self._app.get('/{var}/{chunk}')
-        async def get_key(var, chunk):
-            result = await self.get_key(var, chunk)
+        def get_key(var, chunk):
+            result = self.get_key(var, chunk)
             return result
 
         @self._app.get('/versions')
