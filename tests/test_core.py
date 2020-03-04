@@ -30,7 +30,7 @@ def test_invalid_dask_chunks_raise():
 def test_invalid_encoding_chunks_with_dask_raise():
     expected = [4, 5, 1]
     data = dask.array.zeros((10, 20, 30), chunks=expected)
-    ds = xr.Dataset({'foo': (['x', 'y', 'z'], data),})
+    ds = xr.Dataset({'foo': (['x', 'y', 'z'], data)})
     ds['foo'].encoding['chunks'] = [8, 5, 1]
     with pytest.raises(NotImplementedError) as excinfo:
         _ = ds.rest.zmetadata
