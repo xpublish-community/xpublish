@@ -7,7 +7,7 @@ import sys
 import numpy as np
 import uvicorn
 import xarray as xr
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from numcodecs.compat import ensure_ndarray
 from starlette.responses import HTMLResponse, Response
 from xarray.backends.zarr import (
@@ -87,10 +87,12 @@ class RestAccessor:
         zjson = copy.deepcopy(self.zmetadata)
         for key in list(self._obj.variables):
             # convert compressor to dict
-            compressor_config = zjson["metadata"][f"{key}/{array_meta_key}"][
-                "compressor"
-            ].get_config()
-            zjson["metadata"][f"{key}/{array_meta_key}"]["compressor"] = compressor_config
+            compressor = zjson["metadata"][f"{key}/{array_meta_key}"]["compressor"]
+            if compressor is not None:
+                compressor_config = zjson["metadata"][f"{key}/{array_meta_key}"][
+                    "compressor"
+                ].get_config()
+                zjson["metadata"][f"{key}/{array_meta_key}"]["compressor"] = compressor_config
 
         return zjson
 
@@ -198,6 +200,14 @@ class RestAccessor:
                 json.dumps(self.zmetadata_json()).encode('ascii'), media_type="application/json"
             )
 
+        @self._app.get(f"/{group_meta_key}")
+        def get_zgroup():
+            return self.zmetadata["metadata"][group_meta_key]
+
+        @self._app.get(f"/{attrs_key}")
+        def get_zattrs():
+            return self.zmetadata["metadata"][attrs_key]
+
         @self._app.get("/keys")
         def list_keys():
             return list(self._obj.variables)
@@ -217,8 +227,15 @@ class RestAccessor:
 
         @self._app.get("/{var}/{chunk}")
         def get_key(var, chunk):
-            result = self.get_key(var, chunk)
-            return result
+            # First check that this request wasn't for variable metadata
+            if array_meta_key in chunk:
+                return self.zmetadata["metadata"][f"{var}/{array_meta_key}"]
+            elif attrs_key in chunk:
+                return self.zmetadata["metadata"][f"{var}/{attrs_key}"]
+            elif group_meta_key in chunk:
+                raise HTTPException(status_code=404, detail="No subgroups")
+            else:
+                return self.get_key(var, chunk)
 
         @self._app.get("/versions")
         def versions():
