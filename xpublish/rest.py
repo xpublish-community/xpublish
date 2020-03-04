@@ -63,7 +63,7 @@ class RestAccessor:
             self._encoding[key] = _extract_zarr_variable_encoding(da)
             zmeta["metadata"][f"{key}/{attrs_key}"] = extract_zattrs(encoded_da)
             zmeta["metadata"][f"{key}/{array_meta_key}"] = extract_zarray(
-                encoded_da, self._encoding.get(key, {}), da.encoding["dtype"]
+                encoded_da, self._encoding[key], da.encoding["dtype"]
             )
 
         return zmeta
@@ -304,11 +304,19 @@ def extract_zarray(da, encoding, dtype):
         "shape": list(normalize_shape(da.shape)),
         "zarr_format": zarr_format,
     }
+
     if meta["chunks"] is None:
-        if da.chunks is not None:
-            meta["chunks"] = list([c[0] for c in da.chunks])
-        else:
-            meta["chunks"] = list(da.shape)
+        meta["chunks"] = da.shape
+
+    # validate chunks
+    if isinstance(da.data, dask_array_type):
+        var_chunks = tuple([c[0] for c in da.data.chunks])
+    else:
+        var_chunks = da.shape
+    if not var_chunks == tuple(meta['chunks']):
+        raise ValueError('Encoding chunks do not match inferred chunks')
+
+    meta["chunks"] = list(meta["chunks"])  # return chunks as a list
 
     return meta
 
