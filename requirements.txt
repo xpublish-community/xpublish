@@ -1,3 +1,4 @@
+cachey
 dask
 fastapi
 numcodecs
