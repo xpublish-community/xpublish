@@ -5,29 +5,29 @@ from starlette.testclient import TestClient
 import xpublish  # noqa: F401
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope='module')
 def airtemp_ds():
-    ds = xr.tutorial.open_dataset("air_temperature")
+    ds = xr.tutorial.open_dataset('air_temperature')
     return ds
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope='module')
 def airtemp_app(airtemp_ds):
     airtemp_ds.rest.init_app(
-        title="My Dataset",
-        description="Dataset Description",
-        version="1.0.0",
-        openapi_url="/dataset.json",
-        docs_url="/data-docs",
+        title='My Dataset',
+        description='Dataset Description',
+        version='1.0.0',
+        openapi_url='/dataset.json',
+        docs_url='/data-docs',
     )
     client = TestClient(airtemp_ds.rest.app)
     yield client
 
 
 def test_init_app(airtemp_ds, airtemp_app):
-    assert airtemp_ds.rest.app.title == "My Dataset"
-    assert airtemp_ds.rest.app.description == "Dataset Description"
-    assert airtemp_ds.rest.app.version == "1.0.0"
+    assert airtemp_ds.rest.app.title == 'My Dataset'
+    assert airtemp_ds.rest.app.description == 'Dataset Description'
+    assert airtemp_ds.rest.app.version == '1.0.0'
 
     response = airtemp_app.get('/dataset.json')
     assert response.status_code == 200
@@ -37,49 +37,60 @@ def test_init_app(airtemp_ds, airtemp_app):
 
 
 def test_keys(airtemp_ds, airtemp_app):
-    response = airtemp_app.get("/keys")
+    response = airtemp_app.get('/keys')
     assert response.status_code == 200
     assert response.json() == list(airtemp_ds.variables)
 
 
 def test_info(airtemp_ds, airtemp_app):
-    response = airtemp_app.get("/info")
+    response = airtemp_app.get('/info')
     assert response.status_code == 200
 
 
 def test_repr(airtemp_ds, airtemp_app):
-    response = airtemp_app.get("/")
+    response = airtemp_app.get('/')
     assert response.status_code == 200
 
 
 def test_zmetadata(airtemp_ds, airtemp_app):
-    response = airtemp_app.get("/.zmetadata")
+    response = airtemp_app.get('/.zmetadata')
     assert response.status_code == 200
     assert response.json() == airtemp_ds.rest.zmetadata_json()
 
 
 def test_bad_key(airtemp_app):
-    response = airtemp_app.get("/notakey")
+    response = airtemp_app.get('/notakey')
     assert response.status_code == 404
 
 
 def test_zarray(airtemp_app):
-    response = airtemp_app.get("/air/.zarray")
+    response = airtemp_app.get('/air/.zarray')
     assert response.status_code == 200
 
 
 def test_zattrs(airtemp_app):
-    response = airtemp_app.get("/air/.zattrs")
+    response = airtemp_app.get('/air/.zattrs')
     assert response.status_code == 200
-    response = airtemp_app.get("/.zattrs")
+    response = airtemp_app.get('/.zattrs')
     assert response.status_code == 200
 
 
 def test_get_chunk(airtemp_app):
-    response = airtemp_app.get("/air/0.0.0")
+    response = airtemp_app.get('/air/0.0.0')
     assert response.status_code == 200
 
 
 def test_array_group_raises_404(airtemp_app):
-    response = airtemp_app.get("/air/.zgroup")
+    response = airtemp_app.get('/air/.zgroup')
     assert response.status_code == 404
+
+
+def test_cache(airtemp_ds):
+    client = TestClient(airtemp_ds.rest.app)
+    response1 = client.get('/air/0.0.0')
+    assert response1.status_code == 200
+    assert 'air/0.0.0' in airtemp_ds.rest._cache.data.keys()
+    # test that we can retrieve
+    response2 = client.get('/air/0.0.0')
+    assert response2.status_code == 200
+    assert response1.content == response2.content

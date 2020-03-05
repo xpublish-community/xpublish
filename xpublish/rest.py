@@ -3,10 +3,12 @@ import importlib
 import json
 import logging
 import sys
+import time
 
 import numpy as np
 import uvicorn
 import xarray as xr
+from cachey import Cache
 from fastapi import FastAPI, HTTPException
 from numcodecs.compat import ensure_ndarray
 from starlette.responses import HTMLResponse, Response
@@ -49,6 +51,7 @@ class RestAccessor:
         self._attributes = {}
         self._variables = {}
         self._encoding = {}
+        self._cache = Cache(1e9, 1)  # TODO: make these configurable
 
     def _get_zmetadata(self):
         """ helper method to create consolidated zmetadata dictionary """
@@ -97,18 +100,26 @@ class RestAccessor:
         return zjson
 
     def get_key(self, var, chunk):
+        cache_key = f'{var}/{chunk}'
         logger.debug('var is %s', var)
         logger.debug('chunk is %s', chunk)
 
-        da = self._variables[var].data
-        arr_meta = self.zmetadata['metadata'][f'{var}/{array_meta_key}']
+        response = self._cache.get(cache_key)
+        if response is None:
+            with CostTimer() as ct:
+                arr_meta = self.zmetadata['metadata'][f'{var}/{array_meta_key}']
+                da = self._variables[var].data
 
-        data_chunk = get_data_chunk(da, chunk, out_shape=arr_meta['chunks'])
+                data_chunk = get_data_chunk(da, chunk, out_shape=arr_meta['chunks'])
 
-        echunk = _encode_chunk(
-            data_chunk.tobytes(), filters=arr_meta['filters'], compressor=arr_meta['compressor'],
-        )
-        return Response(echunk, media_type='application/octet-stream')
+                echunk = _encode_chunk(
+                    data_chunk.tobytes(),
+                    filters=arr_meta['filters'],
+                    compressor=arr_meta['compressor'],
+                )
+                response = Response(echunk, media_type='application/octet-stream')
+            self._cache.put(cache_key, response, max(1, int(ct.time)), len(echunk))
+        return response
 
     def _versions(self):
         versions = dict(get_sys_info() + netcdf_and_hdf5_versions())
@@ -371,3 +382,13 @@ def get_data_chunk(da, chunk_id, out_shape):
         return new_chunk
     else:
         return chunk_data
+
+
+class CostTimer:
+    def __enter__(self):
+        self._start = time.perf_counter()
+        return self
+
+    def __exit__(self, *args):
+        end = time.perf_counter()
+        self.time = end - self._start
