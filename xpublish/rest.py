@@ -7,7 +7,7 @@ import sys
 import numpy as np
 import uvicorn
 import xarray as xr
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from numcodecs.compat import ensure_ndarray
 from starlette.responses import HTMLResponse, Response
 from xarray.backends.zarr import (
@@ -63,7 +63,7 @@ class RestAccessor:
             self._encoding[key] = _extract_zarr_variable_encoding(da)
             zmeta['metadata'][f'{key}/{attrs_key}'] = extract_zattrs(encoded_da)
             zmeta['metadata'][f'{key}/{array_meta_key}'] = extract_zarray(
-                encoded_da, self._encoding.get(key, {}), da.encoding.get('dtype', encoded_da.dtype)
+                encoded_da, self._encoding[key], da.encoding.get('dtype', da.dtype)
             )
 
         return zmeta
@@ -87,10 +87,12 @@ class RestAccessor:
         zjson = copy.deepcopy(self.zmetadata)
         for key in list(self._obj.variables):
             # convert compressor to dict
-            compressor_config = zjson['metadata'][f'{key}/{array_meta_key}'][
-                'compressor'
-            ].get_config()
-            zjson['metadata'][f'{key}/{array_meta_key}']['compressor'] = compressor_config
+            compressor = zjson['metadata'][f'{key}/{array_meta_key}']['compressor']
+            if compressor is not None:
+                compressor_config = zjson['metadata'][f'{key}/{array_meta_key}'][
+                    'compressor'
+                ].get_config()
+                zjson['metadata'][f'{key}/{array_meta_key}']['compressor'] = compressor_config
 
         return zjson
 
@@ -198,6 +200,14 @@ class RestAccessor:
                 json.dumps(self.zmetadata_json()).encode('ascii'), media_type='application/json'
             )
 
+        @self._app.get(f'/{group_meta_key}')
+        def get_zgroup():
+            return self.zmetadata['metadata'][group_meta_key]
+
+        @self._app.get(f'/{attrs_key}')
+        def get_zattrs():
+            return self.zmetadata['metadata'][attrs_key]
+
         @self._app.get('/keys')
         def list_keys():
             return list(self._obj.variables)
@@ -217,8 +227,15 @@ class RestAccessor:
 
         @self._app.get('/{var}/{chunk}')
         def get_key(var, chunk):
-            result = self.get_key(var, chunk)
-            return result
+            # First check that this request wasn't for variable metadata
+            if array_meta_key in chunk:
+                return self.zmetadata['metadata'][f'{var}/{array_meta_key}']
+            elif attrs_key in chunk:
+                return self.zmetadata['metadata'][f'{var}/{attrs_key}']
+            elif group_meta_key in chunk:
+                raise HTTPException(status_code=404, detail='No subgroups')
+            else:
+                return self.get_key(var, chunk)
 
         @self._app.get('/versions')
         def versions():
@@ -287,11 +304,19 @@ def extract_zarray(da, encoding, dtype):
         'shape': list(normalize_shape(da.shape)),
         'zarr_format': zarr_format,
     }
+
     if meta['chunks'] is None:
-        if da.chunks is not None:
-            meta['chunks'] = list([c[0] for c in da.chunks])
-        else:
-            meta['chunks'] = list(da.shape)
+        meta['chunks'] = da.shape
+
+    # validate chunks
+    if isinstance(da.data, dask_array_type):
+        var_chunks = tuple([c[0] for c in da.data.chunks])
+    else:
+        var_chunks = da.shape
+    if not var_chunks == tuple(meta['chunks']):
+        raise ValueError('Encoding chunks do not match inferred chunks')
+
+    meta['chunks'] = list(meta['chunks'])  # return chunks as a list
 
     return meta
 
@@ -323,9 +348,14 @@ def get_data_chunk(da, chunk_id, out_shape):
     If this is an incomplete edge chunk, pad the returned array to match out_shape.
     """
     ikeys = tuple(map(int, chunk_id.split('.')))
-    try:
+    if isinstance(da, dask_array_type):
         chunk_data = da.blocks[ikeys]
-    except:
+    else:
+        if ikeys != ((0,) * da.ndim):
+            raise ValueError(
+                'Invalid chunk_id for numpy array: %s. Should have been: %s'
+                % (chunk_id, ((0,) * da.ndim))
+            )
         chunk_data = np.asarray(da)
 
     logger.debug('checking chunk output size, %s == %s' % (chunk_data.shape, out_shape))

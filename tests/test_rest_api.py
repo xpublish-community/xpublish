@@ -63,6 +63,23 @@ def test_bad_key(airtemp_app):
     assert response.status_code == 404
 
 
-def test_get_chunk(airtemp_ds, airtemp_app):
+def test_zarray(airtemp_app):
+    response = airtemp_app.get("/air/.zarray")
+    assert response.status_code == 200
+
+
+def test_zattrs(airtemp_app):
+    response = airtemp_app.get("/air/.zattrs")
+    assert response.status_code == 200
+    response = airtemp_app.get("/.zattrs")
+    assert response.status_code == 200
+
+
+def test_get_chunk(airtemp_app):
     response = airtemp_app.get("/air/0.0.0")
     assert response.status_code == 200
+
+
+def test_array_group_raises_404(airtemp_app):
+    response = airtemp_app.get("/air/.zgroup")
+    assert response.status_code == 404
