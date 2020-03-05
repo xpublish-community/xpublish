@@ -14,10 +14,30 @@ def airtemp_ds():
     return ds.chunk(dict(ds.dims))
 
 
-def test_zmetadata_identical(airtemp_ds):
+@pytest.mark.parametrize(
+    'start, end, freq, nlats, nlons, var_const, calendar, use_cftime',
+    [
+        ('2018-01-01', '2021-01-01', 'MS', 180, 360, True, 'standard', False),
+        ('2018-01-01', '2021-01-01', 'D', 180, 360, False, 'noleap', True),
+        ('2018-01-01', '2021-01-01', '6H', 180, 360, True, 'gregorian', False),
+        ('2018-01-01', '2050-01-01', 'A', 180, 360, None, '360_day', True),
+    ],
+)
+def test_zmetadata_identical(start, end, freq, nlats, nlons, var_const, calendar, use_cftime):
+    ds = create_dataset(
+        start=start,
+        end=end,
+        nlats=nlats,
+        nlons=nlons,
+        var_const=var_const,
+        use_cftime=use_cftime,
+        calendar=calendar,
+    )
+
+    ds = ds.chunk(ds.dims)
     zarr_dict = {}
-    airtemp_ds.to_zarr(zarr_dict, consolidated=True)
-    mapper = TestMapper(airtemp_ds.rest.app)
+    ds.to_zarr(zarr_dict, consolidated=True)
+    mapper = TestMapper(ds.rest.app)
     actual = json.loads(mapper['.zmetadata'].decode())
     expected = json.loads(zarr_dict['.zmetadata'].decode())
     assert actual == expected
@@ -43,13 +63,13 @@ def test_roundtrip(start, end, freq, nlats, nlons, var_const, calendar, use_cfti
         calendar=calendar,
     )
     ds = ds.chunk(ds.dims)
+
     mapper = TestMapper(ds.rest.app)
     actual = xr.open_zarr(mapper, consolidated=True)
 
     xr.testing.assert_identical(actual, ds)
 
 
-@pytest.mark.xfail(reason='Custom chunking not working properly')
 @pytest.mark.parametrize(
     'start, end, freq, nlats, nlons, var_const, calendar, use_cftime, chunks',
     [

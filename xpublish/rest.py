@@ -63,7 +63,7 @@ class RestAccessor:
             self._encoding[key] = _extract_zarr_variable_encoding(da)
             zmeta['metadata'][f'{key}/{attrs_key}'] = extract_zattrs(encoded_da)
             zmeta['metadata'][f'{key}/{array_meta_key}'] = extract_zarray(
-                encoded_da, self._encoding[key], da.encoding.get('dtype', da.dtype)
+                encoded_da, self._encoding[key], encoded_da.dtype
             )
 
         return zmeta
