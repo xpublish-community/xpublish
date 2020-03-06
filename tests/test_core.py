@@ -1,10 +1,12 @@
+import time
+
 import dask
 import numpy as np
 import pytest
 import xarray as xr
 
 import xpublish  # noqa: F401
-from xpublish.rest import get_data_chunk
+from xpublish.rest import CostTimer, get_data_chunk
 
 
 def test_dask_chunks_become_zarr_chunks():
@@ -70,3 +72,19 @@ def test_get_data_chunk_numpy_edge_chunk():
     data = np.arange(10).reshape((2, 5))
     actual = get_data_chunk(data, '0.0', out_shape)
     np.testing.assert_equal(data, actual[:2, :])
+
+
+def test_init_twice_raises():
+    ds = xr.Dataset({'foo': (['x'], [1, 2, 3])})
+    ds.rest(app_kws={'foo': 'bar'})
+    with pytest.raises(RuntimeError) as excinfo:
+        ds.rest(app_kws={'bar': 'foo'})
+    excinfo.match(r'This accessor has already been initialized')
+
+
+def test_cache_timer():
+    with CostTimer() as ct:
+        time.sleep(1)
+
+    assert ct.time >= 1
+    assert ct.time < 1.1
