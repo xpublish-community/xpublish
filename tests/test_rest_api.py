@@ -117,7 +117,7 @@ def test_cache(airtemp_ds):
 
     response1 = client.get('/air/0.0.0')
     assert response1.status_code == 200
-    assert 'air/0.0.0' in airtemp_ds.rest.cache.data.keys()
+    assert 'air/0.0.0' in airtemp_ds.rest.cache
 
     # test that we can retrieve
     response2 = client.get('/air/0.0.0')

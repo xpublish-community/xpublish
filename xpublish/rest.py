@@ -184,11 +184,14 @@ class RestAccessor:
             'uvicorn',
         ]
         for modname in modules:
-            if modname in sys.modules:
-                mod = sys.modules[modname]
-            else:
-                mod = importlib.import_module(modname)
-            versions[modname] = getattr(mod, '__version__', None)
+            try:
+                if modname in sys.modules:
+                    mod = sys.modules[modname]
+                else:
+                    mod = importlib.import_module(modname)
+                versions[modname] = getattr(mod, '__version__', None)
+            except ImportError:
+                pass
         return versions
 
     def _info(self):
