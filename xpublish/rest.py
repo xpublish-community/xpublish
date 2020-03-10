@@ -75,7 +75,7 @@ class RestAccessor:
 
         Notes
         -----
-        This method can only be inoked once.
+        This method can only be invoked once.
         """
         if self._initialized:
             raise RuntimeError('This accessor has already been initialized')
