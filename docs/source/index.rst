@@ -53,9 +53,9 @@ exposing a minimal Zarr compatible REST-like API.
 
 Key attributes of the API are:
 
-- serves a Zarr store API from the root of the dataset
-- provides consolidated Zarr metadata keys (`.zmetadata`) as a json string.
-- provides access to data keys (e.g. `var/0.0.0`) as binary strings.
+- serves a Zarr store API from the root of the dataset.
+- provides Zarr metadata keys (``.zmetadata``, ``.zgroup``, ``.zarray``, and ``.zattrs``) as a JSON strings.
+- provides access to data keys (e.g. ``var/0.0.0``) as binary strings.
 
 .. toctree::
    :maxdepth: 2

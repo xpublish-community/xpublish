@@ -18,16 +18,20 @@ To begin, import xpublish and open an xarray dataset:
         "air_temperature", chunks=dict(lat=5, lon=5),
     )
 
-Optional customization of the underlying FastAPI application is available by using the ``init_app`` method before running ``serve`` below:
+Optional customization of the underlying
+`FastAPI application <https://fastapi.tiangolo.com>`_ or the server-side
+`cache <https://github.com/dask/cachey>`_ is possible when the accessor
+is initialized:
 
 .. ipython:: python
 
-    ds.rest.init_app(
-        title="My Dataset",
-        description="Dataset Description",
-        version="1.0.0",
-        openapi_url="/dataset.json",
-        docs_url="/data-docs"
+    ds.rest(
+        app_kws=dict(
+            title="My Dataset",
+            description="Dataset Description",
+            openapi_url="/dataset.JSON",
+        ),
+        cache_kws=dict(available_bytes=1e9)
     )
 
 Serving a dataset simply requires calling the `serve` method on the `rest`
@@ -47,15 +51,15 @@ REST API
 
 * ``/``: returns xarray's HTML repr.
 * ``/keys``: returns a list of variable keys, equivalent to ``list(ds.variables)``.
-* ``/info``: returns a json dictionary summary of a Dataset variables and attributes, similar to ``ds.info()``.
-* ``/dict``: returns a json dictionary of the full dataset. Accepts the ``?data={value}`` parameter to specify if the return dictionary should include the data in addition to the dataset schema.
-* ``/versions``: returns json dictionary of the versions of python, xarray and related libraries on the server side, similar to ``xr.show_versions()``.
+* ``/info``: returns a JSON dictionary summary of a Dataset variables and attributes, similar to ``ds.info()``.
+* ``/dict``: returns a JSON dictionary of the full dataset.
+* ``/versions``: returns JSON dictionary of the versions of python, xarray and related libraries on the server side, similar to ``xr.show_versions()``.
 
 Zarr API
 ~~~~~~~~
 
-* ``/.zmetadata``: returns a json dictionary representing the consolidated Zarr metadata.
-* ``/{var}/{key}``: returns a single chunk of an array. 
+* ``/.zmetadata``: returns a JSON dictionary representing the consolidated Zarr metadata.
+* ``/{var}/{key}``: returns a single chunk of an array.
 
 API Docs
 ~~~~~~~~
@@ -82,3 +86,12 @@ implements an HTTPStore. In Python, this can be done with fsspec:
 
     # or open as another xarray dataset
     ds = xr.open_zarr(http_map, consolidated=True)
+
+Xpublish's endpoints can also be queried programmatically. For example:
+
+.. ipython:: python
+    :verbatim:
+
+    In [1]: import requests
+
+    In [2]: response = requests.get('http://0.0.0.0:9000/info').json()

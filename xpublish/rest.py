@@ -3,10 +3,12 @@ import importlib
 import json
 import logging
 import sys
+import time
 
 import numpy as np
 import uvicorn
 import xarray as xr
+from cachey import Cache
 from fastapi import FastAPI, HTTPException
 from numcodecs.compat import ensure_ndarray
 from starlette.responses import HTMLResponse, Response
@@ -37,6 +39,11 @@ class RestAccessor:
     ----------
     xarray_obj : Dataset
         Dataset object to be served through the REST API.
+
+    Notes
+    -----
+    When using this as an accessor on an Xarray.Dataset, options are set via
+    the ``RestAccessor.__call__()`` method.
     """
 
     def __init__(self, xarray_obj):
@@ -49,6 +56,44 @@ class RestAccessor:
         self._attributes = {}
         self._variables = {}
         self._encoding = {}
+        self._cache_kws = {'available_bytes': 1e6}
+        self._app_kws = {}
+        self._cache = None
+        self._initialized = False
+
+    def __call__(self, cache_kws=None, app_kws=None):
+        """
+        Initialize this RestAccessor by setting optional configuration values
+
+        Parameters
+        ----------
+        cache_kws : dict
+            Dictionary of keyword arguments to be passed to ``cachey.Cache()``
+        app_kws : dict
+            Dictionary of keyword arguments to be passed to
+            ``fastapi.FastAPI()``
+
+        Notes
+        -----
+        This method can only be invoked once.
+        """
+        if self._initialized:
+            raise RuntimeError('This accessor has already been initialized')
+        self._initialized = True
+
+        # update kwargs
+        if cache_kws is not None:
+            self._cache_kws.update(cache_kws)
+        if app_kws is not None:
+            self._app_kws.update(app_kws)
+        return self
+
+    @property
+    def cache(self):
+        """ Cache Property """
+        if self._cache is None:
+            self._cache = Cache(**self._cache_kws)
+        return self._cache
 
     def _get_zmetadata(self):
         """ helper method to create consolidated zmetadata dictionary """
@@ -61,7 +106,7 @@ class RestAccessor:
             encoded_da = encode_zarr_variable(da)
             self._variables[key] = encoded_da
             self._encoding[key] = _extract_zarr_variable_encoding(da)
-            zmeta['metadata'][f'{key}/{attrs_key}'] = extract_zattrs(encoded_da)
+            zmeta['metadata'][f'{key}/{attrs_key}'] = _extract_zattrs(encoded_da)
             zmeta['metadata'][f'{key}/{array_meta_key}'] = extract_zarray(
                 encoded_da, self._encoding[key], encoded_da.dtype
             )
@@ -96,19 +141,33 @@ class RestAccessor:
 
         return zjson
 
-    def get_key(self, var, chunk):
+    def _get_key(self, var, chunk):
+        """ Retrieve a zarr chunk
+
+        Note that this method will return cached responses when available
+        """
+        cache_key = f'{var}/{chunk}'
         logger.debug('var is %s', var)
         logger.debug('chunk is %s', chunk)
 
-        da = self._variables[var].data
-        arr_meta = self.zmetadata['metadata'][f'{var}/{array_meta_key}']
+        response = self.cache.get(cache_key)
 
-        data_chunk = get_data_chunk(da, chunk, out_shape=arr_meta['chunks'])
+        if response is None:
+            with CostTimer() as ct:
+                arr_meta = self.zmetadata['metadata'][f'{var}/{array_meta_key}']
+                da = self._variables[var].data
 
-        echunk = _encode_chunk(
-            data_chunk.tobytes(), filters=arr_meta['filters'], compressor=arr_meta['compressor'],
-        )
-        return Response(echunk, media_type='application/octet-stream')
+                data_chunk = get_data_chunk(da, chunk, out_shape=arr_meta['chunks'])
+
+                echunk = _encode_chunk(
+                    data_chunk.tobytes(),
+                    filters=arr_meta['filters'],
+                    compressor=arr_meta['compressor'],
+                )
+                response = Response(echunk, media_type='application/octet-stream')
+            self.cache.put(cache_key, response, ct.time, len(echunk))
+
+        return response
 
     def _versions(self):
         versions = dict(get_sys_info() + netcdf_and_hdf5_versions())
@@ -125,74 +184,43 @@ class RestAccessor:
             'uvicorn',
         ]
         for modname in modules:
-            if modname in sys.modules:
-                mod = sys.modules[modname]
-            else:
-                mod = importlib.import_module(modname)
-            versions[modname] = getattr(mod, '__version__', None)
+            try:
+                if modname in sys.modules:
+                    mod = sys.modules[modname]
+                else:
+                    mod = importlib.import_module(modname)
+                versions[modname] = getattr(mod, '__version__', None)
+            except ImportError:
+                pass
         return versions
 
     def _info(self):
-        # TODO: make compatible with NCO-JSON?
+        """
+        Return a dictionary representing dataset schema
+
+        Currently close to the NCO-JSON schema
+        """
         info = {}
         info['dimensions'] = dict(self._obj.dims.items())
         info['variables'] = {}
-        for name, da in self._obj.variables.items():
-            info['variables'] = {
-                name: {
-                    'type': da.data.dtype.name,  # TODO: update this to match encoded variable
-                    'dimensions': list(da.dims),
-                    'attributes': dict(**da.attrs),  # TODO: update this to match encoded variable
-                }
+
+        meta = self.zmetadata['metadata']
+        for name, var in self._variables.items():
+            attrs = meta[f'{name}/{attrs_key}']
+            attrs.pop('_ARRAY_DIMENSIONS')
+            info['variables'][name] = {
+                'type': var.data.dtype.name,
+                'dimensions': list(var.dims),
+                'attributes': attrs,
             }
-        info['global_attributes'] = dict(self._obj.attrs)
+        info['global_attributes'] = meta[attrs_key]
         return info
 
-    def init_app(
-        self,
-        debug=False,
-        title='FastAPI',
-        description='',
-        version='0.1.0',
-        openapi_url='/openapi.json',
-        docs_url='/docs',
-        openapi_prefix='',
-        **kwargs,
-    ):
+    def _init_app(self):
         """ Initiate FastAPI Application.
-
-        Parameters
-        ----------
-        debug : bool
-            Boolean indicating if debug tracebacks for
-            FastAPI application should be returned on errors.
-        title : str
-            API's title/name, in OpenAPI and the automatic API docs UIs.
-        description : str
-            API's description text, in OpenAPI and the automatic API docs UIs.
-        version : str
-            API's version, e.g. v2 or 2.5.0.
-        openapi_url: str
-            Set OpenAPI schema json url. Default at /openapi.json.
-        docs_url : str
-            Set Swagger UI API documentation URL. Set to ``None`` to disable.
-        openapi_prefix : str
-            Set root url of where application will be hosted.
-        kwargs :
-            Additional arguments to be passed to ``FastAPI``.
-            See https://tinyurl.com/fastapi for complete list.
         """
 
-        self._app = FastAPI(
-            debug=debug,
-            title=title,
-            description=description,
-            version=version,
-            openapi_url=openapi_url,
-            docs_url=docs_url,
-            openapi_prefix=openapi_prefix,
-            **kwargs,
-        )
+        self._app = FastAPI(**self._app_kws)
 
         @self._app.get(f'/{zarr_metadata_key}')
         def get_zmetadata():
@@ -222,11 +250,11 @@ class RestAccessor:
             return self._info()
 
         @self._app.get('/dict')
-        def to_dict(data: bool = False):
-            return self._obj.to_dict(data=data)
+        def to_dict():
+            return self._obj.to_dict(data=False)
 
         @self._app.get('/{var}/{chunk}')
-        def get_key(var, chunk):
+        def get_key(var: str, chunk: str):
             # First check that this request wasn't for variable metadata
             if array_meta_key in chunk:
                 return self.zmetadata['metadata'][f'{var}/{array_meta_key}']
@@ -235,7 +263,7 @@ class RestAccessor:
             elif group_meta_key in chunk:
                 raise HTTPException(status_code=404, detail='No subgroups')
             else:
-                return self.get_key(var, chunk)
+                return self._get_key(var, chunk)
 
         @self._app.get('/versions')
         def versions():
@@ -247,7 +275,7 @@ class RestAccessor:
     def app(self):
         """ FastAPI app """
         if self._app is None:
-            self.init_app()
+            self._app = self._init_app()
         return self._app
 
     def serve(self, host='0.0.0.0', port=9000, log_level='debug', **kwargs):
@@ -272,7 +300,7 @@ class RestAccessor:
         uvicorn.run(self.app, host=host, port=port, log_level=log_level, **kwargs)
 
 
-def extract_zattrs(da):
+def _extract_zattrs(da):
     """ helper function to extract zattrs dictionary from DataArray """
     zattrs = {}
     for k, v in da.attrs.items():
@@ -334,7 +362,6 @@ def _encode_chunk(chunk, filters=None, compressor=None):
 
     # compress
     if compressor:
-        logger.debug(compressor)
         cdata = compressor.encode(chunk)
     else:
         cdata = chunk
@@ -371,3 +398,15 @@ def get_data_chunk(da, chunk_id, out_shape):
         return new_chunk
     else:
         return chunk_data
+
+
+class CostTimer:
+    """ Context manager to measure wall time """
+
+    def __enter__(self):
+        self._start = time.perf_counter()
+        return self
+
+    def __exit__(self, *args):
+        end = time.perf_counter()
+        self.time = end - self._start
