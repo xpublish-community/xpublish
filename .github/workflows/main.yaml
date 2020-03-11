@@ -83,7 +83,7 @@ jobs:
           python -m pip list
       - name: Running Tests
         run: |
-          python -m pytest --verbose --junitxml=test-reports/junit.xml --cov=xpublish --cov-config .coveragerc --cov-report term-missing
+          python -m pytest --junitxml=test-reports/junit.xml --cov=./ --verbose
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
