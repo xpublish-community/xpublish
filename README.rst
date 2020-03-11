@@ -15,6 +15,9 @@ Publish Xarray Datasets via a Zarr compatible REST API
    :target: https://mybinder.org/v2/gh/jhamman/xpublish/master
    :alt: Binder
 
+.. image:: https://codecov.io/gh/jhamman/xpublish/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/jhamman/xpublish
+
 **Serverside: Publish a xarray dataset as a rest API**
 
 .. code-block:: python
