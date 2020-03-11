@@ -84,8 +84,7 @@ jobs:
       - name: Running Tests
         run: |
           python -m pytest --verbose --junitxml=test-reports/junit.xml --cov=xpublish --cov-config .coveragerc --cov-report term-missing
-      # - name: Upload coverage to Codecov
-      #   uses: codecov/codecov-action@v1
-      #   with:
-      #     token: ${{ secrets.CODECOV_TOKEN }}
-      #     file: test-reports/junit.xml
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          file: test-reports/junit.xml
