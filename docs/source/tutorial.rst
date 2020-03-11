@@ -92,6 +92,6 @@ Xpublish's endpoints can also be queried programmatically. For example:
 .. ipython:: python
     :verbatim:
 
-    In [1]: import requests
+    import requests
 
-    In [2]: response = requests.get('http://0.0.0.0:9000/info').json()
+    response = requests.get('http://0.0.0.0:9000/info').json()
