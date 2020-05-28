@@ -51,6 +51,8 @@ REST API
 
 * ``/``: returns xarray's HTML repr.
 * ``/keys``: returns a list of variable keys, equivalent to ``list(ds.variables)``.
+* ``/data_var_keys``: returns a list of data variable keys, equivalent to ``list(ds.data_vars)``.
+* ``/coord_keys``: returns a list of coordinate keys, equivalent to ``list(ds.coords)``.
 * ``/info``: returns a JSON dictionary summary of a Dataset variables and attributes, similar to ``ds.info()``.
 * ``/dict``: returns a JSON dictionary of the full dataset.
 * ``/versions``: returns JSON dictionary of the versions of python, xarray and related libraries on the server side, similar to ``xr.show_versions()``.
