@@ -240,6 +240,14 @@ class RestAccessor:
         def list_keys():
             return list(self._obj.variables)
 
+        @self._app.get('/data_var_keys')
+        def list_data_var_keys():
+            return list(self._obj.data_vars.keys())
+
+        @self._app.get('/coord_keys')
+        def list_coord_keys():
+            return list(self._obj.coords.keys())
+
         @self._app.get('/')
         def repr():
             with xr.set_options(display_style='html'):
