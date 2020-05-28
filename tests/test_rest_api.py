@@ -51,10 +51,15 @@ def test_init_app(airtemp_ds):
     assert response.status_code == 200
 
 
-def test_keys(airtemp_ds, airtemp_app):
-    response = airtemp_app.get('/keys')
+@pytest.mark.parametrize('endpoint,obj_attr', [
+    ('/keys', 'variables'),
+    ('/data_var_keys', 'data_vars'),
+    ('/coord_keys', 'coords')
+])
+def test_keys(airtemp_ds, airtemp_app, endpoint, obj_attr):
+    response = airtemp_app.get(endpoint)
     assert response.status_code == 200
-    assert response.json() == list(airtemp_ds.variables)
+    assert response.json() == list(getattr(airtemp_ds, obj_attr))
 
 
 def test_info(airtemp_ds, airtemp_app):
