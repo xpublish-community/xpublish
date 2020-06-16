@@ -34,6 +34,7 @@ class DatasetAccessor:
     cache_kws: dict
         Cache keyword arguments to be passed into cachey object.
     """
+
     def __init__(self, ds, cache_kws):
         self._obj = ds
         self._zmetadata = None

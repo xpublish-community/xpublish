@@ -6,7 +6,7 @@ from typing import Callable, Dict, Union
 
 import uvicorn
 import xarray as xr
-from fastapi import FastAPI, HTTPException, APIRouter, Depends
+from fastapi import APIRouter, Depends, FastAPI, HTTPException
 from starlette.responses import HTMLResponse, Response
 from xarray.util.print_versions import get_sys_info, netcdf_and_hdf5_versions
 from zarr.storage import array_meta_key, attrs_key, group_meta_key
@@ -45,6 +45,7 @@ class APIRouterWrapper:
     collection of Datasets.
 
     """
+
     def __init__(self, obj: DatasetOrCollection, cache_kws: Dict):
 
         self._router = None
@@ -195,9 +196,11 @@ class RestAccessor:
         if isinstance(self._obj, xr.Dataset):
             prefix = ''
         else:
+
             @self._app.get('/datasets')
             def dataset_list():
                 return [{'dataset_id': k, 'url_path': f'/datasets/{k}'} for k in self._obj.keys()]
+
             prefix = '/datasets/{dataset_id}'
 
         self._app.include_router(ds_router.router, prefix=prefix)
@@ -256,4 +259,3 @@ class RestAccessor:
         This method is blocking and does not return.
         """
         uvicorn.run(self.app, host=host, port=port, log_level=log_level, **kwargs)
-
