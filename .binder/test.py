@@ -13,3 +13,17 @@ if __name__ == "__main__":
     print(ds)
 
     ds.rest.serve()
+
+    # ===== Multiple datasets =====
+    # dsr = xr.Dataset.rest({
+    #     'air_temp': xr.tutorial.open_dataset(
+    #         "air_temperature",
+    #         chunks=dict(lat=5, lon=5),
+    #         decode_cf=False),
+    #     'rasm': xr.tutorial.open_dataset(
+    #         "rasm",
+    #         decode_cf=False)
+    # })
+
+    # dsr.serve()
+    # =============================
