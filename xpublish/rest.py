@@ -1,8 +1,6 @@
 import copy
-import importlib
 import json
 import logging
-import sys
 import time
 
 import numpy as np
@@ -19,7 +17,6 @@ from xarray.backends.zarr import (
     encode_zarr_variable,
 )
 from xarray.core.pycompat import dask_array_type
-from xarray.util.print_versions import get_sys_info, netcdf_and_hdf5_versions
 from zarr.meta import encode_fill_value
 from zarr.storage import array_meta_key, attrs_key, default_compressor, group_meta_key
 from zarr.util import normalize_shape
@@ -232,7 +229,7 @@ class RestAccessor:
         for r in [base_router, common_router]:
             self._app.include_router(r, prefix='')
 
-        self._app.dependency_overrides[get_dataset] = lambda : self._obj
+        self._app.dependency_overrides[get_dataset] = lambda: self._obj
 
         return self._app
 
