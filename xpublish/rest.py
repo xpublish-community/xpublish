@@ -11,7 +11,7 @@ import xarray as xr
 from cachey import Cache
 from fastapi import FastAPI, HTTPException
 from numcodecs.compat import ensure_ndarray
-from starlette.responses import HTMLResponse, Response
+from starlette.responses import Response
 from xarray.backends.zarr import (
     _DIMENSION_KEY,
     _encode_zarr_attr_value,
@@ -23,6 +23,8 @@ from xarray.util.print_versions import get_sys_info, netcdf_and_hdf5_versions
 from zarr.meta import encode_fill_value
 from zarr.storage import array_meta_key, attrs_key, default_compressor, group_meta_key
 from zarr.util import normalize_shape
+
+from .routers import base_router, common_router, get_dataset
 
 zarr_format = 2
 zarr_consolidated_format = 1
@@ -169,31 +171,6 @@ class RestAccessor:
 
         return response
 
-    def _versions(self):
-        versions = dict(get_sys_info() + netcdf_and_hdf5_versions())
-        modules = [
-            'xarray',
-            'zarr',
-            'numcodecs',
-            'fastapi',
-            'starlette',
-            'pandas',
-            'numpy',
-            'dask',
-            'distributed',
-            'uvicorn',
-        ]
-        for modname in modules:
-            try:
-                if modname in sys.modules:
-                    mod = sys.modules[modname]
-                else:
-                    mod = importlib.import_module(modname)
-                versions[modname] = getattr(mod, '__version__', None)
-            except ImportError:
-                pass
-        return versions
-
     def _info(self):
         """
         Return a dictionary representing dataset schema
@@ -236,22 +213,9 @@ class RestAccessor:
         def get_zattrs():
             return self.zmetadata['metadata'][attrs_key]
 
-        @self._app.get('/keys')
-        def list_keys():
-            return list(self._obj.variables)
-
-        @self._app.get('/')
-        def repr():
-            with xr.set_options(display_style='html'):
-                return HTMLResponse(self._obj._repr_html_())
-
         @self._app.get('/info')
         def info():
             return self._info()
-
-        @self._app.get('/dict')
-        def to_dict():
-            return self._obj.to_dict(data=False)
 
         @self._app.get('/{var}/{chunk}')
         def get_key(var: str, chunk: str):
@@ -265,9 +229,10 @@ class RestAccessor:
             else:
                 return self._get_key(var, chunk)
 
-        @self._app.get('/versions')
-        def versions():
-            return self._versions()
+        for r in [base_router, common_router]:
+            self._app.include_router(r, prefix='')
+
+        self._app.dependency_overrides[get_dataset] = lambda : self._obj
 
         return self._app
 
