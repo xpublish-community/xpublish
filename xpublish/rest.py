@@ -28,7 +28,7 @@ class RestAccessor:
         self._app = None
         self._app_routers = [common_router, base_router, zarr_router]
         self._app_kws = {}
-       
+
         self._initialized = False
 
     def __call__(self, cache_kws=None, app_kws=None):

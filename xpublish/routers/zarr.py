@@ -13,9 +13,9 @@ from zarr.meta import encode_fill_value
 from zarr.storage import array_meta_key, attrs_key, default_compressor, group_meta_key
 from zarr.util import normalize_shape
 
-from .base import get_dataset
-from ..cache import RestCacheAccessor   # noqa: F401
+from ..cache import RestCacheAccessor  # noqa: F401
 from ..utils import CostTimer
+from .base import get_dataset
 
 try:
     from xarray.backends.zarr import DIMENSION_KEY
@@ -140,7 +140,6 @@ def _get_data_chunk(da, chunk_id, out_shape):
 
 @xr.register_dataset_accessor('_rest_zarr')
 class RestZarrAccessor:
-
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
 
@@ -253,9 +252,7 @@ zarr_router = APIRouter()
 def get_zmetadata(dataset: xr.Dataset = Depends(get_dataset)):
     zmetadata = dataset._rest_zarr.zmetadata_json()
 
-    return Response(
-        json.dumps(zmetadata).encode('ascii'), media_type='application/json'
-    )
+    return Response(json.dumps(zmetadata).encode('ascii'), media_type='application/json')
 
 
 @zarr_router.get(f'/{group_meta_key}')

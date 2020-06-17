@@ -5,7 +5,6 @@ from cachey import Cache
 
 @xr.register_dataset_accessor('_rest_cache')
 class RestCacheAccessor:
-
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
         self._cache_kws = {'available_bytes': 1e6}

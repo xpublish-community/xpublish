@@ -6,8 +6,8 @@ import pytest
 import xarray as xr
 
 import xpublish  # noqa: F401
-from xpublish.utils import CostTimer
 from xpublish.routers.zarr import _get_data_chunk
+from xpublish.utils import CostTimer
 
 
 def test_dask_chunks_become_zarr_chunks():
