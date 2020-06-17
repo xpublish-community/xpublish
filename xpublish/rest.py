@@ -8,7 +8,7 @@ import numpy as np
 import uvicorn
 import xarray as xr
 from cachey import Cache
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from numcodecs.compat import ensure_ndarray
 from starlette.responses import Response
 from xarray.backends.zarr import encode_zarr_variable
