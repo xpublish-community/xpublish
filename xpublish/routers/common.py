@@ -6,7 +6,8 @@ import importlib
 import sys
 
 from fastapi import APIRouter
-from xarray.util.print_versions import get_sys_info, netcdf_and_hdf5_versions
+
+from ..utils import get_sys_info, netcdf_and_hdf5_versions
 
 common_router = APIRouter()
 

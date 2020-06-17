@@ -1,7 +1,6 @@
 import copy
 import json
 import logging
-import time
 
 import dask
 import numpy as np
@@ -17,6 +16,7 @@ from zarr.storage import array_meta_key, attrs_key, default_compressor, group_me
 from zarr.util import normalize_shape
 
 from .routers import base_router, common_router, get_dataset
+from .utils import CostTimer
 
 try:
     from xarray.backends.zarr import DIMENSION_KEY
@@ -29,6 +29,7 @@ except ImportError:
     from xarray.backends.zarr import (
         _extract_zarr_variable_encoding as extract_zarr_variable_encoding,
     )
+
 
 dask_array_type = (dask.array.Array,)
 zarr_format = 2
@@ -368,15 +369,3 @@ def get_data_chunk(da, chunk_id, out_shape):
         return new_chunk
     else:
         return chunk_data
-
-
-class CostTimer:
-    """ Context manager to measure wall time """
-
-    def __enter__(self):
-        self._start = time.perf_counter()
-        return self
-
-    def __exit__(self, *args):
-        end = time.perf_counter()
-        self.time = end - self._start
