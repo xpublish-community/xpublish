@@ -5,25 +5,34 @@ import logging
 import sys
 import time
 
+import dask
 import numpy as np
 import uvicorn
 import xarray as xr
 from cachey import Cache
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from numcodecs.compat import ensure_ndarray
-from starlette.responses import HTMLResponse, Response
-from xarray.backends.zarr import (
-    _DIMENSION_KEY,
-    _encode_zarr_attr_value,
-    _extract_zarr_variable_encoding,
-    encode_zarr_variable,
-)
-from xarray.core.pycompat import dask_array_type
-from xarray.util.print_versions import get_sys_info, netcdf_and_hdf5_versions
+from starlette.responses import Response
+from xarray.backends.zarr import encode_zarr_variable
 from zarr.meta import encode_fill_value
 from zarr.storage import array_meta_key, attrs_key, default_compressor, group_meta_key
 from zarr.util import normalize_shape
 
+from .info import get_sys_info, netcdf_and_hdf5_versions
+
+try:
+    from xarray.backends.zarr import DIMENSION_KEY
+    from xarray.backends.zarr import encode_zarr_attr_value
+    from xarray.backends.zarr import extract_zarr_variable_encoding
+except ImportError:
+    # xarray <= 0.16.1
+    from xarray.backends.zarr import _DIMENSION_KEY as DIMENSION_KEY
+    from xarray.backends.zarr import _encode_zarr_attr_value as encode_zarr_attr_value
+    from xarray.backends.zarr import (
+        _extract_zarr_variable_encoding as extract_zarr_variable_encoding,
+    )
+
+dask_array_type = (dask.array.Array,)
 zarr_format = 2
 zarr_consolidated_format = 1
 zarr_metadata_key = '.zmetadata'
@@ -105,7 +114,7 @@ class RestAccessor:
             # encode variable
             encoded_da = encode_zarr_variable(da)
             self._variables[key] = encoded_da
-            self._encoding[key] = _extract_zarr_variable_encoding(da)
+            self._encoding[key] = extract_zarr_variable_encoding(da)
             zmeta['metadata'][f'{key}/{attrs_key}'] = _extract_zattrs(encoded_da)
             zmeta['metadata'][f'{key}/{array_meta_key}'] = extract_zarray(
                 encoded_da, self._encoding[key], encoded_da.dtype
@@ -117,7 +126,7 @@ class RestAccessor:
         """ helper method to create zattrs dictionary """
         zattrs = {}
         for k, v in self._obj.attrs.items():
-            zattrs[k] = _encode_zarr_attr_value(v)
+            zattrs[k] = encode_zarr_attr_value(v)
         return zattrs
 
     @property
@@ -241,9 +250,9 @@ class RestAccessor:
             return list(self._obj.variables)
 
         @self._app.get('/')
-        def repr():
+        def repr(request: Request):
             with xr.set_options(display_style='html'):
-                return HTMLResponse(self._obj._repr_html_())
+                return self._obj._repr_html_()
 
         @self._app.get('/info')
         def info():
@@ -304,8 +313,8 @@ def _extract_zattrs(da):
     """ helper function to extract zattrs dictionary from DataArray """
     zattrs = {}
     for k, v in da.attrs.items():
-        zattrs[k] = _encode_zarr_attr_value(v)
-    zattrs[_DIMENSION_KEY] = list(da.dims)
+        zattrs[k] = encode_zarr_attr_value(v)
+    zattrs[DIMENSION_KEY] = list(da.dims)
 
     # We don't want `_FillValue` in `.zattrs`
     # It should go in `fill_value` section of `.zarray`

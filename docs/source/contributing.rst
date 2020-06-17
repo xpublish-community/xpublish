@@ -69,7 +69,7 @@ without using a local copy.  This can be convenient for small fixes.
     Build the documentation locally with the following command:
 
     .. code:: bash
-        
+
         $ conda env update -f ci/environment-dev-3.7.yml
         $ cd docs
         $ make html
@@ -77,7 +77,7 @@ without using a local copy.  This can be convenient for small fixes.
     The built documentation should be available in the ``docs/_build/``.
 
 
- 
+
  .. _`pull requests`:
 .. _pull-requests:
 
@@ -113,7 +113,7 @@ Preparing Pull Requests
 
     $ conda env update -f ci/environment-dev-3.7.yml
 
-   
+
 #. Run all the tests
 
    Now running tests is as simple as issuing this command::
@@ -140,5 +140,4 @@ Preparing Pull Requests
     compare: your-branch-name
 
     base-fork: jhamman/xpublish
-    base: master         
-
+    base: master
