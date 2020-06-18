@@ -2,6 +2,7 @@ import copy
 import json
 import logging
 
+import cachey
 import dask
 import numpy as np
 import xarray as xr
@@ -13,9 +14,8 @@ from zarr.meta import encode_fill_value
 from zarr.storage import array_meta_key, attrs_key, default_compressor, group_meta_key
 from zarr.util import normalize_shape
 
-from ..cache import RestCacheAccessor  # noqa: F401
 from ..utils import CostTimer
-from .base import get_dataset
+from .base import get_cache, get_dataset
 
 try:
     from xarray.backends.zarr import DIMENSION_KEY
@@ -194,33 +194,17 @@ class RestZarrAccessor:
         return zjson
 
     def get_key(self, var, chunk):
-        """ Retrieve a zarr chunk
+        """ Retrieve and encode a zarr chunk """
+        arr_meta = self.zmetadata['metadata'][f'{var}/{array_meta_key}']
+        da = self._variables[var].data
 
-        Note that this method will return cached responses when available
-        """
-        cache = self._obj._rest_cache.cache
-        cache_key = f'{var}/{chunk}'
-        logger.debug('var is %s', var)
-        logger.debug('chunk is %s', chunk)
+        data_chunk = _get_data_chunk(da, chunk, out_shape=arr_meta['chunks'])
 
-        response = cache.get(cache_key)
+        echunk = _encode_chunk(
+            data_chunk.tobytes(), filters=arr_meta['filters'], compressor=arr_meta['compressor'],
+        )
 
-        if response is None:
-            with CostTimer() as ct:
-                arr_meta = self.zmetadata['metadata'][f'{var}/{array_meta_key}']
-                da = self._variables[var].data
-
-                data_chunk = _get_data_chunk(da, chunk, out_shape=arr_meta['chunks'])
-
-                echunk = _encode_chunk(
-                    data_chunk.tobytes(),
-                    filters=arr_meta['filters'],
-                    compressor=arr_meta['compressor'],
-                )
-                response = Response(echunk, media_type='application/octet-stream')
-            cache.put(cache_key, response, ct.time, len(echunk))
-
-        return response
+        return echunk
 
     def info(self):
         """
@@ -275,7 +259,17 @@ def info(dataset: xr.Dataset = Depends(get_dataset)):
 
 
 @zarr_router.get('/{var}/{chunk}')
-def get_key(var: str, chunk: str, dataset: xr.Dataset = Depends(get_dataset)):
+def get_variable_chunk(
+    var: str,
+    chunk: str,
+    dataset: xr.Dataset = Depends(get_dataset),
+    cache: cachey.Cache = Depends(get_cache),
+):
+    """Get a zarr array chunk.
+
+    This will return cached responses when available.
+
+    """
     zmetadata = dataset._rest_zarr.zmetadata
 
     # First check that this request wasn't for variable metadata
@@ -286,4 +280,17 @@ def get_key(var: str, chunk: str, dataset: xr.Dataset = Depends(get_dataset)):
     elif group_meta_key in chunk:
         raise HTTPException(status_code=404, detail='No subgroups')
     else:
-        return dataset._rest_zarr.get_key(var, chunk)
+        cache_key = f'{var}/{chunk}'
+        logger.debug('var is %s', var)
+        logger.debug('chunk is %s', chunk)
+
+        response = cache.get(cache_key)
+
+        if response is None:
+            with CostTimer() as ct:
+                echunk = dataset._rest_zarr.get_key(var, chunk)
+                response = Response(echunk, media_type='application/octet-stream')
+
+            cache.put(cache_key, response, ct.time, len(echunk))
+
+        return response

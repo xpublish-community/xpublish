@@ -1,9 +1,9 @@
+import cachey
 import uvicorn
 import xarray as xr
 from fastapi import FastAPI
 
-from .cache import RestCacheAccessor  # noqa: F401
-from .routers import base_router, common_router, get_dataset, zarr_router
+from .routers import base_router, common_router, get_dataset, get_cache, zarr_router
 
 
 @xr.register_dataset_accessor('rest')
@@ -28,6 +28,9 @@ class RestAccessor:
         self._app = None
         self._app_routers = [common_router, base_router, zarr_router]
         self._app_kws = {}
+
+        self._cache = None
+        self._cache_kws = {'available_bytes': 1e6}
 
         self._initialized = False
 
@@ -54,20 +57,21 @@ class RestAccessor:
         # update app kwargs
         if app_kws is not None:
             self._app_kws.update(app_kws)
-
-        # update cache kwargs
-        self._obj._rest_cache(cache_kws=cache_kws)
+        if cache_kws is not None:
+            self._cache_kws.update(cache_kws)
 
         return self
 
     @property
     def cache(self):
         """ Cache Property """
-        return self._obj._rest_cache.cache
+
+        if self._cache is None:
+            self._cache = cachey.Cache(**self._cache_kws)
+        return self._cache
 
     def _init_app(self):
-        """ Initiate FastAPI Application.
-        """
+        """ Initiate FastAPI Application. """
 
         self._app = FastAPI(**self._app_kws)
 
@@ -75,6 +79,7 @@ class RestAccessor:
             self._app.include_router(r, prefix='')
 
         self._app.dependency_overrides[get_dataset] = lambda: self._obj
+        self._app.dependency_overrides[get_cache] = lambda: self.cache
 
         return self._app
 

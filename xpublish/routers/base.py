@@ -16,6 +16,20 @@ def get_dataset():
     return None
 
 
+def get_cache():
+    """FastAPI dependency for accessing the application's cache.
+
+    Use this callable as dependency in any FastAPI path operation
+    function where you need access to the cache provided with the
+    application.
+
+    This dummy dependency will be overridden when creating the FastAPI
+    application.
+
+    """
+    return None
+
+
 base_router = APIRouter()
 
 
