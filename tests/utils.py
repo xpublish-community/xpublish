@@ -7,8 +7,6 @@ import pandas as pd
 import xarray as xr
 from starlette.testclient import TestClient
 
-from xpublish.routers.zarr import _get_zmetadata, _get_zvariables
-
 rs = np.random.RandomState(np.random.MT19937(np.random.SeedSequence(123456789)))
 
 
@@ -130,9 +128,3 @@ def create_dataset(
     ds.time.encoding['calendar'] = calendar
 
     return ds
-
-
-def get_zmeta(dataset):
-    cache = DummyCache(1e6)
-    zvariables = _get_zvariables(dataset=dataset, cache=cache)
-    return _get_zmetadata(dataset=dataset, cache=cache, zvariables=zvariables)

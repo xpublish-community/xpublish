@@ -7,7 +7,7 @@ import sys
 
 from fastapi import APIRouter
 
-from ..utils import get_sys_info, netcdf_and_hdf5_versions
+from ..utils.info import get_sys_info, netcdf_and_hdf5_versions
 
 common_router = APIRouter()
 

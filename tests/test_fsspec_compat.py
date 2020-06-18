@@ -4,9 +4,9 @@ import pytest
 import xarray as xr
 
 import xpublish  # noqa: F401
-from xpublish.routers.zarr import get_zmetadata
+from xpublish.utils.zarr import create_zmetadata, jsonify_zmetadata
 
-from .utils import TestMapper, get_zmeta
+from .utils import TestMapper
 
 
 @pytest.fixture(scope='module')
@@ -18,7 +18,7 @@ def airtemp_ds():
 def test_get_zmetadata_key(airtemp_ds):
     mapper = TestMapper(airtemp_ds.rest.app)
     actual = json.loads(mapper['.zmetadata'].decode())
-    expected = json.loads(get_zmetadata(airtemp_ds, get_zmeta(airtemp_ds)).body)
+    expected = jsonify_zmetadata(airtemp_ds, create_zmetadata(airtemp_ds))
     assert actual == expected
 
 

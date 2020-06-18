@@ -1,17 +1,13 @@
-"""Utility functions for internal use only.
-
-The utility functions for printing version information have been adapted from
+"""Utility functions for printing version information, adapted from
 xarray/util/print_versions.py
 
 """
-
 import locale
 import os
 import platform
 import struct
 import subprocess
 import sys
-import time
 
 
 def get_sys_info():
@@ -81,15 +77,3 @@ def netcdf_and_hdf5_versions():
         except ImportError:
             pass
     return [('libhdf5', libhdf5_version), ('libnetcdf', libnetcdf_version)]
-
-
-class CostTimer:
-    """ Context manager to measure wall time """
-
-    def __enter__(self):
-        self._start = time.perf_counter()
-        return self
-
-    def __exit__(self, *args):
-        end = time.perf_counter()
-        self.time = end - self._start

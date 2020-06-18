@@ -1,34 +1,9 @@
 import xarray as xr
 from fastapi import APIRouter, Depends
 from starlette.responses import HTMLResponse
+from zarr.storage import attrs_key
 
-
-def get_dataset():
-    """FastAPI dependency for accessing a xarray dataset object.
-
-    Use this callable as dependency in any FastAPI path operation
-    function where you need access to the xarray Dataset being served.
-
-    This dummy dependency will be overridden when creating the FastAPI
-    application.
-
-    """
-    return None
-
-
-def get_cache():
-    """FastAPI dependency for accessing the application's cache.
-
-    Use this callable as dependency in any FastAPI path operation
-    function where you need access to the cache provided with the
-    application.
-
-    This dummy dependency will be overridden when creating the FastAPI
-    application.
-
-    """
-    return None
-
+from ..dependencies import get_dataset, get_zmetadata, get_zvariables
 
 base_router = APIRouter()
 
@@ -49,3 +24,31 @@ def list_keys(dataset: xr.Dataset = Depends(get_dataset)):
 @base_router.get('/dict')
 def to_dict(dataset: xr.Dataset = Depends(get_dataset)):
     return dataset.to_dict(data=False)
+
+
+@base_router.get('/info')
+def info(
+    dataset: xr.Dataset = Depends(get_dataset),
+    zvariables: dict = Depends(get_zvariables),
+    zmetadata: dict = Depends(get_zmetadata),
+):
+    """Dataset schema (close to the NCO-JSON schema)."""
+
+    info = {}
+    info['dimensions'] = dict(dataset.dims.items())
+    info['variables'] = {}
+
+    meta = zmetadata['metadata']
+
+    for name, var in zvariables.items():
+        attrs = meta[f'{name}/{attrs_key}']
+        attrs.pop('_ARRAY_DIMENSIONS')
+        info['variables'][name] = {
+            'type': var.data.dtype.name,
+            'dimensions': list(var.dims),
+            'attributes': attrs,
+        }
+
+    info['global_attributes'] = meta[attrs_key]
+
+    return info
