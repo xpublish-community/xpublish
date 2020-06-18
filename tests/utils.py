@@ -1,10 +1,13 @@
 from functools import reduce
 from operator import mul
 
+import cachey
 import numpy as np
 import pandas as pd
 import xarray as xr
 from starlette.testclient import TestClient
+
+from xpublish.routers.zarr import _get_zmetadata, _get_zvariables
 
 rs = np.random.RandomState(np.random.MT19937(np.random.SeedSequence(123456789)))
 
@@ -19,6 +22,19 @@ class TestMapper(TestClient):
         if response.status_code != 200:
             raise KeyError('{} not found. status_code = {}'.format(key, response.status_code))
         return response.content
+
+
+class DummyCache(cachey.Cache):
+    """Like :class:`cachey.Cache` but doesn't cache anything.
+
+    Used for testing.
+
+    """
+    def get(self, *args, **kwargs):
+        return None
+
+    def put(self, *args, **kwargs):
+        pass
 
 
 def create_dataset(
@@ -113,3 +129,9 @@ def create_dataset(
     ds.time.encoding['calendar'] = calendar
 
     return ds
+
+
+def get_zmeta(dataset):
+    cache = DummyCache(1e6)
+    zvariables = _get_zvariables(dataset=dataset, cache=cache)
+    return _get_zmetadata(dataset=dataset, cache=cache, zvariables=zvariables)

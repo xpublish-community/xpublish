@@ -38,7 +38,15 @@ zarr_metadata_key = '.zmetadata'
 logger = logging.getLogger('api')
 
 
-def _extract_zattrs(da):
+def _extract_dataset_zattrs(dataset: xr.Dataset):
+    """ helper function to create zattrs dictionary from Dataset global attrs """
+    zattrs = {}
+    for k, v in dataset.attrs.items():
+        zattrs[k] = encode_zarr_attr_value(v)
+    return zattrs
+
+
+def _extract_dataarray_zattrs(da):
     """ helper function to extract zattrs dictionary from DataArray """
     zattrs = {}
     for k, v in da.attrs.items():
@@ -138,140 +146,133 @@ def _get_data_chunk(da, chunk_id, out_shape):
         return chunk_data
 
 
-@xr.register_dataset_accessor('_rest_zarr')
-class RestZarrAccessor:
-    def __init__(self, xarray_obj):
-        self._obj = xarray_obj
+def _get_zvariables(
+    dataset: xr.Dataset = Depends(get_dataset), cache: cachey.Cache = Depends(get_cache)
+):
+    """Helper function to create (or get from cache) a dictionary of zarr encoded
+    variables.
 
-        self._zmetadata = None
-        self._variables = {}
-        self._encoding = {}
+    """
+    cache_key = "zvariables"
+    zvariables = cache.get(cache_key)
 
-    def _get_zmetadata(self):
-        """ helper method to create consolidated zmetadata dictionary """
+    if zvariables is None:
+        zvariables = {}
+
+        for key, da in dataset.variables.items():
+            encoded_da = encode_zarr_variable(da)
+            zvariables[key] = encoded_da
+
+        # we want to permanently cache this: set high cost value
+        cache.put(cache_key, zvariables, 99999)
+
+    return zvariables
+
+
+def _get_zmetadata(
+    dataset: xr.Dataset = Depends(get_dataset),
+    cache: cachey.Cache = Depends(get_cache),
+    zvariables: dict = Depends(_get_zvariables),
+):
+    """Helper function to create (or get from cache) a consolidated zmetadata
+    dictionary.
+
+    """
+    zmeta = cache.get(zarr_metadata_key)
+
+    if zmeta is None:
         zmeta = {'zarr_consolidated_format': zarr_consolidated_format, 'metadata': {}}
         zmeta['metadata'][group_meta_key] = {'zarr_format': zarr_format}
-        zmeta['metadata'][attrs_key] = self.get_zattrs()
+        zmeta['metadata'][attrs_key] = _extract_dataset_zattrs(dataset)
 
-        for key, da in self._obj.variables.items():
-            # encode variable
-            encoded_da = encode_zarr_variable(da)
-            self._variables[key] = encoded_da
-            self._encoding[key] = extract_zarr_variable_encoding(da)
-            zmeta['metadata'][f'{key}/{attrs_key}'] = _extract_zattrs(encoded_da)
+        for key, da in dataset.variables.items():
+            encoded_da = zvariables[key]
+            encoding = extract_zarr_variable_encoding(da)
+            zmeta['metadata'][f'{key}/{attrs_key}'] = _extract_dataarray_zattrs(encoded_da)
             zmeta['metadata'][f'{key}/{array_meta_key}'] = _extract_zarray(
-                encoded_da, self._encoding[key], encoded_da.dtype
+                encoded_da, encoding, encoded_da.dtype
             )
 
-        return zmeta
+        # we want to permanently cache this: set high cost value
+        cache.put(zarr_metadata_key, zmeta, 99999)
 
-    def get_zattrs(self):
-        """ helper method to create zattrs dictionary """
-        zattrs = {}
-        for k, v in self._obj.attrs.items():
-            zattrs[k] = encode_zarr_attr_value(v)
-        return zattrs
-
-    @property
-    def zmetadata(self):
-        """ Consolidated zmetadata dictionary (`dict`, read-only)."""
-        if self._zmetadata is None:
-            self._zmetadata = self._get_zmetadata()
-        return self._zmetadata
-
-    def zmetadata_json(self):
-        """ JSON version of self.zmetadata """
-        zjson = copy.deepcopy(self.zmetadata)
-        for key in list(self._obj.variables):
-            # convert compressor to dict
-            compressor = zjson['metadata'][f'{key}/{array_meta_key}']['compressor']
-            if compressor is not None:
-                compressor_config = zjson['metadata'][f'{key}/{array_meta_key}'][
-                    'compressor'
-                ].get_config()
-                zjson['metadata'][f'{key}/{array_meta_key}']['compressor'] = compressor_config
-
-        return zjson
-
-    def get_key(self, var, chunk):
-        """ Retrieve and encode a zarr chunk """
-        arr_meta = self.zmetadata['metadata'][f'{var}/{array_meta_key}']
-        da = self._variables[var].data
-
-        data_chunk = _get_data_chunk(da, chunk, out_shape=arr_meta['chunks'])
-
-        echunk = _encode_chunk(
-            data_chunk.tobytes(), filters=arr_meta['filters'], compressor=arr_meta['compressor'],
-        )
-
-        return echunk
-
-    def info(self):
-        """
-        Return a dictionary representing dataset schema
-
-        Currently close to the NCO-JSON schema
-        """
-        info = {}
-        info['dimensions'] = dict(self._obj.dims.items())
-        info['variables'] = {}
-
-        meta = self.zmetadata['metadata']
-        for name, var in self._variables.items():
-            attrs = meta[f'{name}/{attrs_key}']
-            attrs.pop('_ARRAY_DIMENSIONS')
-            info['variables'][name] = {
-                'type': var.data.dtype.name,
-                'dimensions': list(var.dims),
-                'attributes': attrs,
-            }
-        info['global_attributes'] = meta[attrs_key]
-        return info
+    return zmeta
 
 
 zarr_router = APIRouter()
 
 
 @zarr_router.get(f'/{zarr_metadata_key}')
-def get_zmetadata(dataset: xr.Dataset = Depends(get_dataset)):
-    zmetadata = dataset._rest_zarr.zmetadata_json()
+def get_zmetadata(
+    dataset: xr.Dataset = Depends(get_dataset), zmetadata: dict = Depends(_get_zmetadata)
+):
+    # JSON version of zmetadata
+    zjson = copy.deepcopy(zmetadata)
+    for key in list(dataset.variables):
+        # convert compressor to dict
+        compressor = zjson['metadata'][f'{key}/{array_meta_key}']['compressor']
+        if compressor is not None:
+            compressor_config = zjson['metadata'][f'{key}/{array_meta_key}'][
+                'compressor'
+            ].get_config()
+            zjson['metadata'][f'{key}/{array_meta_key}']['compressor'] = compressor_config
 
-    return Response(json.dumps(zmetadata).encode('ascii'), media_type='application/json')
+    return Response(json.dumps(zjson).encode('ascii'), media_type='application/json')
 
 
 @zarr_router.get(f'/{group_meta_key}')
-def get_zgroup(dataset: xr.Dataset = Depends(get_dataset)):
-    zmetadata = dataset._rest_zarr.zmetadata
+def get_zgroup(zmetadata: dict = Depends(_get_zmetadata)):
 
     return zmetadata['metadata'][group_meta_key]
 
 
 @zarr_router.get(f'/{attrs_key}')
-def get_zattrs(dataset: xr.Dataset = Depends(get_dataset)):
-    zmetadata = dataset._rest_zarr.zmetadata
+def get_zattrs(zmetadata: dict = Depends(_get_zmetadata)):
 
     return zmetadata['metadata'][attrs_key]
 
 
 @zarr_router.get('/info')
-def info(dataset: xr.Dataset = Depends(get_dataset)):
-    return dataset._rest_zarr.info()
+def info(
+    dataset: xr.Dataset = Depends(get_dataset),
+    zvariables: dict = Depends(_get_zvariables),
+    zmetadata: dict = Depends(_get_zmetadata),
+):
+    """Dataset schema (close to the NCO-JSON schema)."""
+
+    info = {}
+    info['dimensions'] = dict(dataset.dims.items())
+    info['variables'] = {}
+
+    meta = zmetadata['metadata']
+
+    for name, var in zvariables.items():
+        attrs = meta[f'{name}/{attrs_key}']
+        attrs.pop('_ARRAY_DIMENSIONS')
+        info['variables'][name] = {
+            'type': var.data.dtype.name,
+            'dimensions': list(var.dims),
+            'attributes': attrs,
+        }
+
+    info['global_attributes'] = meta[attrs_key]
+
+    return info
 
 
 @zarr_router.get('/{var}/{chunk}')
 def get_variable_chunk(
     var: str,
     chunk: str,
-    dataset: xr.Dataset = Depends(get_dataset),
     cache: cachey.Cache = Depends(get_cache),
+    zvariables: dict = Depends(_get_zvariables),
+    zmetadata: dict = Depends(_get_zmetadata),
 ):
     """Get a zarr array chunk.
 
     This will return cached responses when available.
 
     """
-    zmetadata = dataset._rest_zarr.zmetadata
-
     # First check that this request wasn't for variable metadata
     if array_meta_key in chunk:
         return zmetadata['metadata'][f'{var}/{array_meta_key}']
@@ -280,15 +281,25 @@ def get_variable_chunk(
     elif group_meta_key in chunk:
         raise HTTPException(status_code=404, detail='No subgroups')
     else:
-        cache_key = f'{var}/{chunk}'
         logger.debug('var is %s', var)
         logger.debug('chunk is %s', chunk)
 
+        cache_key = f'{var}/{chunk}'
         response = cache.get(cache_key)
 
         if response is None:
             with CostTimer() as ct:
-                echunk = dataset._rest_zarr.get_key(var, chunk)
+                arr_meta = zmetadata['metadata'][f'{var}/{array_meta_key}']
+                da = zvariables[var].data
+
+                data_chunk = _get_data_chunk(da, chunk, out_shape=arr_meta['chunks'])
+
+                echunk = _encode_chunk(
+                    data_chunk.tobytes(),
+                    filters=arr_meta['filters'],
+                    compressor=arr_meta['compressor'],
+                )
+
                 response = Response(echunk, media_type='application/octet-stream')
 
             cache.put(cache_key, response, ct.time, len(echunk))
