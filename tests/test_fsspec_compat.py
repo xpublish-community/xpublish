@@ -6,7 +6,7 @@ import xarray as xr
 import xpublish  # noqa: F401
 from xpublish.routers.zarr import get_zmetadata
 
-from .utils import get_zmeta, TestMapper
+from .utils import TestMapper, get_zmeta
 
 
 @pytest.fixture(scope='module')

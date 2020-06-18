@@ -1,6 +1,5 @@
 import time
 
-import cachey
 import dask
 import numpy as np
 import pytest

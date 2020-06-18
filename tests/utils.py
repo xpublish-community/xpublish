@@ -30,6 +30,7 @@ class DummyCache(cachey.Cache):
     Used for testing.
 
     """
+
     def get(self, *args, **kwargs):
         return None
 
