@@ -3,7 +3,7 @@ import uvicorn
 import xarray as xr
 from fastapi import FastAPI
 
-from .routers import base_router, common_router, get_dataset, get_cache, zarr_router
+from .routers import base_router, common_router, get_cache, get_dataset, zarr_router
 
 
 @xr.register_dataset_accessor('rest')
