@@ -26,8 +26,8 @@ class RestAccessor:
         self._obj = xarray_obj
 
         self._app = None
-        self._app_routers = [common_router, base_router, zarr_router]
         self._app_kws = {}
+        self._app_routers = [common_router, base_router, zarr_router]
 
         self._cache = None
         self._cache_kws = {'available_bytes': 1e6}
@@ -54,7 +54,6 @@ class RestAccessor:
             raise RuntimeError('This accessor has already been initialized')
         self._initialized = True
 
-        # update app kwargs
         if app_kws is not None:
             self._app_kws.update(app_kws)
         if cache_kws is not None:
