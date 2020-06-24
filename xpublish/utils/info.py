@@ -1,8 +1,7 @@
-"""Utility functions for printing version information.
+"""Utility functions for printing version information, adapted from
+xarray/util/print_versions.py
 
-Adapted from xarray/util/print_versions.py
 """
-
 import locale
 import os
 import platform

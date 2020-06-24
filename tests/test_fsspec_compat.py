@@ -4,6 +4,7 @@ import pytest
 import xarray as xr
 
 import xpublish  # noqa: F401
+from xpublish.utils.zarr import create_zmetadata, jsonify_zmetadata
 
 from .utils import TestMapper
 
@@ -17,7 +18,8 @@ def airtemp_ds():
 def test_get_zmetadata_key(airtemp_ds):
     mapper = TestMapper(airtemp_ds.rest.app)
     actual = json.loads(mapper['.zmetadata'].decode())
-    assert actual == airtemp_ds.rest.zmetadata_json()
+    expected = jsonify_zmetadata(airtemp_ds, create_zmetadata(airtemp_ds))
+    assert actual == expected
 
 
 def test_missing_key_raises_keyerror(airtemp_ds):

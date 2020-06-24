@@ -6,7 +6,8 @@ import pytest
 import xarray as xr
 
 import xpublish  # noqa: F401
-from xpublish.rest import CostTimer, get_data_chunk
+from xpublish.utils.cache import CostTimer
+from xpublish.utils.zarr import create_zmetadata, get_data_chunk
 
 
 def test_dask_chunks_become_zarr_chunks():
@@ -14,8 +15,10 @@ def test_dask_chunks_become_zarr_chunks():
     data1 = dask.array.zeros((10, 20, 30), chunks=expected)
     data2 = np.zeros((10, 20, 30))
     ds = xr.Dataset({'foo': (['x', 'y', 'z'], data1), 'bar': (['x', 'y', 'z'], data2)})
-    assert ds.rest.zmetadata['metadata']['foo/.zarray']['chunks'] == expected
-    assert ds.rest.zmetadata['metadata']['bar/.zarray']['chunks'] == list(data2.shape)
+    zmeta = create_zmetadata(ds)
+
+    assert zmeta['metadata']['foo/.zarray']['chunks'] == expected
+    assert zmeta['metadata']['bar/.zarray']['chunks'] == list(data2.shape)
 
 
 def test_invalid_dask_chunks_raise():
@@ -25,7 +28,7 @@ def test_invalid_dask_chunks_raise():
     ds = xr.Dataset({'foo': (['x', 'y', 'z'], data)})
 
     with pytest.raises(ValueError) as excinfo:
-        _ = ds.rest.zmetadata
+        _ = create_zmetadata(ds)
     excinfo.match(r'Zarr requires uniform chunk sizes .*')
 
 
@@ -35,7 +38,7 @@ def test_invalid_encoding_chunks_with_dask_raise():
     ds = xr.Dataset({'foo': (['x', 'y', 'z'], data)})
     ds['foo'].encoding['chunks'] = [8, 5, 1]
     with pytest.raises(NotImplementedError) as excinfo:
-        _ = ds.rest.zmetadata
+        _ = create_zmetadata(ds)
     excinfo.match(r'Specified zarr chunks .*')
 
 
@@ -44,7 +47,7 @@ def test_invalid_encoding_chunks_with_numpy_raise():
     ds = xr.Dataset({'foo': (['x', 'y', 'z'], data)})
     ds['foo'].encoding['chunks'] = [8, 5, 1]
     with pytest.raises(ValueError) as excinfo:
-        _ = ds.rest.zmetadata
+        _ = create_zmetadata(ds)
     excinfo.match(r'Encoding chunks do not match inferred.*')
 
 

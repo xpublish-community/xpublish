@@ -3,6 +3,7 @@ import xarray as xr
 from starlette.testclient import TestClient
 
 import xpublish  # noqa: F401
+from xpublish.utils.zarr import create_zmetadata, jsonify_zmetadata
 
 
 @pytest.fixture(scope='function')
@@ -79,7 +80,7 @@ def test_repr(airtemp_ds, airtemp_app):
 def test_zmetadata(airtemp_ds, airtemp_app):
     response = airtemp_app.get('/.zmetadata')
     assert response.status_code == 200
-    assert response.json() == airtemp_ds.rest.zmetadata_json()
+    assert response.json() == jsonify_zmetadata(airtemp_ds, create_zmetadata(airtemp_ds))
 
 
 def test_bad_key(airtemp_app):
