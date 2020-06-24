@@ -1,7 +1,6 @@
 from functools import reduce
 from operator import mul
 
-import cachey
 import numpy as np
 import pandas as pd
 import xarray as xr
