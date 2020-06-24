@@ -3,8 +3,8 @@ xpublish
 
 Publish Xarray Datasets via a Zarr compatible REST API
 
-.. image:: https://img.shields.io/github/workflow/status/jhamman/xpublish/CI?logo=github
-   :target: https://github.com/jhamman/xpublish/actions?query=workflow%3ACI
+.. image:: https://img.shields.io/github/workflow/status/xarray-contrib/xpublish/CI?logo=github
+   :target: https://github.com/xarray-contrib/xpublish/actions?query=workflow%3ACI
    :alt: GitHub Workflow Status
 
 .. image:: https://readthedocs.org/projects/xpublish/badge/?version=latest
@@ -12,11 +12,11 @@ Publish Xarray Datasets via a Zarr compatible REST API
    :alt: Documentation Status
 
 .. image:: https://mybinder.org/badge_logo.svg
-   :target: https://mybinder.org/v2/gh/jhamman/xpublish/master
+   :target: https://mybinder.org/v2/gh/xarray-contrib/xpublish/master
    :alt: Binder
 
-.. image:: https://codecov.io/gh/jhamman/xpublish/branch/master/graph/badge.svg
-   :target: https://codecov.io/gh/jhamman/xpublish
+.. image:: https://codecov.io/gh/xarray-contrib/xpublish/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/xarray-contrib/xpublish
 
 **Serverside: Publish a xarray dataset as a rest API**
 
