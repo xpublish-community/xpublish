@@ -22,20 +22,6 @@ class TestMapper(TestClient):
         return response.content
 
 
-class DummyCache(cachey.Cache):
-    """Like :class:`cachey.Cache` but doesn't cache anything.
-
-    Used for testing.
-
-    """
-
-    def get(self, *args, **kwargs):
-        return None
-
-    def put(self, *args, **kwargs):
-        pass
-
-
 def create_dataset(
     start='2018-01',
     end='2020-12',
