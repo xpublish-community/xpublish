@@ -65,13 +65,7 @@ def test_init_app(airtemp_ds):
     assert response.status_code == 200
 
 
-@pytest.mark.parametrize(
-    'router_kws,path',
-    [
-        (None, '/dims'),
-        ({'prefix': '/foo'}, '/foo/dims'),
-    ]
-)
+@pytest.mark.parametrize('router_kws,path', [(None, '/dims'), ({'prefix': '/foo'}, '/foo/dims'),])
 def test_custom_app_routers(airtemp_ds, dims_router, router_kws, path):
     if router_kws is None:
         routers = [dims_router]
