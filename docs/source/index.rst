@@ -2,7 +2,7 @@
 xpublish
 ========
 
-**Xpublish lets you publish Xarray datasets via a Zarr-compatible REST API.**
+**Xpublish lets you easily publish Xarray datasets via a REST API.**
 
 *You can run a short example application in a live session here:* |Binder|
 
@@ -15,7 +15,8 @@ On the server-side, datasets are published using a simple Xarray accessor:
 
     ds.rest.serve(host="0.0.0.0", port=9000)
 
-On the client-side, datasets are accessed using Zarr and fsspec.
+Datasets can be accessed from various kinds of client applications, e.g., from
+within Python using Zarr and fsspec.
 
 .. ipython:: python
     :verbatim:
@@ -36,26 +37,29 @@ On the client-side, datasets are accessed using Zarr and fsspec.
 Why?
 ~~~~
 
-Xpublish lets you share, publish, and serve Xarray datasets via a web application.
-The data in the Xarray datasets (on the server side) can be backed by dask to
-facilitate on-demand computation via a simple REST API.
+xpublish lets you serve, share and publish xarray datasets via a web
+application.
+
+The data and/or metadata in the xarray datasets can be exposed in various forms
+through pluggable REST API endpoints. Efficient, on-demand delivery of large
+datasets may be enabled with Dask on the server-side.
 
 We are exploring applications of xpublish that include:
 
-- publish on-demand or derived data products
-- turning Xarray objects into streaming services (e.g. OPENDAP)
+* publish on-demand or derived data products
+* turning xarray objects into streaming services (e.g. OPENDAP)
 
 How?
 ~~~~
 
 Under the hood, xpublish is using a web app (FastAPI and Uvicorn) that is
-exposing a minimal Zarr compatible REST-like API.
+exposing a REST-like API with builtin and/or user-defined endpoints.
 
-Key attributes of the API are:
+For example, xpublish provides by default a minimal Zarr compatible REST-like
+API with the following endpoints:
 
-- serves a Zarr store API from the root of the dataset.
-- provides Zarr metadata keys (``.zmetadata``, ``.zgroup``, ``.zarray``, and ``.zattrs``) as a JSON strings.
-- provides access to data keys (e.g. ``var/0.0.0``) as binary strings.
+* ``.zmetadata``: returns Zarr-formatted metadata keys as json strings.
+* ``var/0.0.0``: returns a variable data chunk as a binary string.
 
 .. toctree::
    :maxdepth: 2
@@ -70,7 +74,7 @@ Feedback
 --------
 
 If you encounter any errors or problems with **xpublish**, please open an issue
-at the GitHub `main repository <http://github.com/jhamman/xpublish>`_.
+at the GitHub `main repository <http://github.com/xarray-contrib/xpublish>`_.
 
 Indices and tables
 ==================
