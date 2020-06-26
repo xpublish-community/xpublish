@@ -7,7 +7,7 @@ def normalize_app_routers(routers):
 
     for rt in routers:
         if isinstance(rt, APIRouter):
-            new_routers.append(rt, {})
+            new_routers.append((rt, {}))
         elif isinstance(rt, tuple) and isinstance(rt[0], APIRouter) and len(rt) == 2:
             new_routers.append(rt)
         else:

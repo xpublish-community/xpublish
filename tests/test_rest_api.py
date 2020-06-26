@@ -1,8 +1,10 @@
 import pytest
 import xarray as xr
+from fastapi import APIRouter, Depends
 from starlette.testclient import TestClient
 
 import xpublish  # noqa: F401
+from xpublish.dependencies import get_dataset
 from xpublish.utils.zarr import create_zmetadata, jsonify_zmetadata
 
 
@@ -23,6 +25,17 @@ def airtemp_app(airtemp_ds):
     )
     client = TestClient(airtemp_ds.rest(app_kws=app_kws).app)
     yield client
+
+
+@pytest.fixture(scope='function')
+def dims_router():
+    router = APIRouter()
+
+    @router.get('/dims')
+    def get_dims(dataset: xr.Dataset = Depends(get_dataset)):
+        return dataset.dims
+
+    return router
 
 
 def test_rest_config(airtemp_ds):
@@ -50,6 +63,36 @@ def test_init_app(airtemp_ds):
 
     response = client.get('/data-docs')
     assert response.status_code == 200
+
+
+@pytest.mark.parametrize(
+    'router_kws,path',
+    [
+        (None, '/dims'),
+        ({'prefix': '/foo'}, '/foo/dims'),
+    ]
+)
+def test_custom_app_routers(airtemp_ds, dims_router, router_kws, path):
+    if router_kws is None:
+        routers = [dims_router]
+    else:
+        routers = [(dims_router, router_kws)]
+
+    airtemp_ds.rest(routers=routers)
+    client = TestClient(airtemp_ds.rest.app)
+
+    response = client.get(path)
+    assert response.status_code == 200
+    assert response.json() == airtemp_ds.dims
+
+    # test default routers not present
+    response = client.get('/')
+    assert response.status_code == 404
+
+
+def test_custom_app_routers_error(airtemp_ds):
+    with pytest.raises(ValueError, match="Invalid format.*"):
+        airtemp_ds.rest(routers=["not_a_router"])
 
 
 def test_keys(airtemp_ds, airtemp_app):
