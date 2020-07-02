@@ -17,3 +17,24 @@ def normalize_app_routers(routers):
             )
 
     return new_routers
+
+
+def check_route_conflicts(routers):
+
+    paths = []
+
+    for router, kws in routers:
+        prefix = kws.get('prefix', '')
+        paths += [prefix + r.path for r in router.routes]
+
+    seen = set()
+    duplicates = []
+
+    for p in paths:
+        if p in seen:
+            duplicates.append(p)
+        else:
+            seen.add(p)
+
+    if len(duplicates):
+        raise ValueError(f"Found multiple routes defined for the following paths: {duplicates}")

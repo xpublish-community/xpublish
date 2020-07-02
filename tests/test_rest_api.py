@@ -65,7 +65,7 @@ def test_init_app(airtemp_ds):
     assert response.status_code == 200
 
 
-@pytest.mark.parametrize('router_kws,path', [(None, '/dims'), ({'prefix': '/foo'}, '/foo/dims'),])
+@pytest.mark.parametrize('router_kws,path', [(None, '/dims'), ({'prefix': '/foo'}, '/foo/dims')])
 def test_custom_app_routers(airtemp_ds, dims_router, router_kws, path):
     if router_kws is None:
         routers = [dims_router]
@@ -87,6 +87,23 @@ def test_custom_app_routers(airtemp_ds, dims_router, router_kws, path):
 def test_custom_app_routers_error(airtemp_ds):
     with pytest.raises(ValueError, match="Invalid format.*"):
         airtemp_ds.rest(routers=["not_a_router"])
+
+
+def test_custom_app_routers_conflict(airtemp_ds):
+    router1 = APIRouter()
+
+    @router1.get('/path')
+    def func1():
+        pass
+
+    router2 = APIRouter()
+
+    @router2.get('/same/path')
+    def func2():
+        pass
+
+    with pytest.raises(ValueError, match="Found multiple routes.*"):
+        airtemp_ds.rest(routers=[(router1, {'prefix': '/same'}), router2])
 
 
 def test_keys(airtemp_ds, airtemp_app):

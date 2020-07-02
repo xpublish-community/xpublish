@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from .dependencies import get_cache, get_dataset
 from .routers import base_router, common_router, zarr_router
-from .utils.api import normalize_app_routers
+from .utils.api import check_route_conflicts, normalize_app_routers
 
 
 @xr.register_dataset_accessor('rest')
@@ -68,6 +68,7 @@ class RestAccessor:
 
         if routers is not None:
             self._app_routers = normalize_app_routers(routers)
+            check_route_conflicts(self._app_routers)
         if app_kws is not None:
             self._app_kws.update(app_kws)
         if cache_kws is not None:
