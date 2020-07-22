@@ -56,7 +56,7 @@ jobs:
           python -m pip install isort
       - name: isort check
         run: |
-          isort --recursive --check-only .
+          isort --check-only .
 
   test:
     name: ${{ matrix.python-version }}-build
