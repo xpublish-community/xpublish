@@ -74,7 +74,7 @@ xfail_reason = """Currently, xarray casts datetimes arrays to NumPy compatible a
 This ends up producing unexpected behavior when calling encode_zarr_varible()
 on datasets with variables containing datetime like dtypes.
 
-See: https://github.com/jhamman/xpublish/pull/10#discussion_r388028417"""
+See: https://github.com/xarray-contrib/xpublish/pull/10#discussion_r388028417"""
 
 
 @pytest.mark.parametrize(
