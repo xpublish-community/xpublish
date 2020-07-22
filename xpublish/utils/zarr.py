@@ -11,14 +11,16 @@ from zarr.storage import array_meta_key, attrs_key, default_compressor, group_me
 from zarr.util import normalize_shape
 
 try:
-    from xarray.backends.zarr import DIMENSION_KEY
-    from xarray.backends.zarr import encode_zarr_attr_value
-    from xarray.backends.zarr import extract_zarr_variable_encoding
+    from xarray.backends.zarr import (
+        DIMENSION_KEY,
+        encode_zarr_attr_value,
+        extract_zarr_variable_encoding,
+    )
 except ImportError:
     # xarray <= 0.16.1
-    from xarray.backends.zarr import _DIMENSION_KEY as DIMENSION_KEY
-    from xarray.backends.zarr import _encode_zarr_attr_value as encode_zarr_attr_value
     from xarray.backends.zarr import (
+        _DIMENSION_KEY as DIMENSION_KEY,
+        _encode_zarr_attr_value as encode_zarr_attr_value,
         _extract_zarr_variable_encoding as extract_zarr_variable_encoding,
     )
 
