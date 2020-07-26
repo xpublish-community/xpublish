@@ -7,7 +7,7 @@ xpublish
 *You can run a short example application in a live session here:* |Binder|
 
 .. |Binder| image:: https://mybinder.org/badge_logo.svg
- :target: https://mybinder.org/v2/gh/jhamman/xpublish/master
+ :target: https://mybinder.org/v2/gh/xarray-contrib/xpublish/master
 
 On the server-side, datasets are published using a simple Xarray accessor:
 
@@ -70,7 +70,7 @@ Feedback
 --------
 
 If you encounter any errors or problems with **xpublish**, please open an issue
-at the GitHub `main repository <http://github.com/jhamman/xpublish>`_.
+at the GitHub `main repository <http://github.com/xarray-contrib/xpublish>`_.
 
 Indices and tables
 ==================

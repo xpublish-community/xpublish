@@ -46,8 +46,8 @@ extensions = [
 ]
 
 extlinks = {
-    'issue': ('https://github.com/jhamman/xpublish/issues/%s', 'GH#'),
-    'pr': ('https://github.com/jhamman/xpublish/pull/%s', 'GH#'),
+    'issue': ('https://github.com/xarray-contrib/xpublish/issues/%s', 'GH#'),
+    'pr': ('https://github.com/xarray-contrib/xpublish/pull/%s', 'GH#'),
 }
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
