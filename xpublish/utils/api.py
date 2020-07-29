@@ -12,8 +12,8 @@ def normalize_app_routers(routers):
             new_routers.append(rt)
         else:
             raise ValueError(
-                "Invalid format for routers item, please provide either an APIRouter "
-                "instance or a (APIRouter, {...}) tuple."
+                'Invalid format for routers item, please provide either an APIRouter '
+                'instance or a (APIRouter, {...}) tuple.'
             )
 
     return new_routers
@@ -37,4 +37,4 @@ def check_route_conflicts(routers):
             seen.add(p)
 
     if len(duplicates):
-        raise ValueError(f"Found multiple routes defined for the following paths: {duplicates}")
+        raise ValueError(f'Found multiple routes defined for the following paths: {duplicates}')
