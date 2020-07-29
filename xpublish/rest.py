@@ -5,6 +5,7 @@ from fastapi import FastAPI
 
 from .dependencies import get_cache, get_dataset
 from .routers import base_router, common_router, zarr_router
+from .utils.api import check_route_conflicts, normalize_app_routers
 
 
 @xr.register_dataset_accessor('rest')
@@ -28,22 +29,34 @@ class RestAccessor:
 
         self._app = None
         self._app_kws = {}
-        self._app_routers = [common_router, base_router, zarr_router]
+        self._app_routers = [
+            (common_router, {}),
+            (base_router, {'tags': ['info']}),
+            (zarr_router, {'tags': ['zarr']}),
+        ]
 
         self._cache = None
         self._cache_kws = {'available_bytes': 1e6}
 
         self._initialized = False
 
-    def __call__(self, cache_kws=None, app_kws=None):
+    def __call__(self, routers=None, cache_kws=None, app_kws=None):
         """
         Initialize this RestAccessor by setting optional configuration values
 
         Parameters
         ----------
-        cache_kws : dict
+        routers : list, optional
+            A list of :class:`fastapi.APIRouter` instances to include in the
+            fastAPI application. If None, the default routers will be included.
+            The items of the list may also be tuples with the following format:
+            ``[(router1, {'prefix': '/foo', 'tags': ['foo', 'bar']})]``.
+            The 1st tuple element is a ``APIRouter`` instance and the 2nd element
+            is a dictionary that is used to pass keyword arguments to
+            :meth:`fastapi.FastAPI.include_router`.
+        cache_kws : dict, optional
             Dictionary of keyword arguments to be passed to ``cachey.Cache()``
-        app_kws : dict
+        app_kws : dict, optional
             Dictionary of keyword arguments to be passed to
             ``fastapi.FastAPI()``
 
@@ -55,6 +68,9 @@ class RestAccessor:
             raise RuntimeError('This accessor has already been initialized')
         self._initialized = True
 
+        if routers is not None:
+            self._app_routers = normalize_app_routers(routers)
+            check_route_conflicts(self._app_routers)
         if app_kws is not None:
             self._app_kws.update(app_kws)
         if cache_kws is not None:
@@ -75,8 +91,8 @@ class RestAccessor:
 
         self._app = FastAPI(**self._app_kws)
 
-        for r in self._app_routers:
-            self._app.include_router(r, prefix='')
+        for rt, kwargs in self._app_routers:
+            self._app.include_router(rt, **kwargs)
 
         self._app.dependency_overrides[get_dataset] = lambda: self._obj
         self._app.dependency_overrides[get_cache] = lambda: self.cache

@@ -1,7 +1,7 @@
 xpublish
 ========
 
-Publish Xarray Datasets via a Zarr compatible REST API
+Publish Xarray Datasets via a REST API.
 
 .. image:: https://img.shields.io/github/workflow/status/xarray-contrib/xpublish/CI?logo=github
    :target: https://github.com/xarray-contrib/xpublish/actions?query=workflow%3ACI
@@ -18,7 +18,7 @@ Publish Xarray Datasets via a Zarr compatible REST API
 .. image:: https://codecov.io/gh/xarray-contrib/xpublish/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/xarray-contrib/xpublish
 
-**Serverside: Publish a xarray dataset as a rest API**
+**Serverside: Publish a xarray dataset through a rest API**
 
 .. code-block:: python
 
@@ -26,6 +26,9 @@ Publish Xarray Datasets via a Zarr compatible REST API
 
 
 **Client-side: Connect to a published dataset**
+
+The published dataset can be accessed from various kinds of client applications.
+Here is an example of directly accessing the data from within Python:
 
 .. code-block:: python
 
@@ -47,18 +50,24 @@ Why?
 ^^^^
 
 xpublish lets you serve/share/publish xarray datasets via a web application.
-The data in the xarray datasets (on the server side) can be backed by dask to facilitate on-demand computation via a simple REST API.
+
+The data and/or metadata in the xarray datasets can be exposed in various forms
+through pluggable REST API endpoints. Efficient, on-demand delivery of large
+datasets may be enabled with Dask on the server-side.
+
 We are exploring applications of xpublish that include:
 
-* publish on-demand derived data products
+* publish on-demand or derived data products
 * turning xarray objects into streaming services (e.g. OPENDAP)
 
 How?
 ^^^^
 
-Under the hood, xpublish is using a web app (FastAPI) that is exposing a minimal Zarr compatible REST-like API.
-Key attributes of the API are:
+Under the hood, xpublish is using a web app (FastAPI) that is exposing a
+REST-like API with builtin and/or user-defined endpoints.
 
-* serves a Zarr store API from the root of the dataset
-* provides Zarr metadata keys (\ ``.zmetadata``\ ) as json strings.
-* provides access to data keys (e.g. ``var/0.0.0``\ ) as binary strings.
+For example, xpublish provides by default a minimal Zarr compatible REST-like
+API with the following endpoints:
+
+* ``.zmetadata``: returns Zarr-formatted metadata keys as json strings.
+* ``var/0.0.0``: returns a variable data chunk as a binary string.
