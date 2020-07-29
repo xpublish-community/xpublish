@@ -51,7 +51,9 @@ class RestAccessor:
             fastAPI application. If None, the default routers will be included.
             The items of the list may also be tuples with the following format:
             ``[(router1, {'prefix': '/foo', 'tags': ['foo', 'bar']})]``.
-            This is useful for passing arguments to :meth:`fastapi.FastAPI.include_router`.
+            The 1st tuple element is a ``APIRouter`` instance and the 2nd element
+            is a dictionary that is used to pass keyword arguments to
+            :meth:`fastapi.FastAPI.include_router`.
         cache_kws : dict, optional
             Dictionary of keyword arguments to be passed to ``cachey.Cache()``
         app_kws : dict, optional
