@@ -85,8 +85,8 @@ def test_custom_app_routers(airtemp_ds, dims_router, router_kws, path):
 
 
 def test_custom_app_routers_error(airtemp_ds):
-    with pytest.raises(ValueError, match="Invalid format.*"):
-        airtemp_ds.rest(routers=["not_a_router"])
+    with pytest.raises(ValueError, match='Invalid format.*'):
+        airtemp_ds.rest(routers=['not_a_router'])
 
 
 def test_custom_app_routers_conflict(airtemp_ds):
@@ -102,7 +102,7 @@ def test_custom_app_routers_conflict(airtemp_ds):
     def func2():
         pass
 
-    with pytest.raises(ValueError, match="Found multiple routes.*"):
+    with pytest.raises(ValueError, match='Found multiple routes.*'):
         airtemp_ds.rest(routers=[(router1, {'prefix': '/same'}), router2])
 
 

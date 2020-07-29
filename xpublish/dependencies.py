@@ -40,7 +40,7 @@ def get_zvariables(
 ):
     """FastAPI dependency that returns a dictionary of zarr encoded variables."""
 
-    cache_key = "zvariables"
+    cache_key = 'zvariables'
     zvariables = cache.get(cache_key)
 
     if zvariables is None:
