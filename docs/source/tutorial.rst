@@ -90,9 +90,9 @@ Using those settings, Zarr API endpoints now have the following paths:
 * ``/data/.zmetadata``
 * ``/data/{var}/{key}``
 
-It is also possible to create custom API routes and serve them via the
-application. In the example below, we create a very minimal application to get
-the mean value of a given variable in the published dataset:
+It is also possible to create custom API routes and serve them via Xpublish. In
+the example below, we create a very minimal application to get the mean value of
+a given variable in the published dataset:
 
 .. code-block:: python
 
