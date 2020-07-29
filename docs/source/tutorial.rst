@@ -44,10 +44,11 @@ accessor:
 
 `serve()` passes any keyword arguments on to `uvicorn.run`.
 
-Once launched, the server provides the following endpoints:
+Default API routes
+~~~~~~~~~~~~~~~~~~
 
-REST API
-~~~~~~~~
+By default, the served application provides the following endpoints to get some
+information about the published dataset:
 
 * ``/``: returns xarray's HTML repr.
 * ``/keys``: returns a list of variable keys, equivalent to ``list(ds.variables)``.
@@ -55,16 +56,89 @@ REST API
 * ``/dict``: returns a JSON dictionary of the full dataset.
 * ``/versions``: returns JSON dictionary of the versions of python, xarray and related libraries on the server side, similar to ``xr.show_versions()``.
 
-Zarr API
-~~~~~~~~
+The application also provides data access through a Zarr compatible API with the
+following endpoints:
 
 * ``/.zmetadata``: returns a JSON dictionary representing the consolidated Zarr metadata.
 * ``/{var}/{key}``: returns a single chunk of an array.
 
+Custom API routes
+~~~~~~~~~~~~~~~~~
+
+With Xpublish you have full control on which/how API endpoints are exposed by
+the application.
+
+In the example below, the default API routes are included with additional tags
+and using a path prefix for zarr-like data access:
+
+.. code-block:: python
+
+   from xpublish.routers import base_router, common_router, zarr_router
+
+   ds.rest(
+       routers=[
+           (base_router, {'tags': 'info'}),
+           (common_router, {'tags': 'info'}),
+           (zarr_router, {'tags': 'data', 'prefix': '/data'})
+       ]
+   )
+
+   ds.rest.serve()
+
+Using those settings, Zarr API endpoints now have the following paths:
+
+* ``/data/.zmetadata``
+* ``/data/{var}/{key}``
+
+It is also possible to create custom API routes and serve them via the
+application. In the example below, we create a very minimal application to get
+the mean value of a given variable in the published dataset:
+
+.. code-block:: python
+
+   from fastapi import APIRouter, Depends, HTTPException
+   from xpublish.dependencies import get_dataset
+
+   myrouter = APIRouter()
+
+   @myrouter.get("{var_name}/mean")
+   def get_mean(dataset: xr.Dataset = Depends(get_dataset), var_name: str):
+       if var_name not in dataset.variables:
+           raise HTTPException(
+               status_code=404, detail=f"Variable {var_name} not found in dataset"
+           )
+
+       return dataset[var_name].mean().item()
+
+   ds.rest(routers=[myrouter])
+
+   ds.rest.serve()
+
+Taking the dataset loaded above in this tutorial, this minimal application
+should like this:
+
+* ``/air/mean`` returns a floating number
+* ``/not_a_variable/mean`` returns a 404 HTTP error
+
+The ``get_dataset`` function in the example above is a FastAPI dependency that
+is used to access the dataset object being served by the application from inside
+a FastAPI path operation decorated function or another FastAPI dependency. Note
+that ``get_dataset`` can only be used as function arguments.
+
+Xpublish also provides a ``get_cache`` dependency function to get/put any useful
+key/value pair from/into the cache that is created along with a running instance
+of the application.
+
 API Docs
 ~~~~~~~~
 
-* ``/docs``: Interactive Swagger UI API documentation. This can be set with ``docs_url`` parameter when initializing application.
+Thanks to FastAPI and `Swagger UI`_, automatically generated
+interactive documentation is available at the ``/docs`` URL.
+
+This path can be overridden by setting the ``docs_url`` key in the ``app_kws``
+dictionary argument when initializing the rest accessor.
+
+.. _`Swagger UI`: https://github.com/swagger-api/swagger-ui
 
 Client-Side
 -----------
