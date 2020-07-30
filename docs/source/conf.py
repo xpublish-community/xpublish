@@ -42,7 +42,7 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.extlinks',
-    'numpydoc',
+    'sphinx.ext.napoleon',
     'sphinx_autosummary_accessors',
     'IPython.sphinxext.ipython_console_highlighting',
     'IPython.sphinxext.ipython_directive',
@@ -57,8 +57,6 @@ templates_path = ['_templates', sphinx_autosummary_accessors.templates_path]
 
 # Generate the API documentation when building
 autosummary_generate = True
-numpydoc_show_class_members = False
-
 
 # The suffix of source filenames.
 source_suffix = '.rst'
