@@ -1,5 +1,4 @@
 numpydoc
+sphinx
 sphinx_copybutton
-ipykernel
-netCDF4
 git+https://github.com/keewis/sphinx-autosummary-accessors

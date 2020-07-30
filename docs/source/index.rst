@@ -18,8 +18,7 @@ On the server-side, datasets are published using a simple Xarray accessor:
 Datasets can be accessed from various kinds of client applications, e.g., from
 within Python using Zarr and fsspec.
 
-.. ipython:: python
-    :verbatim:
+.. code-block:: python
 
     import xarray as xr
     import zarr

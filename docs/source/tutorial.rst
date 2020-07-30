@@ -9,7 +9,7 @@ Xpublish provides a simple accessor interface to serve xarray objects.
 
 To begin, import xpublish and open an xarray dataset:
 
-.. ipython:: python
+.. code-block:: python
 
     import xarray as xr
     import xpublish
@@ -23,7 +23,7 @@ Optional customization of the underlying
 `cache <https://github.com/dask/cachey>`_ is possible when the accessor
 is initialized:
 
-.. ipython:: python
+.. code-block:: python
 
     ds.rest(
         app_kws=dict(
@@ -37,8 +37,7 @@ is initialized:
 Serving a dataset simply requires calling the `serve` method on the `rest`
 accessor:
 
-.. ipython:: python
-    :verbatim:
+.. code-block:: python
 
     ds.rest.serve()
 
@@ -146,8 +145,7 @@ Client-Side
 Datasets served by xpublish are can be opened by any zarr client that
 implements an HTTPStore. In Python, this can be done with fsspec:
 
-.. ipython:: python
-    :verbatim:
+.. code-block:: python
 
     import zarr
     from fsspec.implementations.http import HTTPFileSystem
@@ -163,8 +161,7 @@ implements an HTTPStore. In Python, this can be done with fsspec:
 
 Xpublish's endpoints can also be queried programmatically. For example:
 
-.. ipython:: python
-    :verbatim:
+.. code-block:: python
 
     import requests
 
