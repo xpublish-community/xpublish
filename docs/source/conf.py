@@ -14,6 +14,8 @@
 import os
 import sys
 
+import sphinx_autosummary_accessors
+
 import xpublish
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -41,6 +43,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.extlinks',
     'numpydoc',
+    'sphinx_autosummary_accessors',
     'IPython.sphinxext.ipython_console_highlighting',
     'IPython.sphinxext.ipython_directive',
 ]
@@ -50,7 +53,7 @@ extlinks = {
     'pr': ('https://github.com/xarray-contrib/xpublish/pull/%s', 'GH#'),
 }
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ['_templates', sphinx_autosummary_accessors.templates_path]
 
 # Generate the API documentation when building
 autosummary_generate = True
@@ -117,6 +120,14 @@ pygments_style = 'sphinx'
 # If true, keep warnings as "system message" paragraphs in the built documents.
 # keep_warnings = False
 
+
+# -- Intersphinx links ---------------------------------------------------------
+
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3.6/', None),
+    'xarray': ('https://xarray.pydata.org/en/stable/', None),
+    # sadly, there is no intersphinx for fastapi docs
+}
 
 # -- Options for HTML output ---------------------------------------------------
 
