@@ -57,8 +57,8 @@ exposing a REST-like API with builtin and/or user-defined endpoints.
 For example, xpublish provides by default a minimal Zarr compatible REST-like
 API with the following endpoints:
 
-* ``.zmetadata``: returns Zarr-formatted metadata keys as json strings.
-* ``var/0.0.0``: returns a variable data chunk as a binary string.
+* ``/.zmetadata``: returns Zarr-formatted metadata keys as json strings.
+* ``/var/0.0.0``: returns a variable data chunk as a binary string.
 
 .. toctree::
    :maxdepth: 2
