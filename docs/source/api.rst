@@ -13,9 +13,9 @@ properties listed below. Proper use of this accessor should be like:
 .. code-block:: python
 
    >>> import xarray as xr         # first import xarray
-   >>> import xpublish             # import xpublish (the 'rest' accessor is registered for datasets)
+   >>> import xpublish             # import xpublish (the dataset 'rest' accessor is registered)
    >>> ds = xr.Dataset()           # create or load an xarray Dataset
-   >>> ds.rest(...)                # call the 'rest' accessor
+   >>> ds.rest(...)                # call the 'rest' accessor on the dataset
    >>> ds.rest.<meth_or_prop>      # access to the methods and properties listed below
 
 .. currentmodule:: xarray
