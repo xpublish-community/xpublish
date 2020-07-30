@@ -119,14 +119,15 @@ should like this:
 * ``/air/mean`` returns a floating number
 * ``/not_a_variable/mean`` returns a 404 HTTP error
 
-The ``get_dataset`` function in the example above is a FastAPI dependency that
-is used to access the dataset object being served by the application from inside
-a FastAPI path operation decorated function or another FastAPI dependency. Note
-that ``get_dataset`` can only be used as function arguments.
+The :func:`~xpublish.dependencies.get_dataset` function in the example above is
+a FastAPI dependency that is used to access the dataset object being served by
+the application from inside a FastAPI path operation decorated function or
+another FastAPI dependency. Note that ``get_dataset`` can only be used as
+function arguments.
 
-Xpublish also provides a ``get_cache`` dependency function to get/put any useful
-key/value pair from/into the cache that is created along with a running instance
-of the application.
+Xpublish also provides a :func:`~xpublish.dependencies.get_cache` dependency
+function to get/put any useful key/value pair from/into the cache that is
+created along with a running instance of the application.
 
 API Docs
 ~~~~~~~~

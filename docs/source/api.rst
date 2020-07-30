@@ -44,3 +44,19 @@ properties listed below. Proper use of this accessor should be like:
    :template: autosummary/accessor_method.rst
 
    Dataset.rest.serve
+
+FastAPI dependencies
+====================
+
+The functions below are defined in module ``xpublish.dependencies`` and can
+be used as FastAPI dependencies when creating custom API endpoints.
+
+.. currentmodule:: xpublish.dependencies
+
+.. autosummary::
+   :toctree: generated/
+
+   get_dataset
+   get_cache
+   get_zvariables
+   get_zmetadata
