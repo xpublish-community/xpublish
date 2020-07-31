@@ -8,6 +8,7 @@ from starlette.responses import Response
 from zarr.storage import array_meta_key, attrs_key, group_meta_key
 
 from ..dependencies import get_cache, get_dataset, get_zmetadata as _get_zmetadata, get_zvariables
+from ..utils.api import DATASET_ID_ATTR_KEY
 from ..utils.cache import CostTimer
 from ..utils.zarr import encode_chunk, get_data_chunk, jsonify_zmetadata, zarr_metadata_key
 
@@ -41,6 +42,7 @@ def get_zattrs(zmetadata: dict = Depends(_get_zmetadata)):
 def get_variable_chunk(
     var: str,
     chunk: str,
+    dataset: xr.Dataset = Depends(get_dataset),
     cache: cachey.Cache = Depends(get_cache),
     zvariables: dict = Depends(get_zvariables),
     zmetadata: dict = Depends(_get_zmetadata),
@@ -61,7 +63,7 @@ def get_variable_chunk(
         logger.debug('var is %s', var)
         logger.debug('chunk is %s', chunk)
 
-        cache_key = f'{var}/{chunk}'
+        cache_key = dataset.attrs.get(DATASET_ID_ATTR_KEY, '') + '/' + f'{var}/{chunk}'
         response = cache.get(cache_key)
 
         if response is None:

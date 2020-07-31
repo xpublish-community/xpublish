@@ -5,6 +5,7 @@ import cachey
 import xarray as xr
 from fastapi import Depends
 
+from .utils.api import DATASET_ID_ATTR_KEY
 from .utils.zarr import create_zmetadata, create_zvariables, zarr_metadata_key
 
 
@@ -54,7 +55,7 @@ def get_zvariables(
 ):
     """FastAPI dependency that returns a dictionary of zarr encoded variables."""
 
-    cache_key = 'zvariables'
+    cache_key = dataset.attrs.get(DATASET_ID_ATTR_KEY, '') + '/' + 'zvariables'
     zvariables = cache.get(cache_key)
 
     if zvariables is None:
@@ -73,12 +74,13 @@ def get_zmetadata(
 ):
     """FastAPI dependency that returns a consolidated zmetadata dictionary. """
 
-    zmeta = cache.get(zarr_metadata_key)
+    cache_key = dataset.attrs.get(DATASET_ID_ATTR_KEY, '') + '/' + zarr_metadata_key
+    zmeta = cache.get(cache_key)
 
     if zmeta is None:
         zmeta = create_zmetadata(dataset)
 
         # we want to permanently cache this: set high cost value
-        cache.put(zarr_metadata_key, zmeta, 99999)
+        cache.put(cache_key, zmeta, 99999)
 
     return zmeta
