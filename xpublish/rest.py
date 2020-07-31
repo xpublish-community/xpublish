@@ -200,7 +200,7 @@ class RestAccessor:
         Parameters
         ----------
         **kwargs
-            Arguments passed to :func:`Rest.__init__`.
+            Arguments passed to :func:`xpublish.Rest.__init__`.
 
         Notes
         -----
@@ -236,7 +236,7 @@ class RestAccessor:
         Parameters
         ----------
         **kwargs :
-            Arguments passed to :func:`Rest.serve`.
+            Arguments passed to :func:`xpublish.Rest.serve`.
 
         Notes
         -----
