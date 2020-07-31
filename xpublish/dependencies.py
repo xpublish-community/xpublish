@@ -9,7 +9,7 @@ from .utils.zarr import create_zmetadata, create_zvariables, zarr_metadata_key
 
 
 def get_dataset():
-    """FastAPI dependency for accessing a xarray dataset object.
+    """FastAPI dependency for accessing the published xarray dataset object.
 
     Use this callable as dependency in any FastAPI path operation
     function where you need access to the xarray Dataset being served.

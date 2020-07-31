@@ -8,20 +8,18 @@ so do not hesitate!
 .. contents:: Contribution links
    :depth: 2
 
-
 .. _submitfeedback:
 
 Feature requests and feedback
 -----------------------------
 
-Do you like xpublish?  Share some love on Twitter or in your blog posts!
+Do you like xpublish? Share some love on Twitter or in your blog posts!
 
 We'd also like to hear about your propositions and suggestions.  Feel free to
 `submit them as issues <https://github.com/xarray-contrib/xpublish>`_ and:
 
 * Explain in detail how they should work.
 * Keep the scope as narrow as possible.  This will make it easier to implement.
-
 
 .. _reportbugs:
 
@@ -42,7 +40,6 @@ If you can write a demonstration test that currently fails but should pass
 (xfail), that is a very useful commit to make as well, even if you cannot
 fix the bug itself.
 
-
 .. _fixbugs:
 
 Fix bugs
@@ -52,38 +49,37 @@ Look through the `GitHub issues for bugs <https://github.com/xarray-contrib/xpub
 
 Talk to developers to find out how you can fix specific bugs.
 
-
 Write documentation
 -------------------
 
-xpublish could always use more documentation.  What exactly is needed?
+xpublish could always use more documentation. What exactly is needed?
 
 * More complementary documentation.  Have you perhaps found something unclear?
 * Docstrings.  There can never be too many of them.
 * Blog posts, articles and such -- they're all very appreciated.
 
 You can also edit documentation files directly in the GitHub web interface,
-without using a local copy.  This can be convenient for small fixes.
+without using a local copy. This can be convenient for small fixes.
 
-.. note::
-    Build the documentation locally with the following command:
+To build the documentation locally, you first need to install the following
+tools:
 
-    .. code:: bash
+- `Sphinx <https://github.com/sphinx-doc/sphinx>`__
+- `sphinx_rtd_theme <https://github.com/readthedocs/sphinx_rtd_theme>`__
+- `sphinx-autosummary-accessors <https://github.com/keewis/sphinx-autosummary-accessors>`__
 
-        $ conda env update -f ci/environment-dev-3.7.yml
-        $ cd docs
-        $ make html
+You can then build the documentation with the following commands::
 
-    The built documentation should be available in the ``docs/_build/``.
+    $ cd docs
+    $ make html
 
+The built documentation should be available in the ``docs/_build/`` folder.
 
-
- .. _`pull requests`:
+.. _`pull requests`:
 .. _pull-requests:
 
 Preparing Pull Requests
 -----------------------
-
 
 #. Fork the
    `xpublish GitHub repository <https://github.com/xarray-contrib/xpublish>`__.  It's
@@ -99,7 +95,6 @@ Preparing Pull Requests
 
     $ git checkout -b your-bugfix-feature-branch-name master
 
-
 #. Install `pre-commit <https://pre-commit.com>`_ and its hook on the xpublish repo::
 
      $ pip install --user pre-commit
@@ -109,10 +104,10 @@ Preparing Pull Requests
 
    https://pre-commit.com/ is a framework for managing and maintaining multi-language pre-commit hooks
    to ensure code-style and code formatting is consistent.
+
 #. Install dependencies into a new conda environment::
 
     $ conda env update -f ci/environment-dev-3.7.yml
-
 
 #. Run all the tests
 
@@ -133,11 +128,10 @@ Preparing Pull Requests
     $ git commit -a -m "<commit message>"
     $ git push -u
 
-
 #. Finally, submit a pull request through the GitHub website using this data::
 
     head-fork: YOUR_GITHUB_USERNAME/xpublish
     compare: your-branch-name
 
-    base-fork: jhamman/xpublish
+    base-fork: xarray-contrib/xpublish
     base: master

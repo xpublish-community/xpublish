@@ -9,6 +9,6 @@ If you are using `Anaconda`_ or Miniconda, install xpublish with the following c
 
 If you are using virtualenv/pip, run the following command::
 
-    pip install xpublish
+    python -m pip install xpublish
 
 .. _Anaconda: https://www.anaconda.com/download/
