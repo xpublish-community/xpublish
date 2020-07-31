@@ -5,8 +5,9 @@ Dataset-independent API routes.
 import importlib
 import sys
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from ..dependencies import get_dataset_ids
 from ..utils.info import get_sys_info, netcdf_and_hdf5_versions
 
 common_router = APIRouter()
@@ -37,3 +38,11 @@ def get_versions():
         except ImportError:
             pass
     return versions
+
+
+dataset_collection_router = APIRouter()
+
+
+@dataset_collection_router.get('/datasets')
+def get_dataset_collection_keys(ids: list = Depends(get_dataset_ids)):
+    return ids

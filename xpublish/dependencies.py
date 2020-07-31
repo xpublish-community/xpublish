@@ -8,7 +8,21 @@ from fastapi import Depends
 from .utils.zarr import create_zmetadata, create_zvariables, zarr_metadata_key
 
 
-def get_dataset():
+def get_dataset_ids():
+    """FastAPI dependency for getting the list of ids (string keys)
+    of the collection of datasets being served.
+
+    Use this callable as dependency in any FastAPI path operation
+    function where you need access to those ids.
+
+    This dummy dependency will be overridden when creating the FastAPI
+    application.
+
+    """
+    return []
+
+
+def get_dataset(dataset_id: str):
     """FastAPI dependency for accessing the published xarray dataset object.
 
     Use this callable as dependency in any FastAPI path operation
