@@ -35,14 +35,14 @@ def _dataset_unique_getter(dataset):
     return get_dataset
 
 
-def _set_app_routers(dataset_routers, unique=False):
+def _set_app_routers(dataset_routers=None, dataset_route_prefix=''):
 
     app_routers = []
 
     # top-level api endpoints
     app_routers.append((common_router, {}))
 
-    if not unique:
+    if dataset_route_prefix:
         app_routers.append((dataset_collection_router, {'tags': ['info']}))
 
     # dataset-specifc api endpoints
@@ -52,11 +52,6 @@ def _set_app_routers(dataset_routers, unique=False):
             (zarr_router, {'tags': ['zarr']}),
         ]
 
-    if unique:
-        dataset_route_prefix = ''
-    else:
-        dataset_route_prefix = '/datasets/{dataset_id}'
-
     app_routers += normalize_app_routers(dataset_routers, dataset_route_prefix)
 
     check_route_conflicts(app_routers)
@@ -65,19 +60,25 @@ def _set_app_routers(dataset_routers, unique=False):
 
 
 class Rest:
-    """Used to publish a collection of xarray Datasets via a REST API (FastAPI application).
+    """Used to publish one or more Xarray Datasets via a REST API (FastAPI application).
+
+    To publish a single dataset via its own FastAPI application, you might
+    want to use the :attr:`xarray.Dataset.rest` accessor instead for more convenience.
+    It provides the same interface than this class.
 
     Parameters
     ----------
-    datasets : dict
-        A collection of datasets to be served. Keys are dataset ids (will be converted to
-        strings) and values must be :class:`xarray.Dataset` objects.
+    datasets : xr.Dataset or dict
+        A single :class:`xarray.Dataset` object or a mapping of datasets objects
+        to be served. If a mapping is given, keys are used as dataset ids and
+        are converted to strings. See also the notes below.
     routers : list, optional
-        A list of :class:`fastapi.APIRouter` instances to include in the
-        fastAPI application. If None, the default routers will be included.
+        A list of dataset-specific :class:`fastapi.APIRouter` instances to
+        include in the fastAPI application. If None, the default routers will be
+        included.
         The items of the list may also be tuples with the following format:
-        ``[(router1, {'prefix': '/foo', 'tags': ['foo', 'bar']})]``.
-        The 1st tuple element is a :class:`fastapi.APIRouter` instance and the
+        ``[(router1, {'prefix': '/foo', 'tags': ['foo', 'bar']})]``, where
+        the 1st tuple element is a :class:`fastapi.APIRouter` instance and the
         2nd element is a dictionary that is used to pass keyword arguments to
         :meth:`fastapi.FastAPI.include_router`.
     cache_kws : dict, optional
@@ -86,35 +87,36 @@ class Rest:
     app_kws : dict, optional
         Dictionary of keyword arguments to be passed to
         :meth:`fastapi.FastAPI.__init__()`.
-    unique : bool, optional
-        If True, the FastAPI application is configured to serve only one dataset,
-        i.e., dataset ids are ignored and are not present as parameters in the
-        API urls (default: False).
-        For more convienence, use the :attr:`xarray.Dataset.rest` accessor instead
-        to publish one dataset.
+
+    Notes
+    -----
+    The urls of the application's API endpoints differ whether a single dataset
+    or a mapping (collection) of datasets is given. In the latter case, all
+    dataset-specific endpoint urls have the prefix ``/datasets/{dataset_id}``,
+    where ``{dataset_id}`` corresponds to the keys of the mapping (converted to
+    strings). Still in the latter case, the endpoint ``/datasets`` is added and returns
+    the list of all dataset ids.
 
     """
 
     def __init__(self, datasets, routers=None, cache_kws=None, app_kws=None, unique=False):
 
-        self._datasets = normalize_datasets(datasets)
-
-        if unique:
-            if len(datasets) != 1:
-                raise ValueError(
-                    'the given collection of datasets must cointain one item when `unique` '
-                    f'is set to True, found {len(datasets)} item(s)'
-                )
-            self._get_dataset_func = _dataset_unique_getter(self._datasets[''])
+        if isinstance(datasets, xr.Dataset):
+            single_dataset = datasets
+            self._datasets = {}
+            self._get_dataset_func = _dataset_unique_getter(single_dataset)
+            dataset_route_prefix = ''
         else:
+            self._datasets = normalize_datasets(datasets)
             self._get_dataset_func = _dataset_from_collection_getter(self._datasets)
+            dataset_route_prefix = '/datasets/{dataset_id}'
 
         self._app = None
         self._app_kws = {}
         if app_kws is not None:
             self._app_kws.update(app_kws)
 
-        self._app_routers = _set_app_routers(routers, unique=unique)
+        self._app_routers = _set_app_routers(routers, dataset_route_prefix)
 
         self._cache = None
         self._cache_kws = {'available_bytes': 1e6}
@@ -183,14 +185,13 @@ class RestAccessor:
     def __init__(self, xarray_obj):
 
         self._obj = xarray_obj
-        self._datasets = {'': xarray_obj}
         self._rest = None
 
         self._initialized = False
 
     def _get_rest_obj(self):
         if self._rest is None:
-            self._rest = Rest(self._datasets, unique=True)
+            self._rest = Rest(self._obj)
 
         return self._rest
 
@@ -211,10 +212,7 @@ class RestAccessor:
             raise RuntimeError('This accessor has already been initialized')
         self._initialized = True
 
-        # force serving one unique dataset
-        kwargs['unique'] = True
-
-        self._rest = Rest(self._datasets, **kwargs)
+        self._rest = Rest(self._obj, **kwargs)
 
         return self
 
