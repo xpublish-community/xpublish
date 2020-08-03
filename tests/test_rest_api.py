@@ -35,6 +35,25 @@ def airtemp_app_client(airtemp_rest):
 
 
 @pytest.fixture(scope='function')
+def ds_dict():
+    return {
+        'ds1': xr.Dataset({'var': ('x', [1, 2, 3])}),
+        'ds2': xr.Dataset({'var': ('x', [4, 5, 6])}),
+    }
+
+
+@pytest.fixture(scope='function')
+def ds_dict_rest(ds_dict):
+    return Rest(ds_dict)
+
+
+@pytest.fixture(scope='function')
+def ds_dict_app_client(ds_dict_rest):
+    client = TestClient(ds_dict_rest.app)
+    yield client
+
+
+@pytest.fixture(scope='function')
 def dims_router():
     router = APIRouter()
 
@@ -209,3 +228,27 @@ def test_rest_accessor_kws(airtemp_ds):
 
     response = client.get('/data-docs')
     assert response.status_code == 200
+
+
+def test_ds_dict_keys(ds_dict, ds_dict_app_client):
+    response = ds_dict_app_client.get('/datasets')
+    assert response.status_code == 200
+    assert response.json() == list(ds_dict)
+
+    response = ds_dict_app_client.get('/datasets/not_in_dict')
+    assert response.status_code == 404
+
+
+def test_ds_dict_cache(ds_dict):
+    rest = Rest(ds_dict, cache_kws={'available_bytes': 1e9})
+
+    client = TestClient(rest.app)
+
+    response1 = client.get('/datasets/ds1/var/0')
+    assert response1.status_code == 200
+    assert 'ds1/var/0' in rest.cache
+
+    response2 = client.get('/datasets/ds2/info')
+    assert response2.status_code == 200
+    assert 'ds2/zvariables' in rest.cache
+    assert 'ds2/.zmetadata' in rest.cache
