@@ -45,8 +45,9 @@ application <https://fastapi.tiangolo.com>`_ or the server-side `cache
         cache_kws=dict(available_bytes=1e9)
     )
 
-Serving the dataset then simply requires calling the :meth:`~Rest.serve` method
-on the ``Rest`` instance or the ``rest`` accessor:
+Serving the dataset then simply requires calling the
+:meth:`~xpublish.Rest.serve` method on the ``Rest`` instance or the ``rest``
+accessor:
 
 .. code-block:: python
 
@@ -56,7 +57,7 @@ on the ``Rest`` instance or the ``rest`` accessor:
 
     ds.rest.serve()
 
-:meth:`~xarray.Dataset.rest.serve` passes any keyword arguments on to
+:meth:`~xpublish.Rest.serve` passes any keyword arguments on to
 :func:`uvicorn.run`.
 
 Default API routes
@@ -142,7 +143,8 @@ The :func:`~xpublish.dependencies.get_dataset` function in the example above is
 a FastAPI dependency that is used to access the dataset object being served by
 the application, either from inside a FastAPI path operation decorated function
 or from another FastAPI dependency. Note that ``get_dataset`` can only be used
-as function arguments.
+as a function argument (FastAPI has other ways to reuse a dependency, but those
+are not supported in this case).
 
 Xpublish also provides a :func:`~xpublish.dependencies.get_cache` dependency
 function to get/put any useful key-value pair from/into the cache that is
@@ -180,12 +182,12 @@ the ``/datasets/{dataset_id}`` prefix. For example:
 * ``/datasets/rasm/info`` returns information about the ``rasm`` dataset
 * ``/datasets/invalid_dataset_id/info`` returns a 404 HTTP error
 
-The application has also one more API endpoint:
+The application also has one more API endpoint:
 
 * ``/datasets``: returns the list of the ids (keys) of all published datasets
 
 Note that custom routes work for multiple datasets just as well as for a single
-dataset, no code change is required. Taking the example above,
+dataset. No code change is required. Taking the example above,
 
 .. code-block:: python
 
@@ -204,7 +206,7 @@ The following URLs should return expected results:
 Client-Side
 -----------
 
-By default, datasets served by Xpublish are can be opened by any Zarr client
+By default, datasets served by Xpublish can be opened by any Zarr client
 that implements an HTTPStore. In Python, this can be done with ``fsspec``:
 
 .. code-block:: python

@@ -68,7 +68,7 @@ class Rest:
 
     Parameters
     ----------
-    datasets : xr.Dataset or dict
+    datasets : :class:`xarray.Dataset` or dict
         A single :class:`xarray.Dataset` object or a mapping of datasets objects
         to be served. If a mapping is given, keys are used as dataset ids and
         are converted to strings. See also the notes below.
@@ -99,7 +99,7 @@ class Rest:
 
     """
 
-    def __init__(self, datasets, routers=None, cache_kws=None, app_kws=None, unique=False):
+    def __init__(self, datasets, routers=None, cache_kws=None, app_kws=None):
 
         if isinstance(datasets, xr.Dataset):
             single_dataset = datasets
