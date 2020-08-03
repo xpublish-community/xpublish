@@ -7,8 +7,8 @@ API reference
 Top-level Rest class
 ====================
 
-The :class:`~xpublish.Rest` class can be used for publishing a collection of
-:class:`xarray.Dataset` objects.
+The :class:`~xpublish.Rest` class can be used for publishing a
+:class:`xarray.Dataset` object or a collection of Dataset objects.
 
 .. autosummary::
    :toctree: generated/
@@ -22,7 +22,7 @@ Dataset.rest (xarray accessor)
 ==============================
 
 This accessor extends :py:class:`xarray.Dataset` with the same interface than
-:class:`~xpublish.Rest`. It is the preferred method for publishing one single
+:class:`~xpublish.Rest`. It is a convenient method for publishing one single
 dataset. Proper use of this accessor should be like:
 
 .. code-block:: python
