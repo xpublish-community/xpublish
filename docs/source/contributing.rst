@@ -66,7 +66,7 @@ tools:
 
 - `Sphinx <https://github.com/sphinx-doc/sphinx>`__
 - `sphinx_rtd_theme <https://github.com/readthedocs/sphinx_rtd_theme>`__
-- `sphinx-autosummary-accessors <https://github.com/keewis/sphinx-autosummary-accessors>`__
+- `sphinx-autosummary-accessors <https://github.com/xarray-contrib/sphinx-autosummary-accessors>`__
 
 You can then build the documentation with the following commands::
 
