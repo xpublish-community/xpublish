@@ -84,6 +84,8 @@ class Rest:
     cache_kws : dict, optional
         Dictionary of keyword arguments to be passed to
         :meth:`cachey.Cache.__init__()`.
+        By default, the cache size is set to 1MB, but this can be changed with
+        ``available_bytes``.
     app_kws : dict, optional
         Dictionary of keyword arguments to be passed to
         :meth:`fastapi.FastAPI.__init__()`.
