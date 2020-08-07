@@ -94,6 +94,12 @@ def test_init_app_kws(airtemp_ds):
     assert response.status_code == 200
 
 
+@pytest.mark.parametrize('datasets', ['not_a_dataset_obj', {'ds': 'not_a_dataset_obj'}])
+def test_init_dataset_type_error(datasets):
+    with pytest.raises(TypeError, match='Can only publish.*Dataset objects'):
+        Rest(datasets)
+
+
 @pytest.mark.parametrize('router_kws,path', [(None, '/dims'), ({'prefix': '/foo'}, '/foo/dims')])
 def test_custom_app_routers(airtemp_ds, dims_router, router_kws, path):
     if router_kws is None:
@@ -114,7 +120,7 @@ def test_custom_app_routers(airtemp_ds, dims_router, router_kws, path):
 
 
 def test_custom_app_routers_error(airtemp_ds):
-    with pytest.raises(ValueError, match='Invalid format.*'):
+    with pytest.raises(TypeError, match='Invalid type/format.*'):
         Rest(airtemp_ds, routers=['not_a_router'])
 
 

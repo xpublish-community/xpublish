@@ -101,22 +101,22 @@ class Rest:
 
     def __init__(self, datasets, routers=None, cache_kws=None, app_kws=None):
 
-        if isinstance(datasets, xr.Dataset):
-            single_dataset = datasets
-            self._datasets = {}
-            self._get_dataset_func = _dataset_unique_getter(single_dataset)
+        self._datasets = normalize_datasets(datasets)
+
+        if not self._datasets:
+            # publish single dataset
+            self._get_dataset_func = _dataset_unique_getter(datasets)
             dataset_route_prefix = ''
         else:
-            self._datasets = normalize_datasets(datasets)
             self._get_dataset_func = _dataset_from_collection_getter(self._datasets)
             dataset_route_prefix = '/datasets/{dataset_id}'
+
+        self._app_routers = _set_app_routers(routers, dataset_route_prefix)
 
         self._app = None
         self._app_kws = {}
         if app_kws is not None:
             self._app_kws.update(app_kws)
-
-        self._app_routers = _set_app_routers(routers, dataset_route_prefix)
 
         self._cache = None
         self._cache_kws = {'available_bytes': 1e6}
