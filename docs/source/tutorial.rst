@@ -46,8 +46,8 @@ application <https://fastapi.tiangolo.com>`_ or the server-side `cache
     )
 
 Serving the dataset then simply requires calling the
-:meth:`~xpublish.Rest.serve` method on the ``Rest`` instance or the ``rest``
-accessor:
+:meth:`~xpublish.Rest.serve` method on the :class:`~xpublish.Rest` instance or
+the :attr:`xarray.Dataset.rest` accessor:
 
 .. code-block:: python
 
@@ -58,7 +58,9 @@ accessor:
     ds.rest.serve()
 
 :meth:`~xpublish.Rest.serve` passes any keyword arguments on to
-:func:`uvicorn.run`.
+:func:`uvicorn.run` (see `Uvicorn docs`_).
+
+.. _`Uvicorn docs`: https://www.uvicorn.org/deployment/#running-programmatically
 
 Default API routes
 ~~~~~~~~~~~~~~~~~~
