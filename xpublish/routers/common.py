@@ -32,10 +32,10 @@ def get_versions():
         try:
             if modname in sys.modules:
                 mod = sys.modules[modname]
-            else:
+            else:  # pragma: no cover
                 mod = importlib.import_module(modname)
             versions[modname] = getattr(mod, '__version__', None)
-        except ImportError:
+        except ImportError:  # pragma: no cover
             pass
     return versions
 

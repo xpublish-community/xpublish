@@ -4,10 +4,11 @@ import dask
 import numpy as np
 import pytest
 import xarray as xr
+from numcodecs import Blosc, Delta
 
 import xpublish  # noqa: F401
 from xpublish.utils.cache import CostTimer
-from xpublish.utils.zarr import create_zmetadata, get_data_chunk
+from xpublish.utils.zarr import create_zmetadata, encode_chunk, get_data_chunk
 
 
 def test_dask_chunks_become_zarr_chunks():
@@ -83,6 +84,26 @@ def test_init_accessor_twice_raises():
     with pytest.raises(RuntimeError) as excinfo:
         ds.rest(app_kws={'bar': 'foo'})
     excinfo.match(r'This accessor has already been initialized')
+
+
+@pytest.mark.parametrize(
+    'filters, compressor',
+    [
+        (None, None),
+        (None, Blosc(cname='zstd', clevel=1, shuffle=Blosc.SHUFFLE)),
+        ([Delta(dtype='i4')], Blosc(cname='zstd', clevel=1, shuffle=Blosc.SHUFFLE)),
+    ],
+)
+def test_encode_chunk(filters, compressor):
+    buf = np.arange(10).tobytes()
+    ebuf = encode_chunk(buf, filters=filters, compressor=compressor)
+    assert isinstance(ebuf, bytes)
+
+
+def test_encode_object_array_raises():
+    buf = np.arange(10).astype('O')
+    with pytest.raises(RuntimeError):
+        encode_chunk(buf)
 
 
 def test_cache_timer():

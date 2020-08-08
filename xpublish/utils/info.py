@@ -16,8 +16,7 @@ def get_sys_info():
     blob = []
 
     # get full commit hash
-    commit = None
-    if os.path.isdir('.git') and os.path.isdir('xarray'):
+    if os.path.isdir('.git') and os.path.isdir('xpublish'):
         try:
             pipe = subprocess.Popen(
                 'git log --format="%H" -n 1'.split(' '),
@@ -25,38 +24,35 @@ def get_sys_info():
                 stderr=subprocess.PIPE,
             )
             so, serr = pipe.communicate()
-        except Exception:
-            pass
+        except Exception:  # pragma: no cover
+            commit = None
         else:
             if pipe.returncode == 0:
                 commit = so
                 try:
                     commit = so.decode('utf-8')
-                except ValueError:
+                except ValueError:  # pragma: no cover
                     pass
                 commit = commit.strip().strip('"')
 
     blob.append(('commit', commit))
 
-    try:
-        (sysname, nodename, release, version, machine, processor) = platform.uname()
-        blob.extend(
-            [
-                ('python', sys.version),
-                ('python-bits', struct.calcsize('P') * 8),
-                ('OS', '%s' % (sysname)),
-                ('OS-release', '%s' % (release)),
-                # ("Version", "%s" % (version)),
-                ('machine', '%s' % (machine)),
-                ('processor', '%s' % (processor)),
-                ('byteorder', '%s' % sys.byteorder),
-                ('LC_ALL', '%s' % os.environ.get('LC_ALL', 'None')),
-                ('LANG', '%s' % os.environ.get('LANG', 'None')),
-                ('LOCALE', '%s.%s' % locale.getlocale()),
-            ]
-        )
-    except Exception:
-        pass
+    uname = platform.uname()
+    blob.extend(
+        [
+            ('python', sys.version),
+            ('python-bits', struct.calcsize('P') * 8),
+            ('OS', '%s' % (uname.system)),
+            ('OS-release', '%s' % (uname.release)),
+            ('Version', '%s' % (uname.version)),
+            ('machine', '%s' % (uname.machine)),
+            ('processor', '%s' % (uname.processor)),
+            ('byteorder', '%s' % sys.byteorder),
+            ('LC_ALL', '%s' % os.environ.get('LC_ALL', 'None')),
+            ('LANG', '%s' % os.environ.get('LANG', 'None')),
+            ('LOCALE', '%s.%s' % locale.getlocale()),
+        ]
+    )
 
     return blob
 
@@ -69,7 +65,7 @@ def netcdf_and_hdf5_versions():
 
         libhdf5_version = netCDF4.__hdf5libversion__
         libnetcdf_version = netCDF4.__netcdf4libversion__
-    except ImportError:
+    except ImportError:  # pragma: no cover
         try:
             import h5py
 

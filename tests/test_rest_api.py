@@ -1,4 +1,5 @@
 import pytest
+import uvicorn
 import xarray as xr
 from fastapi import APIRouter, Depends
 from starlette.testclient import TestClient
@@ -155,6 +156,15 @@ def test_info(airtemp_ds, airtemp_app_client):
     assert list(json_response['variables'].keys()) == list(airtemp_ds.variables.keys())
 
 
+def test_dict(airtemp_ds, airtemp_app_client):
+    response = airtemp_app_client.get('/dict')
+    assert response.status_code == 200
+    actual = response.json()
+    expected = airtemp_ds.to_dict(data=False)
+    # can't compare actual and expected directly because json converts tuples to lists
+    assert actual['coords'].keys() == expected['coords'].keys()
+
+
 def test_versions(airtemp_app_client):
     response = airtemp_app_client.get('/versions')
     assert response.status_code == 200
@@ -175,6 +185,11 @@ def test_zmetadata(airtemp_ds, airtemp_app_client):
 def test_bad_key(airtemp_app_client):
     response = airtemp_app_client.get('/notakey')
     assert response.status_code == 404
+
+
+def test_zgroup(airtemp_app_client):
+    response = airtemp_app_client.get('/.zgroup')
+    assert response.status_code == 200
 
 
 def test_zarray(airtemp_app_client):
@@ -258,3 +273,17 @@ def test_ds_dict_cache(ds_dict):
     assert response2.status_code == 200
     assert 'ds2/zvariables' in rest.cache
     assert 'ds2/.zmetadata' in rest.cache
+
+
+def test_serve(airtemp_rest, mocker):
+    kwargs = dict(host='0.0.0.0', log_level='debug', port=9000)
+    mocker.patch('uvicorn.run')
+    airtemp_rest.serve(**kwargs)
+    uvicorn.run.assert_called_once_with(airtemp_rest.app, **kwargs)
+
+
+def test_accessor_serve(airtemp_ds, mocker):
+    kwargs = dict(host='0.0.0.0', log_level='debug', port=9000)
+    mocker.patch('uvicorn.run')
+    airtemp_ds.rest.serve(**kwargs)
+    uvicorn.run.assert_called_once_with(airtemp_ds.rest.app, **kwargs)

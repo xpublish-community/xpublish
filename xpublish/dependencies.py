@@ -20,7 +20,7 @@ def get_dataset_ids():
     application.
 
     """
-    return []
+    return []  # pragma: no cover
 
 
 def get_dataset(dataset_id: str):
@@ -33,7 +33,7 @@ def get_dataset(dataset_id: str):
     application.
 
     """
-    return None
+    return None  # pragma: no cover
 
 
 def get_cache():
@@ -47,7 +47,7 @@ def get_cache():
     application.
 
     """
-    return None
+    return None  # pragma: no cover
 
 
 def get_zvariables(

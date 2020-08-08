@@ -3,3 +3,5 @@ omit =
     tests/*.py
     setup.py
     test.py
+exclude_lines =
+    pragma: no cover
