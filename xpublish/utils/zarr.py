@@ -5,27 +5,17 @@ import dask
 import numpy as np
 import xarray as xr
 from numcodecs.compat import ensure_ndarray
-from xarray.backends.zarr import encode_zarr_variable
+from xarray.backends.zarr import (
+    DIMENSION_KEY,
+    encode_zarr_attr_value,
+    encode_zarr_variable,
+    extract_zarr_variable_encoding,
+)
 from zarr.meta import encode_fill_value
 from zarr.storage import array_meta_key, attrs_key, default_compressor, group_meta_key
 from zarr.util import normalize_shape
 
 from .api import DATASET_ID_ATTR_KEY
-
-try:
-    from xarray.backends.zarr import (
-        DIMENSION_KEY,
-        encode_zarr_attr_value,
-        extract_zarr_variable_encoding,
-    )
-except ImportError:
-    # xarray <= 0.16.1
-    from xarray.backends.zarr import (
-        _DIMENSION_KEY as DIMENSION_KEY,
-        _encode_zarr_attr_value as encode_zarr_attr_value,
-        _extract_zarr_variable_encoding as extract_zarr_variable_encoding,
-    )
-
 
 dask_array_type = (dask.array.Array,)
 zarr_format = 2

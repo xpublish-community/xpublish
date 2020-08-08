@@ -174,7 +174,9 @@ class Rest:
         This method is blocking and does not return.
 
         """
-        uvicorn.run(self.app, host=host, port=port, log_level=log_level, **kwargs)
+        uvicorn.run(
+            self.app, host=host, port=port, log_level=log_level, **kwargs
+        )  # pragma: no cover
 
 
 @xr.register_dataset_accessor('rest')
@@ -243,4 +245,4 @@ class RestAccessor:
         This method is blocking and does not return.
 
         """
-        self._get_rest_obj().serve(**kwargs)
+        self._get_rest_obj().serve(**kwargs)  # pragma: no cover

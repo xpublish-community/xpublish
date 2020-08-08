@@ -155,6 +155,15 @@ def test_info(airtemp_ds, airtemp_app_client):
     assert list(json_response['variables'].keys()) == list(airtemp_ds.variables.keys())
 
 
+def test_dict(airtemp_ds, airtemp_app_client):
+    response = airtemp_app_client.get('/dict')
+    assert response.status_code == 200
+    actual = response.json()
+    expected = airtemp_ds.to_dict(data=False)
+    # can't compare actual and expected directly because json converts tuples to lists
+    assert actual['coords'].keys() == expected['coords'].keys()
+
+
 def test_versions(airtemp_app_client):
     response = airtemp_app_client.get('/versions')
     assert response.status_code == 200
@@ -175,6 +184,11 @@ def test_zmetadata(airtemp_ds, airtemp_app_client):
 def test_bad_key(airtemp_app_client):
     response = airtemp_app_client.get('/notakey')
     assert response.status_code == 404
+
+
+def test_zgroup(airtemp_app_client):
+    response = airtemp_app_client.get('/.zgroup')
+    assert response.status_code == 200
 
 
 def test_zarray(airtemp_app_client):
