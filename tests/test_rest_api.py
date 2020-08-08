@@ -1,4 +1,5 @@
 import pytest
+import uvicorn
 import xarray as xr
 from fastapi import APIRouter, Depends
 from starlette.testclient import TestClient
@@ -272,3 +273,17 @@ def test_ds_dict_cache(ds_dict):
     assert response2.status_code == 200
     assert 'ds2/zvariables' in rest.cache
     assert 'ds2/.zmetadata' in rest.cache
+
+
+def test_serve(airtemp_rest, mocker):
+    kwargs = dict(host='0.0.0.0', log_level='debug', port=9000)
+    mocker.patch('uvicorn.run')
+    airtemp_rest.serve(**kwargs)
+    uvicorn.run.assert_called_once_with(airtemp_rest.app, **kwargs)
+
+
+def test_accessor_serve(airtemp_ds, mocker):
+    kwargs = dict(host='0.0.0.0', log_level='debug', port=9000)
+    mocker.patch('uvicorn.run')
+    airtemp_ds.rest.serve(**kwargs)
+    uvicorn.run.assert_called_once_with(airtemp_ds.rest.app, **kwargs)
