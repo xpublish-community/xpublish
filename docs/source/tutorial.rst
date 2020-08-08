@@ -5,9 +5,7 @@ Tutorial
 Server-Side
 -----------
 
-Xpublish provides a simple accessor interface to serve xarray objects.
-
-To begin, import xpublish and open an xarray dataset:
+To begin, import Xpublish and open an Xarray dataset:
 
 .. code-block:: python
 
@@ -18,10 +16,23 @@ To begin, import xpublish and open an xarray dataset:
         "air_temperature", chunks=dict(lat=5, lon=5),
     )
 
-Optional customization of the underlying
-`FastAPI application <https://fastapi.tiangolo.com>`_ or the server-side
-`cache <https://github.com/dask/cachey>`_ is possible when the accessor
-is initialized:
+Publishing the dataset above is straightforward, just use the
+:class:`~xpublish.Rest` class:
+
+.. code-block:: python
+
+   rest = xpublish.Rest(ds)
+
+Alternatively, you might want to use the :attr:`xarray.Dataset.rest` accessor
+for more convenience:
+
+.. code-block:: python
+
+    ds.rest
+
+Optional customization of the underlying `FastAPI
+application <https://fastapi.tiangolo.com>`_ or the server-side `cache
+<https://github.com/dask/cachey>`_ is possible, e.g.,
 
 .. code-block:: python
 
@@ -34,21 +45,28 @@ is initialized:
         cache_kws=dict(available_bytes=1e9)
     )
 
-Serving a dataset simply requires calling the :meth:`~xarray.Dataset.rest.serve`
-method on the ``rest`` accessor:
+Serving the dataset then simply requires calling the
+:meth:`~xpublish.Rest.serve` method on the :class:`~xpublish.Rest` instance or
+the :attr:`xarray.Dataset.rest` accessor:
 
 .. code-block:: python
 
+    rest.serve()
+
+    # or
+
     ds.rest.serve()
 
-:meth:`~xarray.Dataset.rest.serve` passes any keyword arguments on to
-:func:`uvicorn.run`.
+:meth:`~xpublish.Rest.serve` passes any keyword arguments on to
+:func:`uvicorn.run` (see `Uvicorn docs`_).
+
+.. _`Uvicorn docs`: https://www.uvicorn.org/deployment/#running-programmatically
 
 Default API routes
 ~~~~~~~~~~~~~~~~~~
 
-By default, the served application provides the following endpoints to get some
-information about the published dataset:
+By default, the FastAPI application created with Xpublish provides the following
+endpoints to get some information about the published dataset:
 
 * ``/``: returns xarray's HTML repr.
 * ``/keys``: returns a list of variable keys, i.e., those returned by :attr:`xarray.Dataset.variables`.
@@ -68,27 +86,27 @@ Custom API routes
 With Xpublish you have full control on which and how API endpoints are exposed
 by the application.
 
-In the example below, the default API routes are included with additional tags
+In the example below, the default API routes are included with custom tags
 and using a path prefix for Zarr-like data access:
 
 .. code-block:: python
 
-   from xpublish.routers import base_router, common_router, zarr_router
+   from xpublish.routers import base_router, zarr_router
 
    ds.rest(
        routers=[
            (base_router, {'tags': 'info'}),
-           (common_router, {'tags': 'info'}),
-           (zarr_router, {'tags': 'data', 'prefix': '/data'})
+           (zarr_router, {'tags': 'zarr', 'prefix': '/zarr'})
        ]
    )
 
    ds.rest.serve()
 
-Using those settings, Zarr API endpoints now have the following paths:
+Using those settings, the Zarr-specific API endpoints now have the following
+paths:
 
-* ``/data/.zmetadata``
-* ``/data/{var}/{key}``
+* ``/zarr/.zmetadata``
+* ``/zarr/{var}/{key}``
 
 It is also possible to create custom API routes and serve them via Xpublish. In
 the example below, we create a minimal application to get the mean value of a
@@ -126,8 +144,9 @@ like this:
 The :func:`~xpublish.dependencies.get_dataset` function in the example above is
 a FastAPI dependency that is used to access the dataset object being served by
 the application, either from inside a FastAPI path operation decorated function
-or another FastAPI dependency. Note that ``get_dataset`` can only be used as
-function arguments.
+or from another FastAPI dependency. Note that ``get_dataset`` can only be used
+as a function argument (FastAPI has other ways to reuse a dependency, but those
+are not supported in this case).
 
 Xpublish also provides a :func:`~xpublish.dependencies.get_cache` dependency
 function to get/put any useful key-value pair from/into the cache that is
@@ -144,11 +163,53 @@ dictionary argument when initializing the rest accessor.
 
 .. _`Swagger UI`: https://github.com/swagger-api/swagger-ui
 
+Serving multiple datasets
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Xpublish also lets you serve multiple datasets via one FastAPI application. You
+just need to provide a mapping (dictionary) when creating a
+:class:`~xpublish.Rest` instance, e.g.,
+
+.. code-block:: python
+
+    ds2 = xr.tutorial.open_dataset('rasm')
+
+    rest_collection = xpublish.Rest({'air_temperature': ds, 'rasm': ds2})
+
+    rest_collection.serve()
+
+When multiple datasets are given, all dataset-specific API endpoint URLs have
+the ``/datasets/{dataset_id}`` prefix. For example:
+
+* ``/datasets/rasm/info`` returns information about the ``rasm`` dataset
+* ``/datasets/invalid_dataset_id/info`` returns a 404 HTTP error
+
+The application also has one more API endpoint:
+
+* ``/datasets``: returns the list of the ids (keys) of all published datasets
+
+Note that custom routes work for multiple datasets just as well as for a single
+dataset. No code change is required. Taking the example above,
+
+.. code-block:: python
+
+    rest_collection = xpublish.Rest(
+        {'air_temperature': ds, 'rasm': ds2},
+        routers=[myrouter]
+    )
+
+    rest_collection.serve()
+
+The following URLs should return expected results:
+
+* ``/datasets/air_temperature/air/mean``
+* ``/datasets/rasm/Tair/mean``
+
 Client-Side
 -----------
 
-Datasets served by xpublish are can be opened by any Zarr client that
-implements an HTTPStore. In Python, this can be done with ``fsspec``:
+By default, datasets served by Xpublish can be opened by any Zarr client
+that implements an HTTPStore. In Python, this can be done with ``fsspec``:
 
 .. code-block:: python
 
@@ -156,6 +217,8 @@ implements an HTTPStore. In Python, this can be done with ``fsspec``:
     from fsspec.implementations.http import HTTPFileSystem
 
     fs = HTTPFileSystem()
+
+    # The URL 'http://0.0.0.0:9000' here serves one dataset
     http_map = fs.get_mapper('http://0.0.0.0:9000')
 
     # open as a zarr group

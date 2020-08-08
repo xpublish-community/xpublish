@@ -10,6 +10,8 @@ from zarr.meta import encode_fill_value
 from zarr.storage import array_meta_key, attrs_key, default_compressor, group_meta_key
 from zarr.util import normalize_shape
 
+from .api import DATASET_ID_ATTR_KEY
+
 try:
     from xarray.backends.zarr import (
         DIMENSION_KEY,
@@ -38,6 +40,10 @@ def _extract_dataset_zattrs(dataset: xr.Dataset):
     zattrs = {}
     for k, v in dataset.attrs.items():
         zattrs[k] = encode_zarr_attr_value(v)
+
+    # remove xpublish internal attribute
+    zattrs.pop(DATASET_ID_ATTR_KEY, None)
+
     return zattrs
 
 

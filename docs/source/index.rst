@@ -9,14 +9,15 @@ xpublish
 .. |Binder| image:: https://mybinder.org/badge_logo.svg
  :target: https://mybinder.org/v2/gh/xarray-contrib/xpublish/master
 
-On the server-side, datasets are published using a simple Xarray accessor:
+On the server-side, one or more datasets can be published using the
+:class:`xpublish.Rest` class or the :attr:`xarray.Dataset.rest` accessor, e.g.,
 
 .. code-block:: python
 
     ds.rest.serve(host="0.0.0.0", port=9000)
 
-Datasets can be accessed from various kinds of client applications, e.g., from
-within Python using Zarr and fsspec.
+Those datasets can be accessed from various kinds of client applications, e.g.,
+from within Python using Zarr and fsspec.
 
 .. code-block:: python
 

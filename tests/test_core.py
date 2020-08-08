@@ -77,7 +77,7 @@ def test_get_data_chunk_numpy_edge_chunk():
     np.testing.assert_equal(data, actual[:2, :])
 
 
-def test_init_twice_raises():
+def test_init_accessor_twice_raises():
     ds = xr.Dataset({'foo': (['x'], [1, 2, 3])})
     ds.rest(app_kws={'foo': 'bar'})
     with pytest.raises(RuntimeError) as excinfo:
