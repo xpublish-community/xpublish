@@ -3,6 +3,7 @@ from typing import Dict, List, Tuple
 
 import xarray as xr
 from fastapi import APIRouter
+from fastapi.openapi.utils import get_openapi
 
 DATASET_ID_ATTR_KEY = '_xpublish_id'
 
@@ -72,3 +73,67 @@ def check_route_conflicts(routers):
 
     if len(duplicates):
         raise ValueError(f'Found multiple routes defined for the following paths: {duplicates}')
+
+
+class SingleDatasetOpenAPIOverrider:
+    """Used to override the FastAPI application openapi specs when a single
+    dataset is published.
+
+    In this case, the "dataset_id" path parameter is not present in API
+    endpoints and has to be removed manually.
+
+    See:
+
+    - https://fastapi.tiangolo.com/advanced/extending-openapi/
+    - https://github.com/tiangolo/fastapi/issues/1594
+
+    """
+
+    def __init__(self, app):
+        self._app = app
+
+    def openapi(self, *args):
+
+        if self._app.openapi_schema:
+            return self._app.openapi_schema
+
+        kwargs = dict(
+            title=self._app.title,
+            version=self._app.version,
+            description=self._app.description,
+            routes=self._app.routes,
+        )
+
+        # TODO: remove when required fastapi min version >= 0.56.0
+        openapi_prefix = getattr(self._app, 'openapi_prefix', None)
+        if openapi_prefix is not None:
+            kwargs.update(openapi_prefix=self._app.openapi_prefix)
+
+        # TODO: remove 'if' when required fastapi min version >= 0.57.0
+        tags = getattr(self._app, 'openapi_tags', None)
+        if tags is not None:
+            kwargs['tags'] = tags
+
+        # TODO: remove 'if' when required fastapi min version >= 0.58.0
+        servers = getattr(self._app, 'servers', None)
+        if servers is not None:
+            kwargs['servers'] = servers
+
+        # TODO: remove when required fastapi min version >= 0.59.0
+        if len(args):
+            kwargs.update(openapi_prefix=args[0])
+
+        openapi_schema = get_openapi(**kwargs)
+
+        for path in openapi_schema.get('paths', {}).values():
+            for http_method in path.values():
+                params = http_method.get('parameters')
+
+                if params is not None:
+                    for i, p in enumerate(params):
+                        if p.get('name') == 'dataset_id':
+                            params.pop(i)
+
+        self._app.openapi_schema = openapi_schema
+
+        return self._app.openapi_schema
