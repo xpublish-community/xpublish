@@ -48,7 +48,7 @@ jobs:
           fail_ci_if_error: true
 
   test-upstream:
-    name: ${{ matrix.python-version }}-build
+    name: ${{ matrix.python-version }}-dev-build
     runs-on: ubuntu-latest
     strategy:
       matrix:
