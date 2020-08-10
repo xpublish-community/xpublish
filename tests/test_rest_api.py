@@ -275,6 +275,13 @@ def test_ds_dict_cache(ds_dict):
     assert 'ds2/.zmetadata' in rest.cache
 
 
+def test_single_dataset_openapi_override(airtemp_rest):
+    openapi_schema = airtemp_rest.app.openapi()
+
+    # "dataset_id" parameter should be absent in all paths
+    assert len(openapi_schema['paths']['/']['get']['parameters']) == 0
+
+
 def test_serve(airtemp_rest, mocker):
     kwargs = dict(host='0.0.0.0', log_level='debug', port=9000)
     mocker.patch('uvicorn.run')
