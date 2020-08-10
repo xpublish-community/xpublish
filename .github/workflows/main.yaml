@@ -5,58 +5,15 @@ on:
     branches: "*"
   pull_request:
     branches: master
-
+ schedule:
+    - cron: "0 0 * * *"
 jobs:
-  lint-black:
-    name: black-formatter
+  lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2.3.2
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v2.1.1
-        with:
-          python-version: 3.8
-      - name: Install Black
-        run: |
-          python -m pip install black
-      - name: Black Code Formatter
-        run: |
-          black --check --line-length 100 --skip-string-normalization .
-
-  lint-flake8:
-    name: flake8
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2.3.2
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v2.1.1
-        with:
-          python-version: 3.8
-      - name: Install Flake8
-        run: |
-          python -m pip install flake8
-      - name: Flake8 check
-        run: |
-          flake8 .
-
-  lint-isort:
-    name: isort
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2.3.2
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v2.1.1
-        with:
-          python-version: 3.8
-      - name: Install isort
-        run: |
-          python -m pip install isort
-      - name: isort check
-        run: |
-          isort --check-only .
+      - uses: actions/checkout@v1
+      - uses: actions/setup-python@v2.1.1
+      - uses: pre-commit/action@v2.0.0
 
   test:
     name: ${{ matrix.python-version }}-build
@@ -86,6 +43,41 @@ jobs:
           python -m pytest --cov=./ --cov-report=xml --verbose
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
+        if: ${{ matrix.python-version }} == 3.7
         with:
           file: ./coverage.xml
           fail_ci_if_error: true
+
+  test-upstream:
+    name: ${{ matrix.python-version }}-dev-build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7, 3.8]
+    steps:
+      - uses: actions/checkout@v2.3.2
+      - name: Setup Python
+        uses: actions/setup-python@v2.1.1
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+      - uses: actions/cache@v2.1.0
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/dev-requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      - run: |
+          python -m pip install -r dev-requirements.txt
+          python -m pip install --no-deps --upgrade \
+                git+https://github.com/dask/dask \
+                git+https://github.com/dask/cachey \
+                git+https://github.com/zarr-developers/zarr \
+                git+https://github.com/pydata/xarray \
+                git+https://github.com/tiangolo/fastapi \
+                git+https://github.com/encode/uvicorn
+          python -m pip install --no-deps -e .
+          python -m pip list
+      - name: Running Tests
+        run: |
+          python -m pytest --verbose
