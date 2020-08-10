@@ -5,5 +5,5 @@ numcodecs
 numpy>=1.17
 toolz
 uvicorn
-xarray>=0.15
+xarray>=0.16
 zarr
