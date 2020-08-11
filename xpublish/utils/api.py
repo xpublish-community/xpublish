@@ -92,7 +92,7 @@ class SingleDatasetOpenAPIOverrider:
     def __init__(self, app):
         self._app = app
 
-    def openapi(self, *args):
+    def openapi(self):
 
         if self._app.openapi_schema:
             return self._app.openapi_schema
@@ -102,26 +102,9 @@ class SingleDatasetOpenAPIOverrider:
             version=self._app.version,
             description=self._app.description,
             routes=self._app.routes,
+            tags=self._app.openapi_tags,
+            servers=self._app.servers,
         )
-
-        # TODO: remove when required fastapi min version >= 0.56.0
-        openapi_prefix = getattr(self._app, 'openapi_prefix', None)
-        if openapi_prefix is not None:
-            kwargs.update(openapi_prefix=self._app.openapi_prefix)
-
-        # TODO: remove 'if' when required fastapi min version >= 0.57.0
-        tags = getattr(self._app, 'openapi_tags', None)
-        if tags is not None:
-            kwargs['tags'] = tags
-
-        # TODO: remove 'if' when required fastapi min version >= 0.58.0
-        servers = getattr(self._app, 'servers', None)
-        if servers is not None:
-            kwargs['servers'] = servers
-
-        # TODO: remove when required fastapi min version >= 0.59.0
-        if len(args):
-            kwargs.update(openapi_prefix=args[0])
 
         openapi_schema = get_openapi(**kwargs)
 
