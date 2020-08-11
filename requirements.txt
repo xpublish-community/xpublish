@@ -1,6 +1,6 @@
 cachey
 dask
-fastapi
+fastapi>=0.59
 numcodecs
 numpy>=1.17
 toolz
