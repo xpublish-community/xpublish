@@ -5,7 +5,12 @@ from fastapi import FastAPI, HTTPException
 
 from .dependencies import get_cache, get_dataset, get_dataset_ids
 from .routers import base_router, common_router, dataset_collection_router, zarr_router
-from .utils.api import check_route_conflicts, normalize_app_routers, normalize_datasets
+from .utils.api import (
+    SingleDatasetOpenAPIOverrider,
+    check_route_conflicts,
+    normalize_app_routers,
+    normalize_datasets,
+)
 
 
 def _dataset_from_collection_getter(datasets):
@@ -144,6 +149,10 @@ class Rest:
         self._app.dependency_overrides[get_dataset_ids] = lambda: list(self._datasets)
         self._app.dependency_overrides[get_dataset] = self._get_dataset_func
         self._app.dependency_overrides[get_cache] = lambda: self.cache
+
+        if not self._datasets:
+            # fix openapi spec for single dataset
+            self._app.openapi = SingleDatasetOpenAPIOverrider(self._app).openapi
 
         return self._app
 
