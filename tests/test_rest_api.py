@@ -281,6 +281,10 @@ def test_single_dataset_openapi_override(airtemp_rest):
     # "dataset_id" parameter should be absent in all paths
     assert len(openapi_schema['paths']['/']['get']['parameters']) == 0
 
+    # test cached value
+    openapi_schema = airtemp_rest.app.openapi()
+    assert len(openapi_schema['paths']['/']['get']['parameters']) == 0
+
 
 def test_serve(airtemp_rest, mocker):
     kwargs = dict(host='0.0.0.0', log_level='debug', port=9000)
