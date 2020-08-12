@@ -1,4 +1,4 @@
-xpublish
+Xpublish
 ========
 
 Publish Xarray Datasets via a REST API.
@@ -18,7 +18,7 @@ Publish Xarray Datasets via a REST API.
 .. image:: https://codecov.io/gh/xarray-contrib/xpublish/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/xarray-contrib/xpublish
 
-**Serverside: Publish a xarray dataset through a rest API**
+**Serverside: Publish a Xarray Dataset through a rest API**
 
 .. code-block:: python
 
@@ -42,31 +42,31 @@ Here is an example of directly accessing the data from within Python:
    # open as a zarr group
    zg = zarr.open_consolidated(http_map, mode='r')
 
-   # open as another xarray dataset
+   # or open as another Xarray Dataset
    ds = xr.open_zarr(http_map, consolidated=True)
 
 
 Why?
 ^^^^
 
-xpublish lets you serve/share/publish xarray datasets via a web application.
+Xpublish lets you serve/share/publish Xarray Datasets via a web application.
 
-The data and/or metadata in the xarray datasets can be exposed in various forms
+The data and/or metadata in the Xarray Datasets can be exposed in various forms
 through pluggable REST API endpoints. Efficient, on-demand delivery of large
 datasets may be enabled with Dask on the server-side.
 
-We are exploring applications of xpublish that include:
+We are exploring applications of Xpublish that include:
 
 * publish on-demand or derived data products
-* turning xarray objects into streaming services (e.g. OPENDAP)
+* turning xarray objects into streaming services (e.g. OPeNDAP)
 
 How?
 ^^^^
 
-Under the hood, xpublish is using a web app (FastAPI) that is exposing a
+Under the hood, Xpublish is using a web app (FastAPI) that is exposing a
 REST-like API with builtin and/or user-defined endpoints.
 
-For example, xpublish provides by default a minimal Zarr compatible REST-like
+For example, Xpublish provides by default a minimal Zarr compatible REST-like
 API with the following endpoints:
 
 * ``.zmetadata``: returns Zarr-formatted metadata keys as json strings.

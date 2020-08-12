@@ -9,7 +9,6 @@ from setuptools import find_packages, setup
 with open('requirements.txt') as f:
     install_requires = f.read().strip().split('\n')
 
-
 if exists('README.rst'):
     with open('README.rst') as f:
         long_description = f.read()
@@ -17,7 +16,7 @@ else:
     long_description = ''
 
 CLASSIFIERS = [
-    'Development Status :: 2 - Pre-Alpha',
+    'Development Status :: 3 - Alpha',
     'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent',
     'Intended Audience :: Science/Research',
@@ -30,7 +29,7 @@ CLASSIFIERS = [
 
 setup(
     name='xpublish',
-    description='Xarray accessors for publishing datasets as web applications',
+    description='Publish Xarray Datasets via a REST API.',
     long_description=long_description,
     python_requires='>=3.6',
     maintainer='Joe Hamman',
@@ -43,7 +42,7 @@ setup(
     install_requires=install_requires,
     license='MIT',
     zip_safe=False,
-    keywords=['xarray', 'zarr'],
+    keywords=['xarray', 'zarr', 'api'],
     use_scm_version={'version_scheme': 'post-release', 'local_scheme': 'dirty-tag'},
     setup_requires=['setuptools_scm', 'setuptools>=30.3.0'],
 )

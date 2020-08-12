@@ -64,7 +64,8 @@ FastAPI dependencies
 ====================
 
 The functions below are defined in module ``xpublish.dependencies`` and can
-be used as FastAPI dependencies when creating custom API endpoints.
+be used as `FastAPI dependencies <https://fastapi.tiangolo.com/tutorial/dependencies>`_
+when creating custom API endpoints.
 
 .. currentmodule:: xpublish.dependencies
 

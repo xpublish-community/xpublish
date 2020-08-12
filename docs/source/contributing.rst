@@ -1,6 +1,6 @@
-============================
-Contributing to xpublish
-============================
+========================
+Contributing to Xpublish
+========================
 
 Contributions are highly welcomed and appreciated.  Every little help counts,
 so do not hesitate!
@@ -13,7 +13,7 @@ so do not hesitate!
 Feature requests and feedback
 -----------------------------
 
-Do you like xpublish? Share some love on Twitter or in your blog posts!
+Do you like Xpublish? Share some love on Twitter or in your blog posts!
 
 We'd also like to hear about your propositions and suggestions.  Feel free to
 `submit them as issues <https://github.com/xarray-contrib/xpublish>`_ and:
@@ -26,13 +26,13 @@ We'd also like to hear about your propositions and suggestions.  Feel free to
 Report bugs
 -----------
 
-Report bugs for xpublish in the `issue tracker <https://github.com/xarray-contrib/xpublish>`_.
+Report bugs for Xpublish in the `issue tracker <https://github.com/xarray-contrib/xpublish>`_.
 
 If you are reporting a bug, please include:
 
 * Your operating system name and version.
 * Any details about your local setup that might be helpful in troubleshooting,
-  specifically the Python interpreter version, installed libraries, and xpublish
+  specifically the Python interpreter version, installed libraries, and Xpublish
   version.
 * Detailed steps to reproduce the bug.
 
@@ -95,7 +95,7 @@ Preparing Pull Requests
 
     $ git checkout -b your-bugfix-feature-branch-name master
 
-#. Install `pre-commit <https://pre-commit.com>`_ and its hook on the xpublish repo::
+#. Install `pre-commit <https://pre-commit.com>`_ and its hook on the Xpublish repo::
 
      $ pip install --user pre-commit
      $ pre-commit install

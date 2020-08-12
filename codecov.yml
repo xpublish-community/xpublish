@@ -9,13 +9,15 @@ coverage:
   status:
     project:
       default:
-        threshold: 0.2
-        if_not_found: success
+        threshold: 0%
     patch:
       default:
-        enabled: no
+        threshold: 0%
+        if_no_uploads: error
         if_not_found: success
+        if_ci_failed: error
+        only_pulls: false
     changes:
       default:
-        enabled: no
+        threshold: 0%
         if_not_found: success
