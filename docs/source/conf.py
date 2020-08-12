@@ -66,7 +66,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'xpublish'
+project = 'Xpublish'
 copyright = '2019 onwards, Joe Hamman and its Contributors'
 author = 'Joe Hamman'
 
@@ -218,7 +218,7 @@ latex_elements = {
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
-latex_documents = [('index', 'xpublish.tex', 'xpublish Documentation', author, 'manual')]
+latex_documents = [('index', 'xpublish.tex', 'Xpublish Documentation', author, 'manual')]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
@@ -245,7 +245,7 @@ latex_documents = [('index', 'xpublish.tex', 'xpublish Documentation', author, '
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [('index', 'xpublish', 'xpublish Documentation', [author], 1)]
+man_pages = [('index', 'xpublish', 'Xpublish Documentation', [author], 1)]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
@@ -260,7 +260,7 @@ texinfo_documents = [
     (
         'index',
         'xpublish',
-        'xpublish Documentation',
+        'Xpublish Documentation',
         author,
         'xpublish',
         'One line description of project.',

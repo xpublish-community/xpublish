@@ -2,8 +2,7 @@
 Installation
 ============
 
-
-If you are using `Anaconda`_ or Miniconda, install xpublish with the following commands::
+If you are using `Anaconda`_ or Miniconda, install Xpublish with the following commands::
 
     conda install -c conda-forge xpublish
 

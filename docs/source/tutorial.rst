@@ -5,7 +5,7 @@ Tutorial
 Server-Side
 -----------
 
-To begin, import Xpublish and open an Xarray dataset:
+To begin, import Xpublish and open an Xarray :class:`~xarray.Dataset`:
 
 .. code-block:: python
 
@@ -72,13 +72,15 @@ endpoints to get some information about the published dataset:
 * ``/keys``: returns a list of variable keys, i.e., those returned by :attr:`xarray.Dataset.variables`.
 * ``/info``: returns a JSON dictionary summary of a Dataset variables and attributes, similar to :meth:`xarray.Dataset.info`.
 * ``/dict``: returns a JSON dictionary of the full dataset.
-* ``/versions``: returns JSON dictionary of the versions of python, xarray and related libraries on the server side, similar to :func:`xarray.show_versions`.
+* ``/versions``: returns JSON dictionary of the versions of Python, Xarray and related libraries on the server side, similar to :func:`xarray.show_versions`.
 
-The application also provides data access through a Zarr compatible API with the
+The application also provides data access through a Zarr_ compatible API with the
 following endpoints:
 
 * ``/.zmetadata``: returns a JSON dictionary representing the consolidated Zarr metadata.
 * ``/{var}/{key}``: returns a single chunk of an array.
+
+.. _Zarr: https://zarr.readthedocs.io/en/stable/
 
 Custom API routes
 ~~~~~~~~~~~~~~~~~
@@ -120,7 +122,6 @@ given variable in the published dataset:
 
    myrouter = APIRouter()
 
-
    @myrouter.get("/{var_name}/mean")
    def get_mean(var_name: str, dataset: xr.Dataset = Depends(get_dataset)):
        if var_name not in dataset.variables:
@@ -129,7 +130,6 @@ given variable in the published dataset:
            )
 
        return float(dataset[var_name].mean())
-
 
    ds.rest(routers=[myrouter])
 
@@ -224,7 +224,7 @@ that implements an HTTPStore. In Python, this can be done with ``fsspec``:
     # open as a zarr group
     zg = zarr.open_consolidated(http_map, mode='r')
 
-    # or open as another xarray dataset
+    # or open as another Xarray Dataset
     ds = xr.open_zarr(http_map, consolidated=True)
 
 Xpublish's endpoints can also be queried programmatically. For example:

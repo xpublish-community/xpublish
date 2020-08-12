@@ -1,8 +1,8 @@
 ========
-xpublish
+Xpublish
 ========
 
-**Xpublish lets you easily publish Xarray datasets via a REST API.**
+**Xpublish lets you easily publish Xarray Datasets via a REST API.**
 
 *You can run a short example application in a live session here:* |Binder|
 
@@ -31,31 +31,31 @@ from within Python using Zarr and fsspec.
     # open as a zarr group
     zg = zarr.open_consolidated(http_map, mode='r')
 
-    # or open as another xarray dataset
+    # or open as another Xarray Dataset
     ds = xr.open_zarr(http_map, consolidated=True)
 
 Why?
 ~~~~
 
-xpublish lets you serve, share and publish xarray datasets via a web
+Xpublish lets you serve, share and publish Xarray Datasets via a web
 application.
 
-The data and/or metadata in the xarray datasets can be exposed in various forms
+The data and/or metadata in the Xarray Datasets can be exposed in various forms
 through pluggable REST API endpoints. Efficient, on-demand delivery of large
 datasets may be enabled with Dask on the server-side.
 
-We are exploring applications of xpublish that include:
+We are exploring applications of Xpublish that include:
 
 * publish on-demand or derived data products
-* turning xarray objects into streaming services (e.g. OPENDAP)
+* turning xarray objects into streaming services (e.g. OPeNDAP)
 
 How?
 ~~~~
 
-Under the hood, xpublish is using a web app (FastAPI and Uvicorn) that is
+Under the hood, Xpublish is using a web app (FastAPI and Uvicorn) that is
 exposing a REST-like API with builtin and/or user-defined endpoints.
 
-For example, xpublish provides by default a minimal Zarr compatible REST-like
+For example, Xpublish provides by default a minimal Zarr compatible REST-like
 API with the following endpoints:
 
 * ``/.zmetadata``: returns Zarr-formatted metadata keys as json strings.
@@ -73,12 +73,5 @@ API with the following endpoints:
 Feedback
 --------
 
-If you encounter any errors or problems with **xpublish**, please open an issue
-at the GitHub `main repository <http://github.com/xarray-contrib/xpublish>`_.
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+If you encounter any errors or problems with **Xpublish**, please open an issue
+on `GitHub <http://github.com/xarray-contrib/xpublish>`_.
