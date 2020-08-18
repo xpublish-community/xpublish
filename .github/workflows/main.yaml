@@ -47,7 +47,7 @@ jobs:
         if: ${{ matrix.python-version }} == 3.7
         with:
           file: ./coverage.xml
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
   test-upstream:
     name: ${{ matrix.python-version }}-dev-build
