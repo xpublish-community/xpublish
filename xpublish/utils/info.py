@@ -35,7 +35,7 @@ def get_sys_info():
                     pass
                 commit = commit.strip().strip('"')
 
-    blob.append(('commit', commit))
+        blob.append(('commit', commit))
 
     uname = platform.uname()
     blob.extend(
