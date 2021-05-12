@@ -43,7 +43,7 @@ jobs:
         run: |
           python -m pytest --cov=./ --cov-report=xml --verbose
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v1.5.0
         if: ${{ matrix.python-version }} == 3.7
         with:
           file: ./coverage.xml
