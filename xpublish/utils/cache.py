@@ -2,7 +2,7 @@ import time
 
 
 class CostTimer:
-    """ Context manager to measure wall time """
+    """Context manager to measure wall time"""
 
     def __enter__(self):
         self._start = time.perf_counter()

@@ -26,7 +26,7 @@ logger = logging.getLogger('api')
 
 
 def _extract_dataset_zattrs(dataset: xr.Dataset):
-    """ helper function to create zattrs dictionary from Dataset global attrs """
+    """helper function to create zattrs dictionary from Dataset global attrs"""
     zattrs = {}
     for k, v in dataset.attrs.items():
         zattrs[k] = encode_zarr_attr_value(v)
@@ -38,7 +38,7 @@ def _extract_dataset_zattrs(dataset: xr.Dataset):
 
 
 def _extract_dataarray_zattrs(da):
-    """ helper function to extract zattrs dictionary from DataArray """
+    """helper function to extract zattrs dictionary from DataArray"""
     zattrs = {}
     for k, v in da.attrs.items():
         zattrs[k] = encode_zarr_attr_value(v)
@@ -52,13 +52,13 @@ def _extract_dataarray_zattrs(da):
 
 
 def _extract_fill_value(da, dtype):
-    """ helper function to extract fill value from DataArray. """
+    """helper function to extract fill value from DataArray."""
     fill_value = da.attrs.pop('_FillValue', None)
     return encode_fill_value(fill_value, dtype)
 
 
 def _extract_zarray(da, encoding, dtype):
-    """ helper function to extract zarr array metadata. """
+    """helper function to extract zarr array metadata."""
     meta = {
         'compressor': encoding.get('compressor', da.encoding.get('compressor', default_compressor)),
         'filters': encoding.get('filters', da.encoding.get('filters', None)),
@@ -91,7 +91,7 @@ def create_zvariables(dataset):
     zvariables = {}
 
     for key, da in dataset.variables.items():
-        encoded_da = encode_zarr_variable(da)
+        encoded_da = encode_zarr_variable(da, name=key)
         zvariables[key] = encoded_da
 
     return zvariables
@@ -105,7 +105,7 @@ def create_zmetadata(dataset):
     zmeta['metadata'][attrs_key] = _extract_dataset_zattrs(dataset)
 
     for key, da in dataset.variables.items():
-        encoded_da = encode_zarr_variable(da)
+        encoded_da = encode_zarr_variable(da, name=key)
         encoding = extract_zarr_variable_encoding(da)
         zmeta['metadata'][f'{key}/{attrs_key}'] = _extract_dataarray_zattrs(encoded_da)
         zmeta['metadata'][f'{key}/{array_meta_key}'] = _extract_zarray(
@@ -155,7 +155,7 @@ def encode_chunk(chunk, filters=None, compressor=None):
 
 
 def get_data_chunk(da, chunk_id, out_shape):
-    """ Get one chunk of data from this DataArray (da).
+    """Get one chunk of data from this DataArray (da).
 
     If this is an incomplete edge chunk, pad the returned array to match out_shape.
     """

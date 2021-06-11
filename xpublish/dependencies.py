@@ -72,7 +72,7 @@ def get_zmetadata(
     cache: cachey.Cache = Depends(get_cache),
     zvariables: dict = Depends(get_zvariables),
 ):
-    """FastAPI dependency that returns a consolidated zmetadata dictionary. """
+    """FastAPI dependency that returns a consolidated zmetadata dictionary."""
 
     cache_key = dataset.attrs.get(DATASET_ID_ATTR_KEY, '') + '/' + zarr_metadata_key
     zmeta = cache.get(cache_key)

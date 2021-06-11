@@ -11,12 +11,6 @@ from xpublish.utils.zarr import create_zmetadata, jsonify_zmetadata
 
 
 @pytest.fixture(scope='function')
-def airtemp_ds():
-    ds = xr.tutorial.open_dataset('air_temperature')
-    return ds
-
-
-@pytest.fixture(scope='function')
 def airtemp_rest(airtemp_ds):
     app_kws = dict(
         title='My Dataset',
@@ -240,7 +234,8 @@ def test_rest_accessor(airtemp_ds):
 
 def test_rest_accessor_kws(airtemp_ds):
     airtemp_ds.rest(
-        app_kws=dict(docs_url='/data-docs'), cache_kws=dict(available_bytes=1e9),
+        app_kws=dict(docs_url='/data-docs'),
+        cache_kws=dict(available_bytes=1e9),
     )
 
     assert airtemp_ds.rest.cache.available_bytes == 1e9

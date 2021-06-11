@@ -21,6 +21,7 @@ def test_zmetadata_identical(start, end, freq, nlats, nlons, var_const, calendar
     ds = create_dataset(
         start=start,
         end=end,
+        freq=freq,
         nlats=nlats,
         nlons=nlons,
         var_const=var_const,
@@ -50,6 +51,7 @@ def test_roundtrip(start, end, freq, nlats, nlons, var_const, calendar, use_cfti
     ds = create_dataset(
         start=start,
         end=end,
+        freq=freq,
         nlats=nlats,
         nlons=nlons,
         var_const=var_const,
@@ -145,6 +147,7 @@ def test_roundtrip_custom_chunks(
     ds = create_dataset(
         start=start,
         end=end,
+        freq=freq,
         nlats=nlats,
         nlons=nlons,
         var_const=var_const,

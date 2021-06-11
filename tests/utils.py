@@ -33,7 +33,7 @@ def create_dataset(
     nlons=1,
     var_const=None,
 ):
-    """ Utility function for creating test data """
+    """Utility function for creating test data"""
 
     if use_cftime:
         end = xr.coding.cftime_offsets.to_cftime_datetime(end, calendar=calendar)
