@@ -108,7 +108,7 @@ def create_dataset(
 
     ds.tmin.encoding['_FillValue'] = np.float32(-9999999)
     ds.tmax.encoding['_FillValue'] = np.float32(-9999999)
-    ds.time.encoding['bounds'] = 'time_bounds'
+    ds.time.attrs['bounds'] = 'time_bounds'
     ds.time.encoding['units'] = units
     ds.time.encoding['calendar'] = calendar
 
