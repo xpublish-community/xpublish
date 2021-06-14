@@ -33,7 +33,7 @@ def create_dataset(
     nlons=1,
     var_const=None,
 ):
-    """ Utility function for creating test data """
+    """Utility function for creating test data"""
 
     if use_cftime:
         end = xr.coding.cftime_offsets.to_cftime_datetime(end, calendar=calendar)
@@ -108,7 +108,7 @@ def create_dataset(
 
     ds.tmin.encoding['_FillValue'] = np.float32(-9999999)
     ds.tmax.encoding['_FillValue'] = np.float32(-9999999)
-    ds.time.encoding['bounds'] = 'time_bounds'
+    ds.time.attrs['bounds'] = 'time_bounds'
     ds.time.encoding['units'] = units
     ds.time.encoding['calendar'] = calendar
 
