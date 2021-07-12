@@ -19,3 +19,4 @@ dependencies:
   - bokeh
   - ipytree
   - pip
+  - pooch
