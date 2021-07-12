@@ -12,10 +12,10 @@ Publish Xarray Datasets via a REST API.
    :alt: Documentation Status
 
 .. image:: https://mybinder.org/badge_logo.svg
-   :target: https://mybinder.org/v2/gh/xarray-contrib/xpublish/master
+   :target: https://mybinder.org/v2/gh/xarray-contrib/xpublish/main
    :alt: Binder
 
-.. image:: https://codecov.io/gh/xarray-contrib/xpublish/branch/master/graph/badge.svg
+.. image:: https://codecov.io/gh/xarray-contrib/xpublish/branch/main/graph/badge.svg
    :target: https://codecov.io/gh/xarray-contrib/xpublish
 
 **Serverside: Publish a Xarray Dataset through a rest API**
