@@ -4,7 +4,7 @@ import xarray as xr
 from fastapi import FastAPI, HTTPException
 
 from .dependencies import get_cache, get_dataset, get_dataset_ids
-from .routers import base_router, common_router, dataset_collection_router, zarr_router
+from .routers import base_router, common_router, dataset_collection_router, zarr_router, xyz_router
 from .utils.api import (
     SingleDatasetOpenAPIOverrider,
     check_route_conflicts,
@@ -55,6 +55,7 @@ def _set_app_routers(dataset_routers=None, dataset_route_prefix=''):
         dataset_routers = [
             (base_router, {'tags': ['info']}),
             (zarr_router, {'tags': ['zarr']}),
+            xyz_router
         ]
 
     app_routers += normalize_app_routers(dataset_routers, dataset_route_prefix)
