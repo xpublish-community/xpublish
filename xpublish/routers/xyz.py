@@ -53,8 +53,8 @@ def _get_bounds(zoom, x, y):
 
 def _get_tiles(layer, dataset, zoom, x, y, datashader_settings):
 
-    raster_param = datashader_settings.get("raster")
-    shade_param = datashader_settings.get("shade")
+    raster_param = datashader_settings.get("raster", {})
+    shade_param = datashader_settings.get("shade", {"cmap": ["blue", "red"]})
 
     xleft, xright, ybottom, ytop = _get_bounds(zoom, x, y)
 
