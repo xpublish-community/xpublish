@@ -1,6 +1,6 @@
 import xarray as xr
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Response, HTTPException
 from xpublish.dependencies import get_dataset
 
 from datashader import transfer_functions as tf
@@ -51,14 +51,23 @@ def _get_bounds(zoom, x, y):
     return bbx.left, bbx.right, bbx.bottom, bbx.top
 
 
-def _get_tiles(layer, dataset, zoom, x, y, datashader_settings):
+def _get_tiles(layer, dataset, time, zoom, x, y, datashader_settings):
 
     raster_param = datashader_settings.get("raster", {})
     shade_param = datashader_settings.get("shade", {"cmap": ["blue", "red"]})
 
     xleft, xright, ybottom, ytop = _get_bounds(zoom, x, y)
+    
+    if time:
+        frame = dataset[layer].sel(time=time, x=slice(xleft, xright), y=slice(ytop, ybottom)) # noqa
+    else:
+        if 'time' in dataset[layer].dims:
+            dataset = dataset.isel(time=0)
 
-    frame = dataset[layer].sel(x=slice(xleft, xright), y=slice(ytop, ybottom))
+        frame = dataset[layer].sel(x=slice(xleft, xright), y=slice(ytop, ybottom)) # noqa
+
+    if 0 in frame.sizes.values():
+        raise HTTPException(status_code=406, detail=f"Map outside dataset domain")
 
     csv = ds.Canvas(plot_width=256, plot_height=256)
 
@@ -75,21 +84,27 @@ def _get_tiles(layer, dataset, zoom, x, y, datashader_settings):
     return bytes
 
 
-def _validate_dataset(dataset):
+def validate_dataset(dataset):
     dims = dataset.dims
     if "x" not in dims or "y" not in dims:
         raise DataValidationError(
             f" Expected spatial dimension names 'x' and 'y', found: {dims}"
         )
+    if "time" not in dims and len(dims) >= 3:
+        raise DataValidationError(
+            f" Expected time dimension name 'time', found: {dims}"
+        )
+    if len(dims) > 4:
+        raise DataValidationError(
+            f" Not implemented for dimensions > 4"
+        )
 
-
+@xyz_router.get("/tiles/{layer}/{time}/{z}/{x}/{y}")
 @xyz_router.get("/tiles/{layer}/{z}/{x}/{y}")
-async def tiles(layer, z, x, y, dataset: xr.Dataset = Depends(get_dataset)):
-
-    _validate_dataset(dataset)
+async def tiles(layer, time= None, z= None, x= None, y= None, dataset: xr.Dataset = Depends(get_dataset)):
 
     datashader_settings = getattr(xyz_router, "datashader_settings")
 
-    results = _get_tiles(layer, dataset, z, x, y, datashader_settings)
+    results = _get_tiles(layer, dataset, time, z, x, y, datashader_settings)
 
     return Response(content=results, media_type="image/png")
