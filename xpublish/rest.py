@@ -55,7 +55,6 @@ def _set_app_routers(dataset_routers=None, dataset_route_prefix=''):
         dataset_routers = [
             (base_router, {'tags': ['info']}),
             (zarr_router, {'tags': ['zarr']}),
-            xyz_router
         ]
 
     app_routers += normalize_app_routers(dataset_routers, dataset_route_prefix)
