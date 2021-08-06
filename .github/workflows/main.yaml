@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8]
+        python-version: [3.7, 3.8, 3.9]
     steps:
       - uses: actions/checkout@v2.3.4
       - name: Setup Python
@@ -44,7 +44,7 @@ jobs:
           python -m pytest --cov=./ --cov-report=xml --verbose
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2.0.2
-        if: ${{ matrix.python-version }} == 3.7
+        if: ${{ matrix.python-version }} == 3.8
         with:
           file: ./coverage.xml
           fail_ci_if_error: false
