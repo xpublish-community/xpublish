@@ -1,54 +1,65 @@
+from dataclasses import dataclass
+
 import xarray as xr
-from fastapi import APIRouter, Depends
+from fastapi import Depends
 from starlette.responses import HTMLResponse
 from zarr.storage import attrs_key
 
-from ..dependencies import get_dataset, get_zmetadata, get_zvariables
-
-base_router = APIRouter()
-
-
-@base_router.get('/')
-def html_representation(dataset: xr.Dataset = Depends(get_dataset)):
-    """Returns a HTML representation of the dataset."""
-
-    with xr.set_options(display_style='html'):
-        return HTMLResponse(dataset._repr_html_())
+from ..dependencies import get_zmetadata, get_zvariables
+from .factory import XpublishFactory
 
 
-@base_router.get('/keys')
-def list_keys(dataset: xr.Dataset = Depends(get_dataset)):
-    return list(dataset.variables)
+@dataclass
+class BaseFactory(XpublishFactory):
+    """API entry-points providing basic information about the dataset(s)."""
 
+    def register_routes(self):
+        @self.router.get('/')
+        def html_representation(
+            dataset=Depends(self.dataset_dependency),
+        ):
+            """Returns a HTML representation of the dataset."""
 
-@base_router.get('/dict')
-def to_dict(dataset: xr.Dataset = Depends(get_dataset)):
-    return dataset.to_dict(data=False)
+            with xr.set_options(display_style='html'):
+                return HTMLResponse(dataset._repr_html_())
 
+        @self.router.get('/keys')
+        def list_keys(
+            dataset=Depends(self.dataset_dependency),
+        ):
+            return list(dataset.variables)
 
-@base_router.get('/info')
-def info(
-    dataset: xr.Dataset = Depends(get_dataset),
-    zvariables: dict = Depends(get_zvariables),
-    zmetadata: dict = Depends(get_zmetadata),
-):
-    """Dataset schema (close to the NCO-JSON schema)."""
+        @self.router.get('/dict')
+        def to_dict(
+            dataset=Depends(self.dataset_dependency),
+        ):
+            return dataset.to_dict(data=False)
 
-    info = {}
-    info['dimensions'] = dict(dataset.dims.items())
-    info['variables'] = {}
+        @self.router.get('/info')
+        def info(
+            dataset=Depends(self.dataset_dependency),
+            cache=Depends(self.cache_dependency),
+        ):
+            """Dataset schema (close to the NCO-JSON schema)."""
 
-    meta = zmetadata['metadata']
+            zvariables = get_zvariables(dataset, cache)
+            zmetadata = get_zmetadata(dataset, cache, zvariables)
 
-    for name, var in zvariables.items():
-        attrs = meta[f'{name}/{attrs_key}']
-        attrs.pop('_ARRAY_DIMENSIONS')
-        info['variables'][name] = {
-            'type': var.data.dtype.name,
-            'dimensions': list(var.dims),
-            'attributes': attrs,
-        }
+            info = {}
+            info['dimensions'] = dict(dataset.dims.items())
+            info['variables'] = {}
 
-    info['global_attributes'] = meta[attrs_key]
+            meta = zmetadata['metadata']
 
-    return info
+            for name, var in zvariables.items():
+                attrs = meta[f'{name}/{attrs_key}']
+                attrs.pop('_ARRAY_DIMENSIONS')
+                info['variables'][name] = {
+                    'type': var.data.dtype.name,
+                    'dimensions': list(var.dims),
+                    'attributes': attrs,
+                }
+
+            info['global_attributes'] = meta[attrs_key]
+
+            return info
