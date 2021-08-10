@@ -4,7 +4,7 @@ import xarray as xr
 from fastapi import FastAPI, HTTPException
 
 from .dependencies import get_cache, get_dataset, get_dataset_ids
-from .routers import base_router, common_router, dataset_collection_router, zarr_router, xyz_router
+from .routers import base_router, common_router, dataset_collection_router, zarr_router
 from .utils.api import (
     SingleDatasetOpenAPIOverrider,
     check_route_conflicts,
