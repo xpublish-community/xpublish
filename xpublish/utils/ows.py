@@ -49,9 +49,7 @@ def get_tiles(var, dataset, time, xleft, xright, ybottom, ytop) -> xr.DataArray:
             time=time, x=slice(xleft, xright), y=slice(ytop, ybottom)
         )  # noqa
     else:
-        tile = dataset[var].sel(
-            x=slice(xleft, xright), y=slice(ytop, ybottom)
-        )  # noqa
+        tile = dataset[var].sel(x=slice(xleft, xright), y=slice(ytop, ybottom))  # noqa
 
     if 0 in tile.sizes.values():
         raise HTTPException(status_code=406, detail=f"Map outside dataset domain")

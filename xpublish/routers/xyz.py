@@ -21,17 +21,17 @@ class XYZRouter(APIRouter, LayerOptionsMixin):
 xyz_router = XYZRouter()
 
 
-
 @xyz_router.get("/tiles/{var}/{z}/{x}/{y}")
 @xyz_router.get("/tiles/{var}/{z}/{x}/{y}.{format}")
-async def tiles(var, 
-    z, 
-    x, 
-    y, 
-    format: str = "PNG", 
-    time: Optional[str] = None, 
-    cache: cachey.Cache = Depends(get_cache), 
-    dataset: xr.Dataset = Depends(get_dataset)
+async def tiles(
+    var,
+    z,
+    x,
+    y,
+    format: str = "PNG",
+    time: Optional[str] = None,
+    cache: cachey.Cache = Depends(get_cache),
+    dataset: xr.Dataset = Depends(get_dataset),
 ):
 
     # color mapping settings
@@ -41,8 +41,12 @@ async def tiles(var,
 
     xleft, xright, ybottom, ytop = get_bounds(TMS, z, x, y)
 
-    cache_key = dataset.attrs.get(DATASET_ID_ATTR_KEY, '') + '/' + f'/tiles/{var}/{z}/{x}/{y}.{format}?{time}'
-    response = cache.get(cache_key) 
+    cache_key = (
+        dataset.attrs.get(DATASET_ID_ATTR_KEY, "")
+        + "/"
+        + f"/tiles/{var}/{z}/{x}/{y}.{format}?{time}"
+    )
+    response = cache.get(cache_key)
 
     if response is None:
         with CostTimer() as ct:
@@ -51,7 +55,7 @@ async def tiles(var,
 
             byte_image = get_image_datashader(tile, datashader_settings, format)
 
-            response = Response(content=byte_image, media_type=f'image/{format}')
+            response = Response(content=byte_image, media_type=f"image/{format}")
 
         cache.put(cache_key, response, ct.time, len(byte_image))
 
