@@ -42,17 +42,14 @@ def get_bounds(TMS, zoom, x, y):
     return bbx.left, bbx.right, bbx.bottom, bbx.top
 
 
-def get_tiles(layer, dataset, time, xleft, xright, ybottom, ytop) -> xr.DataArray:
+def get_tiles(var, dataset, time, xleft, xright, ybottom, ytop) -> xr.DataArray:
 
     if time:
-        tile = dataset[layer].sel(
+        tile = dataset[var].sel(
             time=time, x=slice(xleft, xright), y=slice(ytop, ybottom)
         )  # noqa
     else:
-        if "time" in dataset[layer].dims:
-            dataset = dataset.isel(time=0)
-
-        tile = dataset[layer].sel(
+        tile = dataset[var].sel(
             x=slice(xleft, xright), y=slice(ytop, ybottom)
         )  # noqa
 
@@ -62,7 +59,7 @@ def get_tiles(layer, dataset, time, xleft, xright, ybottom, ytop) -> xr.DataArra
     return tile
 
 
-def get_image_datashader(tile, datashader_settings):
+def get_image_datashader(tile, datashader_settings, format):
 
     raster_param = datashader_settings.get("raster", {})
     shade_param = datashader_settings.get("shade", {"cmap": ["blue", "red"]})
@@ -73,9 +70,7 @@ def get_image_datashader(tile, datashader_settings):
 
     img = tf.shade(agg, **shade_param)
 
-    img_io = img.to_bytesio("PNG")
-
-    img_io.seek(0)
+    img_io = img.to_bytesio(format)
 
     return img_io.read()
 
