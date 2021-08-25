@@ -42,14 +42,12 @@ def get_bounds(TMS, zoom, x, y):
     return bbx.left, bbx.right, bbx.bottom, bbx.top
 
 
-def get_tiles(var, dataset, time, xleft, xright, ybottom, ytop) -> xr.DataArray:
+def get_tiles(var, dataset, query) -> xr.DataArray:
 
-    if time:
-        tile = dataset[var].sel(
-            time=time, x=slice(xleft, xright), y=slice(ytop, ybottom)
-        )  # noqa
+    if query.get("time"):
+        tile = dataset[var].sel(query)  # noqa
     else:
-        tile = dataset[var].sel(x=slice(xleft, xright), y=slice(ytop, ybottom))  # noqa
+        tile = dataset[var].sel(query)  # noqa
 
     if 0 in tile.sizes.values():
         raise HTTPException(status_code=406, detail=f"Map outside dataset domain")
