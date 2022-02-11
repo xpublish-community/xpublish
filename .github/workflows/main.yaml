@@ -4,9 +4,7 @@ on:
   push:
     branches: "*"
   pull_request:
-    branches: master
-  schedule:
-    - cron: "0 0 * * *"
+    branches: main
 
 jobs:
   lint:
@@ -21,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8]
+        python-version: [3.8, 3.9, 3.10]
     steps:
       - uses: actions/checkout@v2.4.0
       - name: Setup Python
@@ -44,7 +42,7 @@ jobs:
           python -m pytest --cov=./ --cov-report=xml --verbose
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2.1.0
-        if: ${{ matrix.python-version }} == 3.7
+        if: ${{ matrix.python-version }} == 3.9
         with:
           file: ./coverage.xml
           fail_ci_if_error: false
@@ -54,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7, 3.8]
+        python-version: [3.9, 3.10]
     steps:
       - uses: actions/checkout@v2.4.0
       - name: Setup Python

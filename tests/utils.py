@@ -99,9 +99,13 @@ def create_dataset(
 
     ds = xr.Dataset(
         {
-            'tmin': (('time', 'lat', 'lon'), tmin_values.astype('float32')),
-            'tmax': (('time', 'lat', 'lon'), tmax_values.astype('float32')),
-            'time_bounds': (('time', 'd2'), time_bounds),
+            'tmin': xr.DataArray(
+                tmin_values.astype('float32'), dims=('time', 'lat', 'lon'), name='tmin'
+            ),
+            'tmax': xr.DataArray(
+                tmax_values.astype('float32'), dims=('time', 'lat', 'lon'), name='tmax'
+            ),
+            'time_bounds': time_bounds,
         },
         {'time': times, 'lat': lats, 'lon': lons},
     )
