@@ -4,6 +4,7 @@ import logging
 import cachey
 import xarray as xr
 from fastapi import APIRouter, Depends, HTTPException
+from fps.hooks import register_router
 from starlette.responses import Response
 from zarr.storage import array_meta_key, attrs_key, group_meta_key
 
@@ -17,7 +18,7 @@ logger = logging.getLogger('api')
 zarr_router = APIRouter()
 
 
-@zarr_router.get(f'/{zarr_metadata_key}')
+@zarr_router.get(f'/xpublish/{zarr_metadata_key}')
 def get_zmetadata(
     dataset: xr.Dataset = Depends(get_dataset), zmetadata: dict = Depends(_get_zmetadata)
 ):
@@ -26,19 +27,19 @@ def get_zmetadata(
     return Response(json.dumps(zjson).encode('ascii'), media_type='application/json')
 
 
-@zarr_router.get(f'/{group_meta_key}')
+@zarr_router.get(f'/xpublish/{group_meta_key}')
 def get_zgroup(zmetadata: dict = Depends(_get_zmetadata)):
 
     return zmetadata['metadata'][group_meta_key]
 
 
-@zarr_router.get(f'/{attrs_key}')
+@zarr_router.get(f'/xpublish/{attrs_key}')
 def get_zattrs(zmetadata: dict = Depends(_get_zmetadata)):
 
     return zmetadata['metadata'][attrs_key]
 
 
-@zarr_router.get('/{var}/{chunk}')
+@zarr_router.get('/xpublish/{var}/{chunk}')
 def get_variable_chunk(
     var: str,
     chunk: str,
@@ -84,3 +85,6 @@ def get_variable_chunk(
             cache.put(cache_key, response, ct.time, len(echunk))
 
         return response
+
+
+r = register_router(zarr_router)

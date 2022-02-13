@@ -41,6 +41,13 @@ setup(
     package_dir={'xpublish': 'xpublish'},
     include_package_data=True,
     install_requires=install_requires,
+    entry_points={
+        'fps_router': [
+            'xpublish-base = xpublish.routers.base',
+            'xpublish-common = xpublish.routers.common',
+            'xpublish-zarr = xpublish.routers.zarr',
+        ]
+    },
     license='MIT',
     zip_safe=False,
     keywords=['xarray', 'zarr', 'api'],
