@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.0.1
+    rev: v4.1.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -9,27 +9,27 @@ repos:
       - id: check-yaml
       - id: double-quote-string-fixer
 
-  - repo: https://github.com/ambv/black
-    rev: 21.6b0
+  - repo: https://github.com/psf/black
+    rev: 22.1.0
     hooks:
       - id: black
         args: ["--line-length", "100", "--skip-string-normalization"]
 
-  - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.9.2
+  - repo: https://github.com/PyCQA/flake8
+    rev: 4.0.1
     hooks:
       - id: flake8
   - repo: https://github.com/asottile/seed-isort-config
     rev: v2.2.0
     hooks:
       - id: seed-isort-config
-  - repo: https://github.com/pre-commit/mirrors-isort
-    rev: v5.8.0
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.10.1
     hooks:
       - id: isort
 
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v2.2.0
+    rev: v2.5.1
     hooks:
       - id: prettier
         language_version: system
