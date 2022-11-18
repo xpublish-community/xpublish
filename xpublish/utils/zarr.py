@@ -1,7 +1,7 @@
 import copy
 import logging
 
-import dask
+import dask.array
 import numpy as np
 import xarray as xr
 from numcodecs.compat import ensure_ndarray
