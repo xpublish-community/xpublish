@@ -1,4 +1,5 @@
 fsspec
+httpx
 netcdf4
 pooch
 pytest
