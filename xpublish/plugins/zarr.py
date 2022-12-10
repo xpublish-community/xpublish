@@ -1,6 +1,7 @@
 import json
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import List
 
 import cachey
 import xarray as xr
@@ -12,17 +13,20 @@ from ..dependencies import get_cache, get_dataset, get_zmetadata, get_zvariables
 from ..utils.api import DATASET_ID_ATTR_KEY
 from ..utils.cache import CostTimer
 from ..utils.zarr import encode_chunk, get_data_chunk, jsonify_zmetadata, zarr_metadata_key
-from .factory import XpublishFactory
+from .factory import XpublishPluginFactory
 
 logger = logging.getLogger('zarr_api')
 
 
 @dataclass
-class ZarrFactory(XpublishFactory):
+class ZarrPlugin(XpublishPluginFactory):
     """Provides access to data and metadata through as Zarr compatible API."""
 
+    dataset_router_prefix: str = '/zarr'
+    dataset_router_tags: List[str] = field(default_factory=lambda: ['zarr'])
+
     def register_routes(self):
-        @self.router.get(f'/{zarr_metadata_key}')
+        @self.dataset_router.get(f'/{zarr_metadata_key}')
         def get_zarr_metadata(
             dataset=Depends(self.dataset_dependency),
             cache=Depends(self.cache_dependency),
@@ -34,7 +38,7 @@ class ZarrFactory(XpublishFactory):
 
             return Response(json.dumps(zjson).encode('ascii'), media_type='application/json')
 
-        @self.router.get(f'/{group_meta_key}')
+        @self.dataset_router.get(f'/{group_meta_key}')
         def get_zarr_group(
             dataset=Depends(self.dataset_dependency),
             cache=Depends(self.cache_dependency),
@@ -44,7 +48,7 @@ class ZarrFactory(XpublishFactory):
 
             return zmetadata['metadata'][group_meta_key]
 
-        @self.router.get(f'/{attrs_key}')
+        @self.dataset_router.get(f'/{attrs_key}')
         def get_zarr_attrs(
             dataset=Depends(self.dataset_dependency),
             cache=Depends(self.cache_dependency),
@@ -54,7 +58,7 @@ class ZarrFactory(XpublishFactory):
 
             return zmetadata['metadata'][attrs_key]
 
-        @self.router.get('/{var}/{chunk}')
+        @self.dataset_router.get('/{var}/{chunk}')
         def get_variable_chunk(
             var: str,
             chunk: str,

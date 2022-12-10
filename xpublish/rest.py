@@ -1,10 +1,13 @@
+from typing import Dict, List, Optional
+
 import cachey
 import uvicorn
 import xarray as xr
 from fastapi import FastAPI, HTTPException
 
 from .dependencies import get_cache, get_dataset, get_dataset_ids
-from .routers import BaseFactory, ZarrFactory, common_router, dataset_collection_router
+from .plugins import XpublishPluginFactory, configure_plugins, find_plugins
+from .routers import dataset_collection_router
 from .utils.api import (
     SingleDatasetOpenAPIOverrider,
     check_route_conflicts,
@@ -44,18 +47,8 @@ def _set_app_routers(dataset_routers=None, dataset_route_prefix=''):
 
     app_routers = []
 
-    # top-level api endpoints
-    app_routers.append((common_router, {}))
-
     if dataset_route_prefix:
         app_routers.append((dataset_collection_router, {'tags': ['info']}))
-
-    # dataset-specifc api endpoints
-    if dataset_routers is None:
-        dataset_routers = [
-            (BaseFactory().router, {'tags': ['info']}),
-            (ZarrFactory().router, {'tags': ['zarr']}),
-        ]
 
     app_routers += normalize_app_routers(dataset_routers, dataset_route_prefix)
 
@@ -79,8 +72,8 @@ class Rest:
         are converted to strings. See also the notes below.
     routers : list, optional
         A list of dataset-specific :class:`fastapi.APIRouter` instances to
-        include in the fastAPI application. If None, the default routers will be
-        included.
+        include in the fastAPI application. These routers are in addition
+        to any loaded via plugins.
         The items of the list may also be tuples with the following format:
         ``[(router1, {'prefix': '/foo', 'tags': ['foo', 'bar']})]``, where
         the 1st tuple element is a :class:`fastapi.APIRouter` instance and the
@@ -94,6 +87,20 @@ class Rest:
     app_kws : dict, optional
         Dictionary of keyword arguments to be passed to
         :meth:`fastapi.FastAPI.__init__()`.
+    plugins : dict, optional
+        Optional dictionary of loaded, configured plugins.
+        Overrides automatic loading of plugins.
+    extend_plugins: dict, optional
+        Optional dictionary of loaded, configured plugins.
+        Instead of skipping the automatic loading of plugins,
+        automatic loading still occurs, then plugins can be
+        manually configured or added.
+        Useful for plugins without entry points.
+    exclude_plugin_names: list, optional
+        Skips automatically loading matching plugins
+    plugin_configs : dict, optional
+        Plugin kwargs can be set by passing in a dictionary
+        of plugin names to a dict of kwargs.
 
     Notes
     -----
@@ -106,8 +113,86 @@ class Rest:
 
     """
 
-    def __init__(self, datasets, routers=None, cache_kws=None, app_kws=None):
+    def __init__(
+        self,
+        datasets,
+        routers=None,
+        cache_kws=None,
+        app_kws=None,
+        plugins: Optional[Dict[str, XpublishPluginFactory]] = None,
+        extend_plugins: Optional[Dict[str, XpublishPluginFactory]] = None,
+        exclude_plugin_names: Optional[List[str]] = None,
+        plugin_configs: Optional[Dict] = None,
+    ):
 
+        dataset_route_prefix = self.init_datasets(datasets)
+
+        if not plugins:
+            self.load_plugins(exclude_plugins=exclude_plugin_names, plugin_configs=plugin_configs)
+        else:
+            self._plugins = plugins
+
+        self._plugins.update(extend_plugins)
+
+        plugin_app_routers, plugin_dataset_routers = self.plugin_routers()
+
+        self._app_routers = plugin_app_routers
+        self._app_routers.extend(
+            _set_app_routers(plugin_dataset_routers + routers, dataset_route_prefix)
+        )
+
+        self.init_app_kwargs(app_kws)
+        self.init_cache_kwargs(cache_kws)
+
+    def load_plugins(
+        self, exclude_plugins: Optional[List[str]] = None, plugin_configs: Optional[Dict] = None
+    ):
+        """Initialize and load plugins from entry_points"""
+        found_plugins = find_plugins(exclude_plugins=exclude_plugins)
+        self._plugins = configure_plugins(found_plugins, plugin_configs=plugin_configs)
+
+    def plugin_routers(self):
+        """Load the app and dataset routers for plugins"""
+        app_routers = []
+        dataset_routers = []
+
+        for plugin in self._plugins.values():
+            if plugin.app_router.routes:
+                router_kwargs = {}
+                if plugin.app_router_prefix:
+                    router_kwargs['prefix'] = plugin.app_router_prefix
+                if plugin.app_router_tags:
+                    router_kwargs['tags'] = plugin.app_router_tags
+
+                app_routers.append((plugin.app_router, router_kwargs))
+
+            if plugin.dataset_router.routes:
+                router_kwargs = {}
+                if plugin.dataset_router_prefix:
+                    router_kwargs['prefix'] = plugin.dataset_router_prefix
+                if plugin.dataset_router_tags:
+                    router_kwargs['tags'] = plugin.dataset_router_tags
+
+                dataset_routers.append((plugin.dataset_router, router_kwargs))
+
+        return app_routers, dataset_routers
+
+    def init_cache_kwargs(self, cache_kws):
+        """Set up cache kwargs"""
+        self._cache = None
+        self._cache_kws = {'available_bytes': 1e6}
+        if cache_kws is not None:
+            self._cache_kws.update(cache_kws)
+
+    def init_app_kwargs(self, app_kws):
+        """Set up FastAPI application kwargs"""
+        self._app = None
+        self._app_kws = {}
+        if app_kws is not None:
+            self._app_kws.update(app_kws)
+
+    def init_datasets(self, datasets):
+        """Initialize datasets and getter functions"""
         self._datasets = normalize_datasets(datasets)
 
         if not self._datasets:
@@ -117,18 +202,7 @@ class Rest:
         else:
             self._get_dataset_func = _dataset_from_collection_getter(self._datasets)
             dataset_route_prefix = '/datasets/{dataset_id}'
-
-        self._app_routers = _set_app_routers(routers, dataset_route_prefix)
-
-        self._app = None
-        self._app_kws = {}
-        if app_kws is not None:
-            self._app_kws.update(app_kws)
-
-        self._cache = None
-        self._cache_kws = {'available_bytes': 1e6}
-        if cache_kws is not None:
-            self._cache_kws.update(cache_kws)
+        return dataset_route_prefix
 
     @property
     def cache(self) -> cachey.Cache:

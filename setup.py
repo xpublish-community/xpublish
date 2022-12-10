@@ -45,4 +45,11 @@ setup(
     keywords=['xarray', 'zarr', 'api'],
     use_scm_version={'version_scheme': 'post-release', 'local_scheme': 'dirty-tag'},
     setup_requires=['setuptools_scm', 'setuptools>=30.3.0'],
+    entry_points={
+        'xpublish.plugin': [
+            'base = xpublish.plugins.base:BasePlugin',
+            'zarr = xpublish.plugins.zarr:ZarrPlugin',
+            'module_version = xpublish.plugins.module_version:ModuleVersionPlugin'
+        ]
+    },
 )
