@@ -11,9 +11,9 @@ from ..dependencies import get_cache, get_dataset, get_dataset_ids
 @dataclass
 class XpublishPluginFactory:
     """Xpublish plugin factory.
-    
+
     Xpublish plugins are designed to be automatically loaded via the entry point
-    group `xpublish.plugin` from any installed package. 
+    group `xpublish.plugin` from any installed package.
 
     Plugins can define both app (top-level) and dataset based routes, and
     default prefixes and tags for both.

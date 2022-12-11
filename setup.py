@@ -50,7 +50,7 @@ setup(
         'xpublish.plugin': [
             'base = xpublish.plugins.base:BasePlugin',
             'zarr = xpublish.plugins.zarr:ZarrPlugin',
-            'module_version = xpublish.plugins.module_version:ModuleVersionPlugin'
+            'module_version = xpublish.plugins.module_version:ModuleVersionPlugin',
         ]
     },
 )

@@ -1,9 +1,9 @@
 """
 Version information router
 """
-from dataclasses import dataclass
 import importlib
 import sys
+from dataclasses import dataclass
 from typing import List
 
 from ..utils.info import get_sys_info, netcdf_and_hdf5_versions
@@ -15,7 +15,7 @@ class ModuleVersionPlugin(XpublishPluginFactory):
     """Module and system version information"""
 
     def register_routes(self):
-        @self.app_router.get("/versions")
+        @self.app_router.get('/versions')
         def get_versions():
             versions = dict(get_sys_info() + netcdf_and_hdf5_versions())
             modules = [
