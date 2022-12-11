@@ -5,11 +5,12 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from starlette.testclient import TestClient
+from zarr.storage import BaseStore
 
 rs = np.random.RandomState(np.random.MT19937(np.random.SeedSequence(123456789)))
 
 
-class TestMapper(TestClient):
+class TestMapper(TestClient, BaseStore):
     """
     A simple subclass to support getitem syntax on Starlette TestClient Objects
     """
@@ -19,6 +20,18 @@ class TestMapper(TestClient):
         if response.status_code != 200:
             raise KeyError('{} not found. status_code = {}'.format(key, response.status_code))
         return response.content
+
+    def __delitem__(self, key):
+        return NotImplemented
+
+    def __iter__(self):
+        return NotImplemented
+
+    def __len__(self):
+        return NotImplemented
+
+    def __setitem__(self, key, value):
+        return NotImplemented
 
 
 def create_dataset(
@@ -99,9 +112,13 @@ def create_dataset(
 
     ds = xr.Dataset(
         {
-            'tmin': (('time', 'lat', 'lon'), tmin_values.astype('float32')),
-            'tmax': (('time', 'lat', 'lon'), tmax_values.astype('float32')),
-            'time_bounds': (('time', 'd2'), time_bounds),
+            'tmin': xr.DataArray(
+                tmin_values.astype('float32'), dims=('time', 'lat', 'lon'), name='tmin'
+            ),
+            'tmax': xr.DataArray(
+                tmax_values.astype('float32'), dims=('time', 'lat', 'lon'), name='tmax'
+            ),
+            'time_bounds': time_bounds,
         },
         {'time': times, 'lat': lats, 'lon': lons},
     )

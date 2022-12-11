@@ -16,14 +16,15 @@ else:
     long_description = ''
 
 CLASSIFIERS = [
-    'Development Status :: 3 - Alpha',
+    'Development Status :: 4 - Beta',
     'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent',
     'Intended Audience :: Science/Research',
     'Programming Language :: Python',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.6',
-    'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
     'Topic :: Scientific/Engineering',
 ]
 
@@ -31,7 +32,7 @@ setup(
     name='xpublish',
     description='Publish Xarray Datasets via a REST API.',
     long_description=long_description,
-    python_requires='>=3.6',
+    python_requires='>=3.8',
     maintainer='Joe Hamman',
     maintainer_email='jhamman@ucar.edu',
     classifiers=CLASSIFIERS,
@@ -44,7 +45,7 @@ setup(
     zip_safe=False,
     keywords=['xarray', 'zarr', 'api'],
     use_scm_version={'version_scheme': 'post-release', 'local_scheme': 'dirty-tag'},
-    setup_requires=['setuptools_scm', 'setuptools>=30.3.0'],
+    setup_requires=['setuptools_scm>=3.4', 'setuptools>=42'],
     entry_points={
         'xpublish.plugin': [
             'base = xpublish.plugins.base:BasePlugin',
