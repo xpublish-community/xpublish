@@ -14,7 +14,7 @@ from .factory import XpublishPluginFactory
 class BasePlugin(XpublishPluginFactory):
     """API entry-points providing basic information about the dataset(s)."""
 
-    dataset_router_prefix: str = '/info'
+    dataset_router_prefix: str = ''
     dataset_router_tags: List[str] = field(default_factory=lambda: ['info'])
 
     def register_routes(self):

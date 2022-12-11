@@ -22,7 +22,7 @@ logger = logging.getLogger('zarr_api')
 class ZarrPlugin(XpublishPluginFactory):
     """Provides access to data and metadata through as Zarr compatible API."""
 
-    dataset_router_prefix: str = '/zarr'
+    dataset_router_prefix: str = ''
     dataset_router_tags: List[str] = field(default_factory=lambda: ['zarr'])
 
     def register_routes(self):

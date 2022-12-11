@@ -90,6 +90,7 @@ class Rest:
     plugins : dict, optional
         Optional dictionary of loaded, configured plugins.
         Overrides automatic loading of plugins.
+        If no plugins are desired, set to an empty dict.
     extend_plugins: dict, optional
         Optional dictionary of loaded, configured plugins.
         Instead of skipping the automatic loading of plugins,
@@ -127,18 +128,18 @@ class Rest:
 
         dataset_route_prefix = self.init_datasets(datasets)
 
-        if not plugins:
-            self.load_plugins(exclude_plugins=exclude_plugin_names, plugin_configs=plugin_configs)
-        else:
+        if plugins is not None:
             self._plugins = plugins
+        else:
+            self.load_plugins(exclude_plugins=exclude_plugin_names, plugin_configs=plugin_configs)
 
-        self._plugins.update(extend_plugins)
+        self._plugins.update(extend_plugins or {})
 
         plugin_app_routers, plugin_dataset_routers = self.plugin_routers()
 
         self._app_routers = plugin_app_routers
         self._app_routers.extend(
-            _set_app_routers(plugin_dataset_routers + routers, dataset_route_prefix)
+            _set_app_routers(plugin_dataset_routers + (routers or []), dataset_route_prefix)
         )
 
         self.init_app_kwargs(app_kws)

@@ -102,7 +102,7 @@ def test_custom_app_routers(airtemp_ds, dims_router, router_kws, path):
     else:
         routers = [(dims_router, router_kws)]
 
-    rest = Rest(airtemp_ds, routers=routers)
+    rest = Rest(airtemp_ds, routers=routers, plugins={})
     client = TestClient(rest.app)
 
     response = client.get(path)
