@@ -4,7 +4,6 @@ Version information router
 import importlib
 import sys
 from dataclasses import dataclass
-from typing import List
 
 from ..utils.info import get_sys_info, netcdf_and_hdf5_versions
 from .factory import XpublishPluginFactory
