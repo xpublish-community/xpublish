@@ -6,6 +6,7 @@ import importlib
 import sys
 
 from fastapi import APIRouter, Depends
+from fps.hooks import register_router
 
 from ..dependencies import get_dataset_ids
 from ..utils.info import get_sys_info, netcdf_and_hdf5_versions
@@ -13,7 +14,7 @@ from ..utils.info import get_sys_info, netcdf_and_hdf5_versions
 common_router = APIRouter()
 
 
-@common_router.get('/versions')
+@common_router.get('/xpublish/versions')
 def get_versions():
     versions = dict(get_sys_info() + netcdf_and_hdf5_versions())
     modules = [
@@ -46,3 +47,6 @@ dataset_collection_router = APIRouter()
 @dataset_collection_router.get('/datasets')
 def get_dataset_collection_keys(ids: list = Depends(get_dataset_ids)):
     return ids
+
+
+r = register_router(common_router)

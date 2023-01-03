@@ -1,5 +1,6 @@
 import xarray as xr
 from fastapi import APIRouter, Depends
+from fps.hooks import register_router
 from starlette.responses import HTMLResponse
 from zarr.storage import attrs_key
 
@@ -8,7 +9,7 @@ from ..dependencies import get_dataset, get_zmetadata, get_zvariables
 base_router = APIRouter()
 
 
-@base_router.get('/')
+@base_router.get('/xpublish')
 def html_representation(dataset: xr.Dataset = Depends(get_dataset)):
     """Returns a HTML representation of the dataset."""
 
@@ -16,17 +17,17 @@ def html_representation(dataset: xr.Dataset = Depends(get_dataset)):
         return HTMLResponse(dataset._repr_html_())
 
 
-@base_router.get('/keys')
+@base_router.get('/xpublish/keys')
 def list_keys(dataset: xr.Dataset = Depends(get_dataset)):
     return list(dataset.variables)
 
 
-@base_router.get('/dict')
+@base_router.get('/xpublish/dict')
 def to_dict(dataset: xr.Dataset = Depends(get_dataset)):
     return dataset.to_dict(data=False)
 
 
-@base_router.get('/info')
+@base_router.get('/xpublish/info')
 def info(
     dataset: xr.Dataset = Depends(get_dataset),
     zvariables: dict = Depends(get_zvariables),
@@ -52,3 +53,6 @@ def info(
     info['global_attributes'] = meta[attrs_key]
 
     return info
+
+
+r = register_router(base_router)

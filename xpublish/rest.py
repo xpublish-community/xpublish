@@ -185,6 +185,14 @@ class Rest:
         """
         uvicorn.run(self.app, host=host, port=port, log_level=log_level, **kwargs)
 
+    def serve_in_jupyter(self):
+        """Serve via Jupyverse."""
+        from fps.main import app as fps_app
+
+        fps_app.dependency_overrides[get_dataset_ids] = lambda: list(self._datasets)
+        fps_app.dependency_overrides[get_dataset] = self._get_dataset_func
+        fps_app.dependency_overrides[get_cache] = lambda: self.cache
+
 
 @xr.register_dataset_accessor('rest')
 class RestAccessor:

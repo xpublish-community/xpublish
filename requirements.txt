@@ -7,3 +7,4 @@ toolz
 uvicorn
 xarray>=0.16
 zarr
+fps
