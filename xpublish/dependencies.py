@@ -1,7 +1,7 @@
 """
 Helper functions to use a FastAPI dependencies.
 """
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Dict, List
 
 import cachey
 import xarray as xr
@@ -91,7 +91,7 @@ def get_zmetadata(
     return zmeta
 
 
-def get_plugins() -> dict[str, 'Plugin']:
+def get_plugins() -> Dict[str, 'Plugin']:
     """FastAPI dependency that returns the a dictionary of loaded plugins"""
 
     return []
