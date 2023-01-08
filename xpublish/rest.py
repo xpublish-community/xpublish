@@ -197,7 +197,7 @@ class Rest:
         return self._cache
 
     @property
-    def plugins(self) -> dict[str, Plugin]:
+    def plugins(self) -> Dict[str, Plugin]:
         """Returns the loaded plugins"""
         return self._plugins
 

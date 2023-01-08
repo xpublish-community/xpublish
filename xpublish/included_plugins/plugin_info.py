@@ -23,7 +23,7 @@ class PluginInfoAppRouter(Router):
     def register(self):
         @self._router.get('/plugins')
         def get_plugins(
-            plugins: dict[str, Plugin] = Depends(self.deps.plugins)
+            plugins: Dict[str, Plugin] = Depends(self.deps.plugins)
         ) -> Dict[str, PluginInfo]:
             plugin_info = {}
 

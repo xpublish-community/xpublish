@@ -109,7 +109,7 @@ class Router(PluginType):
     """
 
     prefix: str = Field(description='Shared route prefix')
-    tags: list[str] = Field(default_factory=list, description='Tags in OpenAPI documentation')
+    tags: List[str] = Field(default_factory=list, description='Tags in OpenAPI documentation')
 
     _router: APIRouter = PrivateAttr(default_factory=APIRouter)
 
