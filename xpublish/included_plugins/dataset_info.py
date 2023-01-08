@@ -1,48 +1,44 @@
-from dataclasses import dataclass, field
-from typing import List
-
 import xarray as xr
 from fastapi import Depends
+from pydantic import Field
 from starlette.responses import HTMLResponse
 from zarr.storage import attrs_key
 
 from ..dependencies import get_zmetadata, get_zvariables
-from .factory import XpublishPluginFactory
+from ..plugin import Plugin, Router
 
 
-@dataclass
-class BasePlugin(XpublishPluginFactory):
+class DatasetInfoRouter(Router):
     """API entry-points providing basic information about the dataset(s)."""
 
-    dataset_router_prefix: str = ''
-    dataset_router_tags: List[str] = field(default_factory=lambda: ['info'])
+    prefix = ''
 
-    def register_routes(self):
-        @self.dataset_router.get('/')
+    def register(self):
+        @self._router.get('/')
         def html_representation(
-            dataset=Depends(self.dataset_dependency),
+            dataset=Depends(self.deps.dataset),
         ):
             """Returns a HTML representation of the dataset."""
 
             with xr.set_options(display_style='html'):
                 return HTMLResponse(dataset._repr_html_())
 
-        @self.dataset_router.get('/keys')
+        @self._router.get('/keys')
         def list_keys(
-            dataset=Depends(self.dataset_dependency),
+            dataset=Depends(self.deps.dataset),
         ):
             return list(dataset.variables)
 
-        @self.dataset_router.get('/dict')
+        @self._router.get('/dict')
         def to_dict(
-            dataset=Depends(self.dataset_dependency),
+            dataset=Depends(self.deps.dataset),
         ):
             return dataset.to_dict(data=False)
 
-        @self.dataset_router.get('/info')
+        @self._router.get('/info')
         def info(
-            dataset=Depends(self.dataset_dependency),
-            cache=Depends(self.cache_dependency),
+            dataset=Depends(self.deps.dataset),
+            cache=Depends(self.deps.cache),
         ):
             """Dataset schema (close to the NCO-JSON schema)."""
 
@@ -67,3 +63,9 @@ class BasePlugin(XpublishPluginFactory):
             info['global_attributes'] = meta[attrs_key]
 
             return info
+
+
+class DatasetInfoPlugin(Plugin):
+    name = 'dataset_info'
+
+    dataset_router: DatasetInfoRouter = Field(default_factory=DatasetInfoRouter)

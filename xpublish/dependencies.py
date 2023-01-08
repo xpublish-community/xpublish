@@ -1,7 +1,7 @@
 """
 Helper functions to use a FastAPI dependencies.
 """
-from typing import List
+from typing import TYPE_CHECKING, List
 
 import cachey
 import xarray as xr
@@ -9,6 +9,9 @@ from fastapi import Depends
 
 from .utils.api import DATASET_ID_ATTR_KEY
 from .utils.zarr import create_zmetadata, create_zvariables, zarr_metadata_key
+
+if TYPE_CHECKING:
+    from .plugin import Plugin
 
 
 def get_dataset_ids() -> List[str]:
@@ -86,3 +89,9 @@ def get_zmetadata(
         cache.put(cache_key, zmeta, 99999)
 
     return zmeta
+
+
+def get_plugins() -> dict[str, 'Plugin']:
+    """FastAPI dependency that returns the a dictionary of loaded plugins"""
+
+    return []

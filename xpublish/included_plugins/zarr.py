@@ -1,35 +1,34 @@
 import json
 import logging
-from dataclasses import dataclass, field
 from typing import List
 
 import cachey
 import xarray as xr
 from fastapi import Depends, HTTPException
+from pydantic import Field
 from starlette.responses import Response
 from zarr.storage import array_meta_key, attrs_key, group_meta_key
 
 from ..dependencies import get_cache, get_dataset, get_zmetadata, get_zvariables
+from ..plugin import Plugin, Router
 from ..utils.api import DATASET_ID_ATTR_KEY
 from ..utils.cache import CostTimer
 from ..utils.zarr import encode_chunk, get_data_chunk, jsonify_zmetadata, zarr_metadata_key
-from .factory import XpublishPluginFactory
 
 logger = logging.getLogger('zarr_api')
 
 
-@dataclass
-class ZarrPlugin(XpublishPluginFactory):
+class ZarrDatasetRouter(Router):
     """Provides access to data and metadata through as Zarr compatible API."""
 
-    dataset_router_prefix: str = ''
-    dataset_router_tags: List[str] = field(default_factory=lambda: ['zarr'])
+    prefix: str = ''
+    tags: List[str] = Field(default_factory=lambda: ['zarr'])
 
-    def register_routes(self):
-        @self.dataset_router.get(f'/{zarr_metadata_key}')
+    def register(self):
+        @self._router.get(f'/{zarr_metadata_key}')
         def get_zarr_metadata(
-            dataset=Depends(self.dataset_dependency),
-            cache=Depends(self.cache_dependency),
+            dataset=Depends(self.deps.dataset),
+            cache=Depends(self.deps.cache),
         ):
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
@@ -38,27 +37,27 @@ class ZarrPlugin(XpublishPluginFactory):
 
             return Response(json.dumps(zjson).encode('ascii'), media_type='application/json')
 
-        @self.dataset_router.get(f'/{group_meta_key}')
+        @self._router.get(f'/{group_meta_key}')
         def get_zarr_group(
-            dataset=Depends(self.dataset_dependency),
-            cache=Depends(self.cache_dependency),
+            dataset=Depends(self.deps.dataset),
+            cache=Depends(self.deps.cache),
         ):
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
 
             return zmetadata['metadata'][group_meta_key]
 
-        @self.dataset_router.get(f'/{attrs_key}')
+        @self._router.get(f'/{attrs_key}')
         def get_zarr_attrs(
-            dataset=Depends(self.dataset_dependency),
-            cache=Depends(self.cache_dependency),
+            dataset=Depends(self.deps.dataset),
+            cache=Depends(self.deps.cache),
         ):
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
 
             return zmetadata['metadata'][attrs_key]
 
-        @self.dataset_router.get('/{var}/{chunk}')
+        @self._router.get('/{var}/{chunk}')
         def get_variable_chunk(
             var: str,
             chunk: str,
@@ -105,3 +104,11 @@ class ZarrPlugin(XpublishPluginFactory):
                     cache.put(cache_key, response, ct.time, len(echunk))
 
                 return response
+
+
+class ZarrPlugin(Plugin):
+    """Adds Zarr-like accessing endpoints for datasets"""
+
+    name = 'zarr'
+
+    dataset_router: ZarrDatasetRouter = Field(default_factory=ZarrDatasetRouter)

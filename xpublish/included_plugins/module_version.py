@@ -3,18 +3,20 @@ Version information router
 """
 import importlib
 import sys
-from dataclasses import dataclass
 
+from pydantic import Field
+
+from ..plugin import Plugin, Router
 from ..utils.info import get_sys_info, netcdf_and_hdf5_versions
-from .factory import XpublishPluginFactory
 
 
-@dataclass
-class ModuleVersionPlugin(XpublishPluginFactory):
+class ModuleVersionAppRouter(Router):
     """Module and system version information"""
 
-    def register_routes(self):
-        @self.app_router.get('/versions')
+    prefix = ''
+
+    def register(self):
+        @self._router.get('/versions')
         def get_versions():
             versions = dict(get_sys_info() + netcdf_and_hdf5_versions())
             modules = [
@@ -39,3 +41,9 @@ class ModuleVersionPlugin(XpublishPluginFactory):
                 except ImportError:  # pragma: no cover
                     pass
             return versions
+
+
+class ModuleVersionPlugin(Plugin):
+    name = 'module_version'
+
+    app_router: ModuleVersionAppRouter = Field(default_factory=ModuleVersionAppRouter)
