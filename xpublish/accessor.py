@@ -2,7 +2,7 @@ import cachey
 import xarray as xr
 from fastapi import FastAPI
 
-from .rest import Rest
+from .rest import SingleDatasetRest
 
 
 @xr.register_dataset_accessor('rest')
@@ -21,7 +21,7 @@ class RestAccessor:
 
     def _get_rest_obj(self):
         if self._rest is None:
-            self._rest = Rest(self._obj)
+            self._rest = SingleDatasetRest(self._obj)
 
         return self._rest
 
@@ -42,7 +42,7 @@ class RestAccessor:
             raise RuntimeError('This accessor has already been initialized')
         self._initialized = True
 
-        self._rest = Rest(self._obj, **kwargs)
+        self._rest = SingleDatasetRest(self._obj, **kwargs)
 
         return self
 

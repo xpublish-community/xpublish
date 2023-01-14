@@ -3,7 +3,7 @@ import json
 import pytest
 import xarray as xr
 
-from xpublish import Rest
+from xpublish import SingleDatasetRest
 
 from .utils import TestMapper, create_dataset
 
@@ -32,7 +32,7 @@ def test_zmetadata_identical(start, end, freq, nlats, nlons, var_const, calendar
     ds = ds.chunk(ds.dims)
     zarr_dict = {}
     ds.to_zarr(zarr_dict, consolidated=True)
-    mapper = TestMapper(Rest(ds).app)
+    mapper = TestMapper(SingleDatasetRest(ds).app)
     actual = json.loads(mapper['.zmetadata'].decode())
     expected = json.loads(zarr_dict['.zmetadata'].decode())
     assert actual == expected
@@ -60,7 +60,7 @@ def test_roundtrip(start, end, freq, nlats, nlons, var_const, calendar, use_cfti
     )
     ds = ds.chunk(ds.dims)
 
-    mapper = TestMapper(Rest(ds).app)
+    mapper = TestMapper(SingleDatasetRest(ds).app)
     actual = xr.open_zarr(mapper, consolidated=True)
 
     xr.testing.assert_identical(actual, ds)
@@ -156,7 +156,7 @@ def test_roundtrip_custom_chunks(
         decode_times=decode_times,
     )
     ds = ds.chunk(chunks)
-    mapper = TestMapper(Rest(ds).app)
+    mapper = TestMapper(SingleDatasetRest(ds).app)
     actual = xr.open_zarr(mapper, consolidated=True, decode_times=decode_times)
 
     xr.testing.assert_identical(actual, ds)

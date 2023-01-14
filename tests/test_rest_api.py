@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from starlette.testclient import TestClient
 
 import xpublish  # noqa: F401
-from xpublish import Rest
+from xpublish import Rest, SingleDatasetRest
 from xpublish.dependencies import get_dataset
 from xpublish.utils.zarr import create_zmetadata, jsonify_zmetadata
 
@@ -20,7 +20,7 @@ def airtemp_rest(airtemp_ds):
         docs_url='/data-docs',
     )
 
-    return Rest(airtemp_ds, app_kws=app_kws)
+    return SingleDatasetRest(airtemp_ds, app_kws=app_kws)
 
 
 @pytest.fixture(scope='function')
@@ -102,7 +102,7 @@ def test_custom_app_routers(airtemp_ds, dims_router, router_kws, path):
     else:
         routers = [(dims_router, router_kws)]
 
-    rest = Rest(airtemp_ds, routers=routers, plugins={})
+    rest = SingleDatasetRest(airtemp_ds, routers=routers, plugins={})
     client = TestClient(rest.app)
 
     response = client.get(path)
@@ -209,7 +209,7 @@ def test_array_group_raises_404(airtemp_app_client):
 
 
 def test_cache(airtemp_ds):
-    rest = Rest(airtemp_ds, cache_kws={'available_bytes': 1e9})
+    rest = SingleDatasetRest(airtemp_ds, cache_kws={'available_bytes': 1e9})
     assert rest.cache.available_bytes == 1e9
 
     client = TestClient(rest.app)
@@ -244,6 +244,13 @@ def test_rest_accessor_kws(airtemp_ds):
 
     response = client.get('/data-docs')
     assert response.status_code == 200
+
+
+def test_rest_accessor_single_dataset(airtemp_ds):
+    client = TestClient(airtemp_ds.rest.app)
+
+    response = client.get('/datasets')
+    assert response.status_code == 404
 
 
 def test_ds_dict_keys(ds_dict, ds_dict_app_client):
