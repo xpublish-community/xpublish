@@ -95,7 +95,7 @@ def get_zmetadata(
 def get_plugins() -> Dict[str, 'Plugin']:
     """FastAPI dependency that returns the a dictionary of loaded plugins"""
 
-    return []
+    return {}
 
 
 def get_plugin_manager() -> pluggy.PluginManager:

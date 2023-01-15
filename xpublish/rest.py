@@ -125,7 +125,7 @@ class Rest:
     def register_plugin(self, plugin: Plugin, plugin_name: Optional[str] = None):
         """Register a plugin
 
-        Note: plugins registered this way cannot add new hookspecs
+        Note: presently, plugins registered this way cannot add new hookspecs or routers
         """
         self.pm.register(plugin, plugin_name or plugin.name)
 
