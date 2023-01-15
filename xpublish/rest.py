@@ -7,7 +7,7 @@ import xarray as xr
 from fastapi import APIRouter, FastAPI, HTTPException
 
 from .dependencies import get_cache, get_dataset, get_dataset_ids, get_plugin_manager
-from .plugin import Plugin, PluginSpec, get_plugins, load_default_plugins
+from .plugins import Plugin, PluginSpec, get_plugins, load_default_plugins
 from .routers import dataset_collection_router
 from .utils.api import (
     SingleDatasetOpenAPIOverrider,

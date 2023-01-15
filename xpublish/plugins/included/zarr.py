@@ -8,11 +8,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from starlette.responses import Response
 from zarr.storage import array_meta_key, attrs_key, group_meta_key
 
-from ..dependencies import get_zmetadata, get_zvariables
-from ..plugin import Plugin, hookimpl
-from ..utils.api import DATASET_ID_ATTR_KEY
-from ..utils.cache import CostTimer
-from ..utils.zarr import encode_chunk, get_data_chunk, jsonify_zmetadata, zarr_metadata_key
+from ...dependencies import get_zmetadata, get_zvariables
+from ...utils.api import DATASET_ID_ATTR_KEY
+from ...utils.cache import CostTimer
+from ...utils.zarr import encode_chunk, get_data_chunk, jsonify_zmetadata, zarr_metadata_key
+from .. import Plugin, hookimpl
 
 logger = logging.getLogger('zarr_api')
 

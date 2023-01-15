@@ -7,8 +7,8 @@ from typing import List
 
 from fastapi import APIRouter
 
-from ..plugin import Plugin, hookimpl
-from ..utils.info import get_sys_info, netcdf_and_hdf5_versions
+from ...utils.info import get_sys_info, netcdf_and_hdf5_versions
+from .. import Plugin, hookimpl
 
 
 class ModuleVersionPlugin(Plugin):

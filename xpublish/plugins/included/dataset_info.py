@@ -5,8 +5,8 @@ from fastapi import APIRouter, Depends
 from starlette.responses import HTMLResponse
 from zarr.storage import attrs_key
 
-from ..dependencies import get_zmetadata, get_zvariables
-from ..plugin import Plugin, hookimpl
+from ...dependencies import get_zmetadata, get_zvariables
+from .. import Plugin, hookimpl
 
 
 class DatasetInfoPlugin(Plugin):

@@ -7,7 +7,7 @@ from typing import Dict, List, Optional
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from ..plugin import Plugin, hookimpl
+from .. import Plugin, hookimpl
 
 
 class PluginInfo(BaseModel):

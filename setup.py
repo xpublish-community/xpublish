@@ -48,10 +48,10 @@ setup(
     setup_requires=['setuptools_scm>=3.4', 'setuptools>=42'],
     entry_points={
         'xpublish.plugin': [
-            'info = xpublish.included_plugins.dataset_info:DatasetInfoPlugin',
-            'zarr = xpublish.included_plugins.zarr:ZarrPlugin',
-            'module_version = xpublish.included_plugins.module_version:ModuleVersionPlugin',
-            'plugin_info = xpublish.included_plugins.plugin_info:PluginInfoPlugin',
+            'info = xpublish.plugins.included.dataset_info:DatasetInfoPlugin',
+            'zarr = xpublish.plugins.included.zarr:ZarrPlugin',
+            'module_version = xpublish.plugins.included.module_version:ModuleVersionPlugin',
+            'plugin_info = xpublish.plugins.included.plugin_info:PluginInfoPlugin',
         ]
     },
 )

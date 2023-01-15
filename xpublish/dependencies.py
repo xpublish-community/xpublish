@@ -12,7 +12,7 @@ from .utils.api import DATASET_ID_ATTR_KEY
 from .utils.zarr import create_zmetadata, create_zvariables, zarr_metadata_key
 
 if TYPE_CHECKING:
-    from .plugin import Plugin
+    from .plugins import Plugin
 
 
 def get_dataset_ids() -> List[str]:
