@@ -4,6 +4,7 @@ Helper functions to use a FastAPI dependencies.
 from typing import TYPE_CHECKING, Dict, List
 
 import cachey
+import pluggy
 import xarray as xr
 from fastapi import Depends
 
@@ -95,3 +96,7 @@ def get_plugins() -> Dict[str, 'Plugin']:
     """FastAPI dependency that returns the a dictionary of loaded plugins"""
 
     return []
+
+
+def get_plugin_manager() -> pluggy.PluginManager:
+    """Return the active plugin manager"""

@@ -3,20 +3,25 @@ Version information router
 """
 import importlib
 import sys
+from typing import List
 
-from pydantic import Field
+from fastapi import APIRouter
 
-from ..plugin import Plugin, Router
+from ..plugin import Plugin, hookimpl
 from ..utils.info import get_sys_info, netcdf_and_hdf5_versions
 
 
-class ModuleVersionAppRouter(Router):
-    """Module and system version information"""
+class ModuleVersionPlugin(Plugin):
+    name = 'module_version'
 
-    prefix = ''
+    app_router_prefix: str = ''
+    app_router_tags: List[str] = []
 
-    def register(self):
-        @self._router.get('/versions')
+    @hookimpl
+    def app_router(self):
+        router = APIRouter(prefix=self.app_router_prefix, tags=self.app_router_tags)
+
+        @router.get('/versions')
         def get_versions():
             versions = dict(get_sys_info() + netcdf_and_hdf5_versions())
             modules = [
@@ -42,8 +47,4 @@ class ModuleVersionAppRouter(Router):
                     pass
             return versions
 
-
-class ModuleVersionPlugin(Plugin):
-    name = 'module_version'
-
-    app_router: ModuleVersionAppRouter = Field(default_factory=ModuleVersionAppRouter)
+        return router

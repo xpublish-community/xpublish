@@ -3,6 +3,7 @@ dask
 fastapi>=0.59
 numcodecs
 numpy>=1.17
+pluggy
 toolz
 uvicorn
 xarray>=0.16

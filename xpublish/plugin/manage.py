@@ -4,7 +4,7 @@ Load and configure Xpublish plugins from entry point group `xpublish.plugin`
 from importlib.metadata import entry_points
 from typing import Dict, Iterable, Optional
 
-from .base import Plugin
+from .hooks import Plugin
 
 
 def find_default_plugins(exclude_plugins: Optional[Iterable[str]] = None):

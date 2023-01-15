@@ -1,7 +1,7 @@
 from pkg_resources import DistributionNotFound, get_distribution
 
 from .accessor import RestAccessor  # noqa: F401
-from .plugin import Plugin, Router  # noqa: F401
+from .plugin import Plugin, hookimpl  # noqa: F401
 from .rest import Rest, SingleDatasetRest  # noqa: F401
 
 try:

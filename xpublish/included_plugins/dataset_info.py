@@ -1,44 +1,52 @@
+from typing import List
+
 import xarray as xr
-from fastapi import Depends
-from pydantic import Field
+from fastapi import APIRouter, Depends
 from starlette.responses import HTMLResponse
 from zarr.storage import attrs_key
 
 from ..dependencies import get_zmetadata, get_zvariables
-from ..plugin import Plugin, Router
+from ..plugin import Plugin, hookimpl
 
 
-class DatasetInfoRouter(Router):
-    """API entry-points providing basic information about the dataset(s)."""
+class DatasetInfoPlugin(Plugin):
+    name = 'dataset_info'
 
-    prefix = ''
+    dataset_router_prefix: str = ''
+    dataset_router_tags: List[str] = []
 
-    def register(self):
-        @self._router.get('/')
+    @hookimpl
+    def dataset_router(self):
+        router = APIRouter()
+
+        router.prefix = self.dataset_router_prefix
+        router.tags = self.dataset_router_tags
+
+        @router.get('/')
         def html_representation(
-            dataset=Depends(self.deps.dataset),
+            dataset=Depends(self.dependencies.dataset),
         ):
             """Returns a HTML representation of the dataset."""
 
             with xr.set_options(display_style='html'):
                 return HTMLResponse(dataset._repr_html_())
 
-        @self._router.get('/keys')
+        @router.get('/keys')
         def list_keys(
-            dataset=Depends(self.deps.dataset),
+            dataset=Depends(self.dependencies.dataset),
         ):
             return list(dataset.variables)
 
-        @self._router.get('/dict')
+        @router.get('/dict')
         def to_dict(
-            dataset=Depends(self.deps.dataset),
+            dataset=Depends(self.dependencies.dataset),
         ):
             return dataset.to_dict(data=False)
 
-        @self._router.get('/info')
+        @router.get('/info')
         def info(
-            dataset=Depends(self.deps.dataset),
-            cache=Depends(self.deps.cache),
+            dataset=Depends(self.dependencies.dataset),
+            cache=Depends(self.dependencies.cache),
         ):
             """Dataset schema (close to the NCO-JSON schema)."""
 
@@ -64,8 +72,4 @@ class DatasetInfoRouter(Router):
 
             return info
 
-
-class DatasetInfoPlugin(Plugin):
-    name = 'dataset_info'
-
-    dataset_router: DatasetInfoRouter = Field(default_factory=DatasetInfoRouter)
+        return router

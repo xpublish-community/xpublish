@@ -2,12 +2,12 @@
 Plugin information router
 """
 import importlib
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
-from fastapi import Depends
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 
-from ..plugin import Plugin, Router
+from ..plugin import Plugin, hookimpl
 
 
 class PluginInfo(BaseModel):
@@ -15,15 +15,19 @@ class PluginInfo(BaseModel):
     version: Optional[str]
 
 
-class PluginInfoAppRouter(Router):
-    """Plugin information"""
+class PluginInfoPlugin(Plugin):
+    name = 'plugin_info'
 
-    prefix = ''
+    app_router_prefix: str = ''
+    app_router_tags: List[str] = []
 
-    def register(self):
-        @self._router.get('/plugins')
+    @hookimpl
+    def app_router(self):
+        router = APIRouter(prefix=self.app_router_prefix, tags=self.app_router_tags)
+
+        @router.get('/plugins')
         def get_plugins(
-            plugins: Dict[str, Plugin] = Depends(self.deps.plugins)
+            plugins: Dict[str, Plugin] = Depends(self.dependencies.plugins)
         ) -> Dict[str, PluginInfo]:
             plugin_info = {}
 
@@ -42,8 +46,4 @@ class PluginInfoAppRouter(Router):
 
             return plugin_info
 
-
-class PluginInfoPlugin(Plugin):
-    name = 'plugin_info'
-
-    app_router: PluginInfoAppRouter = Field(default_factory=PluginInfoAppRouter)
+        return router

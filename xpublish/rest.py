@@ -1,12 +1,13 @@
 from typing import Dict, Optional
 
 import cachey
+import pluggy
 import uvicorn
 import xarray as xr
 from fastapi import APIRouter, FastAPI, HTTPException
 
-from .dependencies import get_cache, get_dataset, get_dataset_ids
-from .plugin import Plugin, get_plugins, load_default_plugins
+from .dependencies import get_cache, get_dataset, get_dataset_ids, get_plugin_manager
+from .plugin import Plugin, PluginSpec, get_plugins, load_default_plugins
 from .routers import dataset_collection_router
 from .utils.api import (
     SingleDatasetOpenAPIOverrider,
@@ -82,22 +83,51 @@ class Rest:
         """Initialize datasets and getter functions"""
         self._datasets = normalize_datasets(datasets)
 
-        def get_dataset_func(dataset_id: str):
-            if dataset_id not in self._datasets:
-                raise HTTPException(status_code=404, detail=f"Dataset '{dataset_id}' not found")
-
-            return self._datasets[dataset_id]
-
-        self._get_dataset_func = get_dataset_func
+        self._get_dataset_func = self.get_dataset_from_plugins
         self._dataset_route_prefix = '/datasets/{dataset_id}'
         return self._dataset_route_prefix
+
+    def get_datasets_from_plugins(self):
+        """Get dataset ids from directly loaded datasets and plugins"""
+        dataset_ids = list(self._datasets)
+
+        for plugin_dataset_ids in self.pm.hook.get_datasets():
+            dataset_ids.extend(plugin_dataset_ids)
+
+        return dataset_ids
+
+    def get_dataset_from_plugins(self, dataset_id: str):
+        """Attempt to load dataset from plugins, otherwise load"""
+        dataset = self.pm.hook.get_dataset(dataset_id=dataset_id)
+
+        if dataset:
+            return dataset
+
+        if dataset_id not in self._datasets:
+            raise HTTPException(status_code=404, detail=f"Dataset '{dataset_id}' not found")
+
+        return self._datasets[dataset_id]
 
     def setup_plugins(self, plugins: Optional[Dict[str, Plugin]] = None):
         """Initialize and load plugins from entry_points"""
         if plugins is None:
-            self._plugins = load_default_plugins()
-        else:
-            self._plugins = plugins
+            plugins = load_default_plugins()
+
+        self.pm = pluggy.PluginManager('xpublish')
+        self.pm.add_hookspecs(PluginSpec)
+
+        for name, plugin in plugins.items():
+            self.pm.register(plugin, name=name)
+
+        for hookspec in self.pm.hook.register_hookspec():
+            self.pm.add_hookspecs(hookspec)
+
+    def register_plugin(self, plugin: Plugin, plugin_name: Optional[str] = None):
+        """Register a plugin
+
+        Note: plugins registered this way cannot add new hookspecs
+        """
+        self.pm.register(plugin, plugin_name or plugin.name)
 
     def setup_routers(self, dataset_routers: Optional[APIRouter]):
         """Setup plugin and dataset routers. Needs to run after dataset and plugin setup"""
@@ -121,24 +151,11 @@ class Rest:
         app_routers = []
         dataset_routers = []
 
-        for plugin in self._plugins.values():
-            if plugin.app_router:
-                router_kwargs = {}
-                if plugin.app_router.prefix:
-                    router_kwargs['prefix'] = plugin.app_router.prefix
-                if plugin.app_router.tags:
-                    router_kwargs['tags'] = plugin.app_router.tags
+        for router in self.pm.hook.app_router():
+            app_routers.append((router, {'prefix': router.prefix, 'tags': router.tags}))
 
-                app_routers.append((plugin.app_router._router, router_kwargs))
-
-            if plugin.dataset_router:
-                router_kwargs = {}
-                if plugin.dataset_router.prefix:
-                    router_kwargs['prefix'] = plugin.dataset_router.prefix
-                if plugin.dataset_router.tags:
-                    router_kwargs['tags'] = plugin.dataset_router.tags
-
-                dataset_routers.append((plugin.dataset_router._router, router_kwargs))
+        for router in self.pm.hook.dataset_router():
+            dataset_routers.append((router, {'prefix': router.prefix, 'tags': router.tags}))
 
         return app_routers, dataset_routers
 
@@ -167,14 +184,15 @@ class Rest:
     @property
     def plugins(self) -> Dict[str, Plugin]:
         """Returns the loaded plugins"""
-        return self._plugins
+        return dict(self.pm.list_name_plugin())
 
     def _init_dependencies(self):
         """Initialize dependencies"""
-        self._app.dependency_overrides[get_dataset_ids] = lambda: list(self._datasets)
+        self._app.dependency_overrides[get_dataset_ids] = self.get_datasets_from_plugins
         self._app.dependency_overrides[get_dataset] = self._get_dataset_func
         self._app.dependency_overrides[get_cache] = lambda: self.cache
         self._app.dependency_overrides[get_plugins] = lambda: self.plugins
+        self._app.dependency_overrides[get_plugin_manager] = lambda: self.pm
 
     def _init_app(self):
         """Initiate the FastAPI application."""
@@ -244,10 +262,7 @@ class SingleDatasetRest(Rest):
         self._dataset_route_prefix = ''
         self._datasets = {}
 
-        def get_dataset_func():
-            return self._dataset
-
-        self._get_dataset_func = get_dataset_func
+        self._get_dataset_func = lambda: self._dataset
 
         return self._dataset_route_prefix
 
