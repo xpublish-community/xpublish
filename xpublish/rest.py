@@ -74,7 +74,9 @@ class Rest:
         self.setup_datasets(datasets or {})
         self.setup_plugins(plugins)
 
-        self.setup_routers(routers)
+        routers = normalize_app_routers(routers or [], self._dataset_route_prefix)
+        check_route_conflicts(routers)
+        self._routers = routers
 
         self.init_app_kwargs(app_kws)
         self.init_cache_kwargs(cache_kws)
@@ -123,13 +125,43 @@ class Rest:
             self.pm.add_hookspecs(hookspec)
 
     def register_plugin(self, plugin: Plugin, plugin_name: Optional[str] = None):
-        """Register a plugin
-
-        Note: presently, plugins registered this way cannot add new hookspecs or routers
-        """
+        """Register a plugin"""
+        existing_plugins = self.pm.get_plugins()
         self.pm.register(plugin, plugin_name or plugin.name)
 
-    def setup_routers(self, dataset_routers: Optional[APIRouter]):
+        for hookspec in self.pm.subset_hook_caller(
+            'register_hookspec', remove_plugins=existing_plugins
+        )():
+            self.pm.add_hookspecs(hookspec)
+
+    def init_cache_kwargs(self, cache_kws):
+        """Set up cache kwargs"""
+        self._cache = None
+        self._cache_kws = {'available_bytes': 1e6}
+        if cache_kws is not None:
+            self._cache_kws.update(cache_kws)
+
+    def init_app_kwargs(self, app_kws):
+        """Set up FastAPI application kwargs"""
+        self._app = None
+        self._app_kws = {}
+        if app_kws is not None:
+            self._app_kws.update(app_kws)
+
+    @property
+    def cache(self) -> cachey.Cache:
+        """Returns the :class:`cachey.Cache` instance used by the FastAPI application."""
+
+        if self._cache is None:
+            self._cache = cachey.Cache(**self._cache_kws)
+        return self._cache
+
+    @property
+    def plugins(self) -> Dict[str, Plugin]:
+        """Returns the loaded plugins"""
+        return dict(self.pm.list_name_plugin())
+
+    def _init_routers(self, dataset_routers: Optional[APIRouter]):
         """Setup plugin and dataset routers. Needs to run after dataset and plugin setup"""
         app_routers, plugin_dataset_routers = self.plugin_routers()
 
@@ -159,33 +191,6 @@ class Rest:
 
         return app_routers, dataset_routers
 
-    def init_cache_kwargs(self, cache_kws):
-        """Set up cache kwargs"""
-        self._cache = None
-        self._cache_kws = {'available_bytes': 1e6}
-        if cache_kws is not None:
-            self._cache_kws.update(cache_kws)
-
-    def init_app_kwargs(self, app_kws):
-        """Set up FastAPI application kwargs"""
-        self._app = None
-        self._app_kws = {}
-        if app_kws is not None:
-            self._app_kws.update(app_kws)
-
-    @property
-    def cache(self) -> cachey.Cache:
-        """Returns the :class:`cachey.Cache` instance used by the FastAPI application."""
-
-        if self._cache is None:
-            self._cache = cachey.Cache(**self._cache_kws)
-        return self._cache
-
-    @property
-    def plugins(self) -> Dict[str, Plugin]:
-        """Returns the loaded plugins"""
-        return dict(self.pm.list_name_plugin())
-
     def _init_dependencies(self):
         """Initialize dependencies"""
         self._app.dependency_overrides[get_dataset_ids] = self.get_datasets_from_plugins
@@ -199,6 +204,7 @@ class Rest:
 
         self._app = FastAPI(**self._app_kws)
 
+        self._init_routers(self._routers)
         for rt, kwargs in self._app_routers:
             self._app.include_router(rt, **kwargs)
 
