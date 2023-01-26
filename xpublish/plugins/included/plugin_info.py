@@ -7,7 +7,7 @@ from typing import Dict, List, Optional
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from .. import Plugin, hookimpl
+from .. import Dependencies, Plugin, hookimpl
 
 
 class PluginInfo(BaseModel):
@@ -22,12 +22,12 @@ class PluginInfoPlugin(Plugin):
     app_router_tags: List[str] = []
 
     @hookimpl
-    def app_router(self):
+    def app_router(self, deps: Dependencies):
         router = APIRouter(prefix=self.app_router_prefix, tags=self.app_router_tags)
 
         @router.get('/plugins')
         def get_plugins(
-            plugins: Dict[str, Plugin] = Depends(self.dependencies.plugins)
+            plugins: Dict[str, Plugin] = Depends(deps.plugins)
         ) -> Dict[str, PluginInfo]:
             plugin_info = {}
 

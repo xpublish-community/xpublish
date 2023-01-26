@@ -280,12 +280,18 @@ def test_ds_dict_cache(ds_dict):
 def test_single_dataset_openapi_override(airtemp_rest):
     openapi_schema = airtemp_rest.app.openapi()
 
-    # "dataset_id" parameter should be absent in all paths
-    assert len(openapi_schema['paths']['/']['get']['parameters']) == 0
+    with pytest.raises(KeyError):
+        # "dataset_id" parameter should be absent in all paths
+        # parameters is no longer generated when plugins use passed in deps
+        #  and get_dataset is replaced
+        assert len(openapi_schema['paths']['/']['get']['parameters']) == 0
 
-    # test cached value
-    openapi_schema = airtemp_rest.app.openapi()
-    assert len(openapi_schema['paths']['/']['get']['parameters']) == 0
+    with pytest.raises(KeyError):
+        # test cached value
+        # parameters is no longer generated when plugins use passed in deps
+        #  and get_dataset is replaced
+        openapi_schema = airtemp_rest.app.openapi()
+        assert len(openapi_schema['paths']['/']['get']['parameters']) == 0
 
 
 def test_serve(airtemp_rest, mocker):

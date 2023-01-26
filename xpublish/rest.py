@@ -7,7 +7,7 @@ import xarray as xr
 from fastapi import APIRouter, FastAPI, HTTPException
 
 from .dependencies import get_cache, get_dataset, get_dataset_ids, get_plugin_manager
-from .plugins import Plugin, PluginSpec, get_plugins, load_default_plugins
+from .plugins import Dependencies, Plugin, PluginSpec, get_plugins, load_default_plugins
 from .routers import dataset_collection_router
 from .utils.api import (
     SingleDatasetOpenAPIOverrider,
@@ -183,21 +183,36 @@ class Rest:
         app_routers = []
         dataset_routers = []
 
-        for router in self.pm.hook.app_router():
+        deps = self.dependencies()
+
+        for router in self.pm.hook.app_router(deps=deps):
             app_routers.append((router, {'prefix': router.prefix, 'tags': router.tags}))
 
-        for router in self.pm.hook.dataset_router():
+        for router in self.pm.hook.dataset_router(deps=deps):
             dataset_routers.append((router, {'prefix': router.prefix, 'tags': router.tags}))
 
         return app_routers, dataset_routers
 
+    def dependencies(self) -> Dependencies:
+        deps = Dependencies(
+            dataset_ids=self.get_datasets_from_plugins,
+            dataset=self._get_dataset_func,
+            cache=lambda: self.cache,
+            plugins=lambda: self.plugins,
+            plugin_manager=lambda: self.pm,
+        )
+
+        return deps
+
     def _init_dependencies(self):
         """Initialize dependencies"""
-        self._app.dependency_overrides[get_dataset_ids] = self.get_datasets_from_plugins
-        self._app.dependency_overrides[get_dataset] = self._get_dataset_func
-        self._app.dependency_overrides[get_cache] = lambda: self.cache
-        self._app.dependency_overrides[get_plugins] = lambda: self.plugins
-        self._app.dependency_overrides[get_plugin_manager] = lambda: self.pm
+        deps = self.dependencies()
+
+        self._app.dependency_overrides[get_dataset_ids] = deps.dataset_ids
+        self._app.dependency_overrides[get_dataset] = deps.dataset
+        self._app.dependency_overrides[get_cache] = deps.cache
+        self._app.dependency_overrides[get_plugins] = deps.plugins
+        self._app.dependency_overrides[get_plugin_manager] = deps.plugin_manager
 
     def _init_app(self):
         """Initiate the FastAPI application."""

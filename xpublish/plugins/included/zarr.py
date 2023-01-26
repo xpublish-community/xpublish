@@ -12,7 +12,7 @@ from ...dependencies import get_zmetadata, get_zvariables
 from ...utils.api import DATASET_ID_ATTR_KEY
 from ...utils.cache import CostTimer
 from ...utils.zarr import encode_chunk, get_data_chunk, jsonify_zmetadata, zarr_metadata_key
-from .. import Plugin, hookimpl
+from .. import Dependencies, Plugin, hookimpl
 
 logger = logging.getLogger('zarr_api')
 
@@ -26,13 +26,13 @@ class ZarrPlugin(Plugin):
     dataset_router_tags: List[str] = ['zarr']
 
     @hookimpl
-    def dataset_router(self):
+    def dataset_router(self, deps: Dependencies):
         router = APIRouter(prefix=self.dataset_router_prefix, tags=self.dataset_router_tags)
 
         @router.get(f'/{zarr_metadata_key}')
         def get_zarr_metadata(
-            dataset=Depends(self.dependencies.dataset),
-            cache=Depends(self.dependencies.cache),
+            dataset=Depends(deps.dataset),
+            cache=Depends(deps.cache),
         ):
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
@@ -43,8 +43,8 @@ class ZarrPlugin(Plugin):
 
         @router.get(f'/{group_meta_key}')
         def get_zarr_group(
-            dataset=Depends(self.dependencies.dataset),
-            cache=Depends(self.dependencies.cache),
+            dataset=Depends(deps.dataset),
+            cache=Depends(deps.cache),
         ):
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
@@ -53,8 +53,8 @@ class ZarrPlugin(Plugin):
 
         @router.get(f'/{attrs_key}')
         def get_zarr_attrs(
-            dataset=Depends(self.dependencies.dataset),
-            cache=Depends(self.dependencies.cache),
+            dataset=Depends(deps.dataset),
+            cache=Depends(deps.cache),
         ):
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
@@ -65,8 +65,8 @@ class ZarrPlugin(Plugin):
         def get_variable_chunk(
             var: str,
             chunk: str,
-            dataset: xr.Dataset = Depends(self.dependencies.dataset),
-            cache: cachey.Cache = Depends(self.dependencies.cache),
+            dataset: xr.Dataset = Depends(deps.dataset),
+            cache: cachey.Cache = Depends(deps.cache),
         ):
             """Get a zarr array chunk.
 

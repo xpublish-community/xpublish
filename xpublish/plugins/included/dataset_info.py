@@ -6,7 +6,7 @@ from starlette.responses import HTMLResponse
 from zarr.storage import attrs_key
 
 from ...dependencies import get_zmetadata, get_zvariables
-from .. import Plugin, hookimpl
+from .. import Dependencies, Plugin, hookimpl
 
 
 class DatasetInfoPlugin(Plugin):
@@ -16,7 +16,7 @@ class DatasetInfoPlugin(Plugin):
     dataset_router_tags: List[str] = []
 
     @hookimpl
-    def dataset_router(self):
+    def dataset_router(self, deps: Dependencies):
         router = APIRouter()
 
         router.prefix = self.dataset_router_prefix
@@ -24,7 +24,7 @@ class DatasetInfoPlugin(Plugin):
 
         @router.get('/')
         def html_representation(
-            dataset=Depends(self.dependencies.dataset),
+            dataset=Depends(deps.dataset),
         ):
             """Returns a HTML representation of the dataset."""
 
@@ -33,20 +33,20 @@ class DatasetInfoPlugin(Plugin):
 
         @router.get('/keys')
         def list_keys(
-            dataset=Depends(self.dependencies.dataset),
+            dataset=Depends(deps.dataset),
         ):
             return list(dataset.variables)
 
         @router.get('/dict')
         def to_dict(
-            dataset=Depends(self.dependencies.dataset),
+            dataset=Depends(deps.dataset),
         ):
             return dataset.to_dict(data=False)
 
         @router.get('/info')
         def info(
-            dataset=Depends(self.dependencies.dataset),
-            cache=Depends(self.dependencies.cache),
+            dataset=Depends(deps.dataset),
+            cache=Depends(deps.cache),
         ):
             """Dataset schema (close to the NCO-JSON schema)."""
 

@@ -4,7 +4,7 @@ import cachey
 import pluggy
 import xarray as xr
 from fastapi import APIRouter
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from ..dependencies import get_cache, get_dataset, get_dataset_ids, get_plugin_manager, get_plugins
 
@@ -12,7 +12,7 @@ hookspec = pluggy.HookspecMarker('xpublish')
 hookimpl = pluggy.HookimplMarker('xpublish')
 
 
-class PluginDependencies(BaseModel):
+class Dependencies(BaseModel):
     dataset_ids: Callable[..., List[str]] = get_dataset_ids
     dataset: Callable[..., xr.Dataset] = get_dataset
     cache: Callable[..., cachey.Cache] = get_cache
@@ -37,11 +37,6 @@ class Plugin(BaseModel):
     """
 
     name: str
-    dependencies: PluginDependencies = Field(
-        default_factory=PluginDependencies,
-        description='Xpublish dependencies, which can be overridden on a per-plugin basis',
-        repr=False,
-    )
 
     def __hash__(self):
         """Make sure that the plugin is hashable to load with pluggy"""
@@ -72,7 +67,7 @@ class PluginSpec(Plugin):
     """Plugin extension points"""
 
     @hookspec
-    def app_router(self) -> APIRouter:
+    def app_router(self, deps: Dependencies) -> APIRouter:
         """Create an app (top-level) router for the plugin
 
         Implementations should return an APIRouter, and define
@@ -81,7 +76,7 @@ class PluginSpec(Plugin):
         """
 
     @hookspec
-    def dataset_router(self) -> APIRouter:
+    def dataset_router(self, deps: Dependencies) -> APIRouter:
         """Create a dataset router for the plugin
 
         Implementations should return an APIRouter, and define
