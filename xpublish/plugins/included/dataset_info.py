@@ -1,9 +1,9 @@
-from typing import List
+from typing import Sequence
 
 import xarray as xr
 from fastapi import APIRouter, Depends
-from starlette.responses import HTMLResponse
-from zarr.storage import attrs_key
+from starlette.responses import HTMLResponse  # type: ignore
+from zarr.storage import attrs_key  # type: ignore
 
 from ...dependencies import get_zmetadata, get_zvariables
 from .. import Dependencies, Plugin, hookimpl
@@ -13,14 +13,11 @@ class DatasetInfoPlugin(Plugin):
     name = 'dataset_info'
 
     dataset_router_prefix: str = ''
-    dataset_router_tags: List[str] = []
+    dataset_router_tags: Sequence[str] = []
 
     @hookimpl
     def dataset_router(self, deps: Dependencies):
-        router = APIRouter()
-
-        router.prefix = self.dataset_router_prefix
-        router.tags = self.dataset_router_tags
+        router = APIRouter(prefix=self.dataset_router_prefix, tags=list(self.dataset_router_tags))
 
         @router.get('/')
         def html_representation(

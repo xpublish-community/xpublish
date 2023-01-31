@@ -2,7 +2,7 @@
 Plugin information router
 """
 import importlib
-from typing import Dict, List, Optional
+from typing import Dict, Optional, Sequence
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -19,11 +19,11 @@ class PluginInfoPlugin(Plugin):
     name = 'plugin_info'
 
     app_router_prefix: str = ''
-    app_router_tags: List[str] = []
+    app_router_tags: Sequence[str] = []
 
     @hookimpl
     def app_router(self, deps: Dependencies):
-        router = APIRouter(prefix=self.app_router_prefix, tags=self.app_router_tags)
+        router = APIRouter(prefix=self.app_router_prefix, tags=list(self.app_router_tags))
 
         @router.get('/plugins')
         def get_plugins(

@@ -1,12 +1,12 @@
 import json
 import logging
-from typing import List
+from typing import Sequence
 
-import cachey
+import cachey  # type: ignore
 import xarray as xr
 from fastapi import APIRouter, Depends, HTTPException
-from starlette.responses import Response
-from zarr.storage import array_meta_key, attrs_key, group_meta_key
+from starlette.responses import Response  # type: ignore
+from zarr.storage import array_meta_key, attrs_key, group_meta_key  # type: ignore
 
 from ...dependencies import get_zmetadata, get_zvariables
 from ...utils.api import DATASET_ID_ATTR_KEY
@@ -23,11 +23,11 @@ class ZarrPlugin(Plugin):
     name = 'zarr'
 
     dataset_router_prefix: str = ''
-    dataset_router_tags: List[str] = ['zarr']
+    dataset_router_tags: Sequence[str] = ['zarr']
 
     @hookimpl
     def dataset_router(self, deps: Dependencies):
-        router = APIRouter(prefix=self.dataset_router_prefix, tags=self.dataset_router_tags)
+        router = APIRouter(prefix=self.dataset_router_prefix, tags=list(self.dataset_router_tags))
 
         @router.get(f'/{zarr_metadata_key}')
         def get_zarr_metadata(

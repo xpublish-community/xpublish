@@ -1,7 +1,7 @@
-from typing import Callable, Iterable, List, Optional
+from typing import Callable, Dict, Iterable, List, Optional
 
-import cachey
-import pluggy
+import cachey  # type: ignore
+import pluggy  # type: ignore
 import xarray as xr
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -16,7 +16,7 @@ class Dependencies(BaseModel):
     dataset_ids: Callable[..., List[str]] = get_dataset_ids
     dataset: Callable[..., xr.Dataset] = get_dataset
     cache: Callable[..., cachey.Cache] = get_cache
-    plugins: Callable[..., 'Plugin'] = get_plugins
+    plugins: Callable[..., Dict[str, 'Plugin']] = get_plugins
     plugin_manager: Callable[..., pluggy.PluginManager] = get_plugin_manager
 
     def __hash__(self):
@@ -56,7 +56,7 @@ class Plugin(BaseModel):
 
         https://github.com/pydantic/pydantic/pull/1466
         """
-        d = super().__dir__()
+        d = list(super().__dir__())
 
         d.remove('__signature__')
 
@@ -67,7 +67,7 @@ class PluginSpec(Plugin):
     """Plugin extension points"""
 
     @hookspec
-    def app_router(self, deps: Dependencies) -> APIRouter:
+    def app_router(self, deps: Dependencies) -> APIRouter:  # type: ignore
         """Create an app (top-level) router for the plugin
 
         Implementations should return an APIRouter, and define
@@ -76,7 +76,7 @@ class PluginSpec(Plugin):
         """
 
     @hookspec
-    def dataset_router(self, deps: Dependencies) -> APIRouter:
+    def dataset_router(self, deps: Dependencies) -> APIRouter:  # type: ignore
         """Create a dataset router for the plugin
 
         Implementations should return an APIRouter, and define
@@ -85,16 +85,16 @@ class PluginSpec(Plugin):
         """
 
     @hookspec
-    def get_datasets(self) -> Iterable[str]:
+    def get_datasets(self) -> Iterable[str]:  # type: ignore
         """Return an iterable of dataset ids that the plugin can provide"""
 
     @hookspec(firstresult=True)
-    def get_dataset(self, dataset_id: str) -> Optional[xr.Dataset]:
+    def get_dataset(self, dataset_id: str) -> Optional[xr.Dataset]:  # type: ignore
         """Return a dataset by requested dataset_id.
 
         If the plugin does not have the dataset, return None
         """
 
     @hookspec
-    def register_hookspec(self):
+    def register_hookspec(self):  # type: ignore
         """Return additional hookspec classes to register with the plugin manager"""
