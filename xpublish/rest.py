@@ -1,10 +1,14 @@
+from typing import Dict, Optional
+
 import cachey
+import pluggy
 import uvicorn
 import xarray as xr
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, FastAPI, HTTPException
 
-from .dependencies import get_cache, get_dataset, get_dataset_ids
-from .routers import base_router, common_router, dataset_collection_router, zarr_router
+from .dependencies import get_cache, get_dataset, get_dataset_ids, get_plugin_manager
+from .plugins import Dependencies, Plugin, PluginSpec, get_plugins, load_default_plugins
+from .routers import dataset_collection_router
 from .utils.api import (
     SingleDatasetOpenAPIOverrider,
     check_route_conflicts,
@@ -13,74 +17,23 @@ from .utils.api import (
 )
 
 
-def _dataset_from_collection_getter(datasets):
-    """Used to override the get_dataset FastAPI dependency in case where
-    a collection of datasets is being served.
-
-    """
-
-    def get_dataset(dataset_id: str):
-        if dataset_id not in datasets:
-            raise HTTPException(status_code=404, detail=f"Dataset '{dataset_id}' not found")
-
-        return datasets[dataset_id]
-
-    return get_dataset
-
-
-def _dataset_unique_getter(dataset):
-    """Used to override the get_dataset FastAPI dependency in case where
-    only one dataset is being served, e.g., via the 'rest' accessor.
-
-    """
-
-    def get_dataset():
-        return dataset
-
-    return get_dataset
-
-
-def _set_app_routers(dataset_routers=None, dataset_route_prefix=''):
-
-    app_routers = []
-
-    # top-level api endpoints
-    app_routers.append((common_router, {}))
-
-    if dataset_route_prefix:
-        app_routers.append((dataset_collection_router, {'tags': ['info']}))
-
-    # dataset-specifc api endpoints
-    if dataset_routers is None:
-        dataset_routers = [
-            (base_router, {'tags': ['info']}),
-            (zarr_router, {'tags': ['zarr']}),
-        ]
-
-    app_routers += normalize_app_routers(dataset_routers, dataset_route_prefix)
-
-    check_route_conflicts(app_routers)
-
-    return app_routers
-
-
 class Rest:
-    """Used to publish one or more Xarray Datasets via a REST API (FastAPI application).
+    """Used to publish multiple Xarray Datasets via a REST API (FastAPI application).
 
     To publish a single dataset via its own FastAPI application, you might
-    want to use the :attr:`xarray.Dataset.rest` accessor instead for more convenience.
-    It provides the same interface than this class.
+    want to use the :attr:`xarray.Dataset.rest` accessor for more convenience.
+    Additionally the :class:`xpublish.SingleDatasetRest` class allows has
+    a simplified interface for single dataset access.
 
     Parameters
     ----------
-    datasets : :class:`xarray.Dataset` or dict
-        A single :class:`xarray.Dataset` object or a mapping of datasets objects
-        to be served. If a mapping is given, keys are used as dataset ids and
-        are converted to strings. See also the notes below.
+    datasets : dict
+        A mapping of datasets objects to be served. If a mapping is given, keys
+        are used as dataset ids and are converted to strings. See also the notes below.
     routers : list, optional
         A list of dataset-specific :class:`fastapi.APIRouter` instances to
-        include in the fastAPI application. If None, the default routers will be
-        included.
+        include in the fastAPI application. These routers are in addition
+        to any loaded via plugins.
         The items of the list may also be tuples with the following format:
         ``[(router1, {'prefix': '/foo', 'tags': ['foo', 'bar']})]``, where
         the 1st tuple element is a :class:`fastapi.APIRouter` instance and the
@@ -94,6 +47,10 @@ class Rest:
     app_kws : dict, optional
         Dictionary of keyword arguments to be passed to
         :meth:`fastapi.FastAPI.__init__()`.
+    plugins : dict, optional
+        Optional dictionary of loaded, configured plugins.
+        Overrides automatic loading of plugins.
+        If no plugins are desired, set to an empty dict.
 
     Notes
     -----
@@ -106,29 +63,95 @@ class Rest:
 
     """
 
-    def __init__(self, datasets, routers=None, cache_kws=None, app_kws=None):
+    def __init__(
+        self,
+        datasets: Optional[Dict[str, xr.Dataset]] = None,
+        routers: Optional[APIRouter] = None,
+        cache_kws=None,
+        app_kws=None,
+        plugins: Optional[Dict[str, Plugin]] = None,
+    ):
+        self.setup_datasets(datasets or {})
+        self.setup_plugins(plugins)
 
+        routers = normalize_app_routers(routers or [], self._dataset_route_prefix)
+        check_route_conflicts(routers)
+        self._routers = routers
+
+        self.init_app_kwargs(app_kws)
+        self.init_cache_kwargs(cache_kws)
+
+    def setup_datasets(self, datasets: Dict[str, xr.Dataset]):
+        """Initialize datasets and getter functions"""
         self._datasets = normalize_datasets(datasets)
 
-        if not self._datasets:
-            # publish single dataset
-            self._get_dataset_func = _dataset_unique_getter(datasets)
-            dataset_route_prefix = ''
-        else:
-            self._get_dataset_func = _dataset_from_collection_getter(self._datasets)
-            dataset_route_prefix = '/datasets/{dataset_id}'
+        self._get_dataset_func = self.get_dataset_from_plugins
+        self._dataset_route_prefix = '/datasets/{dataset_id}'
+        return self._dataset_route_prefix
 
-        self._app_routers = _set_app_routers(routers, dataset_route_prefix)
+    def get_datasets_from_plugins(self):
+        """Get dataset ids from directly loaded datasets and plugins"""
+        dataset_ids = list(self._datasets)
 
-        self._app = None
-        self._app_kws = {}
-        if app_kws is not None:
-            self._app_kws.update(app_kws)
+        for plugin_dataset_ids in self.pm.hook.get_datasets():
+            dataset_ids.extend(plugin_dataset_ids)
 
+        return dataset_ids
+
+    def get_dataset_from_plugins(self, dataset_id: str):
+        """Attempt to load dataset from plugins, otherwise load"""
+        dataset = self.pm.hook.get_dataset(dataset_id=dataset_id)
+
+        if dataset:
+            return dataset
+
+        if dataset_id not in self._datasets:
+            raise HTTPException(status_code=404, detail=f"Dataset '{dataset_id}' not found")
+
+        return self._datasets[dataset_id]
+
+    def setup_plugins(self, plugins: Optional[Dict[str, Plugin]] = None):
+        """Initialize and load plugins from entry_points"""
+        if plugins is None:
+            plugins = load_default_plugins()
+
+        self.pm = pluggy.PluginManager('xpublish')
+        self.pm.add_hookspecs(PluginSpec)
+
+        for name, plugin in plugins.items():
+            self.pm.register(plugin, name=name)
+
+        for hookspec in self.pm.hook.register_hookspec():
+            self.pm.add_hookspecs(hookspec)
+
+    def register_plugin(self, plugin: Plugin, plugin_name: Optional[str] = None):
+        """Register a plugin"""
+        existing_plugins = self.pm.get_plugins()
+        try:
+            self.pm.register(plugin, plugin_name or plugin.name)
+        except AttributeError as e:
+            raise AttributeError(
+                f'Plugin {plugin} is likely not initialized before registration'
+            ) from e
+
+        for hookspec in self.pm.subset_hook_caller(
+            'register_hookspec', remove_plugins=existing_plugins
+        )():
+            self.pm.add_hookspecs(hookspec)
+
+    def init_cache_kwargs(self, cache_kws):
+        """Set up cache kwargs"""
         self._cache = None
         self._cache_kws = {'available_bytes': 1e6}
         if cache_kws is not None:
             self._cache_kws.update(cache_kws)
+
+    def init_app_kwargs(self, app_kws):
+        """Set up FastAPI application kwargs"""
+        self._app = None
+        self._app_kws = {}
+        if app_kws is not None:
+            self._app_kws.update(app_kws)
 
     @property
     def cache(self) -> cachey.Cache:
@@ -138,21 +161,74 @@ class Rest:
             self._cache = cachey.Cache(**self._cache_kws)
         return self._cache
 
+    @property
+    def plugins(self) -> Dict[str, Plugin]:
+        """Returns the loaded plugins"""
+        return dict(self.pm.list_name_plugin())
+
+    def _init_routers(self, dataset_routers: Optional[APIRouter]):
+        """Setup plugin and dataset routers. Needs to run after dataset and plugin setup"""
+        app_routers, plugin_dataset_routers = self.plugin_routers()
+
+        if self._dataset_route_prefix:
+            app_routers.append((dataset_collection_router, {'tags': ['info']}))
+
+        app_routers.extend(
+            normalize_app_routers(
+                plugin_dataset_routers + (dataset_routers or []), self._dataset_route_prefix
+            )
+        )
+
+        check_route_conflicts(app_routers)
+
+        self._app_routers = app_routers
+
+    def plugin_routers(self):
+        """Load the app and dataset routers for plugins"""
+        app_routers = []
+        dataset_routers = []
+
+        deps = self.dependencies()
+
+        for router in self.pm.hook.app_router(deps=deps):
+            app_routers.append((router, {}))
+
+        for router in self.pm.hook.dataset_router(deps=deps):
+            dataset_routers.append((router, {}))
+
+        return app_routers, dataset_routers
+
+    def dependencies(self) -> Dependencies:
+        deps = Dependencies(
+            dataset_ids=self.get_datasets_from_plugins,
+            dataset=self._get_dataset_func,
+            cache=lambda: self.cache,
+            plugins=lambda: self.plugins,
+            plugin_manager=lambda: self.pm,
+        )
+
+        return deps
+
+    def _init_dependencies(self):
+        """Initialize dependencies"""
+        deps = self.dependencies()
+
+        self._app.dependency_overrides[get_dataset_ids] = deps.dataset_ids
+        self._app.dependency_overrides[get_dataset] = deps.dataset
+        self._app.dependency_overrides[get_cache] = deps.cache
+        self._app.dependency_overrides[get_plugins] = deps.plugins
+        self._app.dependency_overrides[get_plugin_manager] = deps.plugin_manager
+
     def _init_app(self):
         """Initiate the FastAPI application."""
 
         self._app = FastAPI(**self._app_kws)
 
+        self._init_routers(self._routers)
         for rt, kwargs in self._app_routers:
             self._app.include_router(rt, **kwargs)
 
-        self._app.dependency_overrides[get_dataset_ids] = lambda: list(self._datasets)
-        self._app.dependency_overrides[get_dataset] = self._get_dataset_func
-        self._app.dependency_overrides[get_cache] = lambda: self.cache
-
-        if not self._datasets:
-            # fix openapi spec for single dataset
-            self._app.openapi = SingleDatasetOpenAPIOverrider(self._app).openapi
+        self._init_dependencies()
 
         return self._app
 
@@ -186,70 +262,39 @@ class Rest:
         uvicorn.run(self.app, host=host, port=port, log_level=log_level, **kwargs)
 
 
-@xr.register_dataset_accessor('rest')
-class RestAccessor:
-    """REST API Accessor for serving one dataset in its
-    dedicated FastAPI application.
+class SingleDatasetRest(Rest):
+    """Used to publish a single Xarray dataset via a REST API (FastAPI application).
+    Use xpublish.Rest to publish multiple datasets.
 
+    Parameters:
+    -----------
+    dataset : :class:`xarray.Dataset`
+        A single :class:`xarray.Dataset` object to be served.
     """
 
-    def __init__(self, xarray_obj):
+    def __init__(
+        self,
+        dataset: xr.Dataset,
+        routers=None,
+        cache_kws=None,
+        app_kws=None,
+        plugins: Optional[Dict[str, Plugin]] = None,
+    ):
+        self._dataset = dataset
 
-        self._obj = xarray_obj
-        self._rest = None
+        super().__init__({}, routers, cache_kws, app_kws, plugins)
 
-        self._initialized = False
+    def setup_datasets(self, datasets):
+        self._dataset_route_prefix = ''
+        self._datasets = {}
 
-    def _get_rest_obj(self):
-        if self._rest is None:
-            self._rest = Rest(self._obj)
+        self._get_dataset_func = lambda: self._dataset
 
-        return self._rest
+        return self._dataset_route_prefix
 
-    def __call__(self, **kwargs):
-        """Initialize this accessor by setting optional configuration values.
+    def _init_app(self):
+        self._app = super()._init_app()
 
-        Parameters
-        ----------
-        **kwargs
-            Arguments passed to :func:`xpublish.Rest.__init__`.
+        self._app.openapi = SingleDatasetOpenAPIOverrider(self._app).openapi
 
-        Notes
-        -----
-        This method can only be invoked once.
-
-        """
-        if self._initialized:
-            raise RuntimeError('This accessor has already been initialized')
-        self._initialized = True
-
-        self._rest = Rest(self._obj, **kwargs)
-
-        return self
-
-    @property
-    def cache(self) -> cachey.Cache:
-        """Returns the :class:`cachey.Cache` instance used by the FastAPI application."""
-
-        return self._get_rest_obj().cache
-
-    @property
-    def app(self) -> FastAPI:
-        """Returns the :class:`fastapi.FastAPI` application instance."""
-
-        return self._get_rest_obj().app
-
-    def serve(self, **kwargs):
-        """Serve this FastAPI application via :func:`uvicorn.run`.
-
-        Parameters
-        ----------
-        **kwargs :
-            Arguments passed to :func:`xpublish.Rest.serve`.
-
-        Notes
-        -----
-        This method is blocking and does not return.
-
-        """
-        self._get_rest_obj().serve(**kwargs)
+        return self._app

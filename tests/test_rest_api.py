@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from starlette.testclient import TestClient
 
 import xpublish  # noqa: F401
-from xpublish import Rest
+from xpublish import Plugin, Rest, SingleDatasetRest, hookimpl, hookspec
 from xpublish.dependencies import get_dataset
 from xpublish.utils.zarr import create_zmetadata, jsonify_zmetadata
 
@@ -20,7 +20,7 @@ def airtemp_rest(airtemp_ds):
         docs_url='/data-docs',
     )
 
-    return Rest(airtemp_ds, app_kws=app_kws)
+    return SingleDatasetRest(airtemp_ds, app_kws=app_kws)
 
 
 @pytest.fixture(scope='function')
@@ -57,6 +57,52 @@ def dims_router():
         return dataset.dims
 
     return router
+
+
+@pytest.fixture(scope='function')
+def dataset_plugin(airtemp_ds):
+    class AirtempPlugin(Plugin):
+        name = 'airtemp'
+
+        @hookimpl
+        def get_dataset(self, dataset_id: str):
+            if dataset_id == 'airtemp':
+                return airtemp_ds
+
+        @hookimpl
+        def get_datasets(self):
+            return ['airtemp']
+
+    return AirtempPlugin()
+
+
+@pytest.fixture(scope='function')
+def hook_spec_plugin():
+    class TestHookSpec:
+        @hookspec(firstresult=True)
+        def hello(self):
+            pass
+
+    class HookSpecPlugin(Plugin):
+        name = 'hook_spec'
+
+        @hookimpl
+        def register_hookspec(self):
+            return TestHookSpec
+
+    return HookSpecPlugin()
+
+
+@pytest.fixture(scope='function')
+def hook_implementation_plugin():
+    class HookImplementationPlugin(Plugin):
+        name = 'hook_implementation'
+
+        @hookimpl
+        def hello(self):
+            return 'world'
+
+    return HookImplementationPlugin()
 
 
 def test_init_cache_kws(airtemp_ds):
@@ -102,7 +148,7 @@ def test_custom_app_routers(airtemp_ds, dims_router, router_kws, path):
     else:
         routers = [(dims_router, router_kws)]
 
-    rest = Rest(airtemp_ds, routers=routers)
+    rest = SingleDatasetRest(airtemp_ds, routers=routers, plugins={})
     client = TestClient(rest.app)
 
     response = client.get(path)
@@ -136,6 +182,47 @@ def test_custom_app_routers_conflict(airtemp_ds):
         Rest(airtemp_ds, routers=[(router1, {'prefix': '/same'}), router2])
 
 
+def test_custom_dataset_plugin(airtemp_ds, dataset_plugin):
+    rest = Rest({})
+    rest.register_plugin(dataset_plugin)
+
+    client = TestClient(rest.app)
+
+    datasets_response = client.get('/datasets')
+    assert 'airtemp' in datasets_response.json()
+
+    info_response = client.get('/datasets/airtemp/info')
+    json_response = info_response.json()
+    assert json_response['dimensions'] == airtemp_ds.dims
+    assert list(json_response['variables'].keys()) == list(airtemp_ds.variables.keys())
+
+
+def test_custom_plugin_hooks_register(hook_spec_plugin, hook_implementation_plugin):
+    rest = Rest({})
+    rest.register_plugin(hook_implementation_plugin)
+    rest.register_plugin(hook_spec_plugin)
+
+    assert 'world' == rest.pm.hook.hello()
+
+
+def test_custom_plugin_hooks_init(hook_spec_plugin, hook_implementation_plugin):
+    rest = Rest(
+        {},
+        plugins={'hook_implementation': hook_implementation_plugin, 'hook_spec': hook_spec_plugin},
+    )
+
+    assert 'world' == rest.pm.hook.hello()
+
+
+def test_custom_plugin_not_initialized():
+    class TestPlugin(Plugin):
+        pass
+
+    rest = Rest({})
+    with pytest.raises(AttributeError):
+        rest.register_plugin(TestPlugin)
+
+
 def test_keys(airtemp_ds, airtemp_app_client):
     response = airtemp_app_client.get('/keys')
     assert response.status_code == 200
@@ -163,6 +250,27 @@ def test_versions(airtemp_app_client):
     response = airtemp_app_client.get('/versions')
     assert response.status_code == 200
     assert response.json()['xarray'] == xr.__version__
+
+
+def test_plugin_versions(airtemp_app_client):
+    response = airtemp_app_client.get('/plugins')
+    assert response.status_code == 200
+
+    plugins = response.json()
+
+    assert plugins['info']['version'] == xpublish.__version__
+
+
+def test_plugins_loaded(airtemp_app_client):
+    response = airtemp_app_client.get('/plugins')
+    assert response.status_code == 200
+
+    plugins = response.json()
+
+    assert 'info' in plugins
+    assert 'module_version' in plugins
+    assert 'plugin_info' in plugins
+    assert 'zarr' in plugins
 
 
 def test_repr(airtemp_ds, airtemp_app_client):
@@ -209,7 +317,7 @@ def test_array_group_raises_404(airtemp_app_client):
 
 
 def test_cache(airtemp_ds):
-    rest = Rest(airtemp_ds, cache_kws={'available_bytes': 1e9})
+    rest = SingleDatasetRest(airtemp_ds, cache_kws={'available_bytes': 1e9})
     assert rest.cache.available_bytes == 1e9
 
     client = TestClient(rest.app)
@@ -246,6 +354,13 @@ def test_rest_accessor_kws(airtemp_ds):
     assert response.status_code == 200
 
 
+def test_rest_accessor_single_dataset(airtemp_ds):
+    client = TestClient(airtemp_ds.rest.app)
+
+    response = client.get('/datasets')
+    assert response.status_code == 404
+
+
 def test_ds_dict_keys(ds_dict, ds_dict_app_client):
     response = ds_dict_app_client.get('/datasets')
     assert response.status_code == 200
@@ -273,12 +388,18 @@ def test_ds_dict_cache(ds_dict):
 def test_single_dataset_openapi_override(airtemp_rest):
     openapi_schema = airtemp_rest.app.openapi()
 
-    # "dataset_id" parameter should be absent in all paths
-    assert len(openapi_schema['paths']['/']['get']['parameters']) == 0
+    with pytest.raises(KeyError):
+        # "dataset_id" parameter should be absent in all paths
+        # parameters is no longer generated when plugins use passed in deps
+        #  and get_dataset is replaced
+        assert len(openapi_schema['paths']['/']['get']['parameters']) == 0
 
-    # test cached value
-    openapi_schema = airtemp_rest.app.openapi()
-    assert len(openapi_schema['paths']['/']['get']['parameters']) == 0
+    with pytest.raises(KeyError):
+        # test cached value
+        # parameters is no longer generated when plugins use passed in deps
+        #  and get_dataset is replaced
+        openapi_schema = airtemp_rest.app.openapi()
+        assert len(openapi_schema['paths']['/']['get']['parameters']) == 0
 
 
 def test_serve(airtemp_rest, mocker):
