@@ -127,7 +127,12 @@ class Rest:
     def register_plugin(self, plugin: Plugin, plugin_name: Optional[str] = None):
         """Register a plugin"""
         existing_plugins = self.pm.get_plugins()
-        self.pm.register(plugin, plugin_name or plugin.name)
+        try:
+            self.pm.register(plugin, plugin_name or plugin.name)
+        except AttributeError as e:
+            raise AttributeError(
+                f'Plugin {plugin} is likely not initialized before registration'
+            ) from e
 
         for hookspec in self.pm.subset_hook_caller(
             'register_hookspec', remove_plugins=existing_plugins
@@ -186,10 +191,10 @@ class Rest:
         deps = self.dependencies()
 
         for router in self.pm.hook.app_router(deps=deps):
-            app_routers.append((router, {'prefix': router.prefix, 'tags': router.tags}))
+            app_routers.append((router, {}))
 
         for router in self.pm.hook.dataset_router(deps=deps):
-            dataset_routers.append((router, {'prefix': router.prefix, 'tags': router.tags}))
+            dataset_routers.append((router, {}))
 
         return app_routers, dataset_routers
 

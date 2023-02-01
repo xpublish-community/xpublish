@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from starlette.testclient import TestClient
 
 import xpublish  # noqa: F401
-from xpublish import Rest, SingleDatasetRest
+from xpublish import Plugin, Rest, SingleDatasetRest, hookimpl, hookspec
 from xpublish.dependencies import get_dataset
 from xpublish.utils.zarr import create_zmetadata, jsonify_zmetadata
 
@@ -57,6 +57,52 @@ def dims_router():
         return dataset.dims
 
     return router
+
+
+@pytest.fixture(scope='function')
+def dataset_plugin(airtemp_ds):
+    class AirtempPlugin(Plugin):
+        name = 'airtemp'
+
+        @hookimpl
+        def get_dataset(self, dataset_id: str):
+            if dataset_id == 'airtemp':
+                return airtemp_ds
+
+        @hookimpl
+        def get_datasets(self):
+            return ['airtemp']
+
+    return AirtempPlugin()
+
+
+@pytest.fixture(scope='function')
+def hook_spec_plugin():
+    class TestHookSpec:
+        @hookspec(firstresult=True)
+        def hello(self):
+            pass
+
+    class HookSpecPlugin(Plugin):
+        name = 'hook_spec'
+
+        @hookimpl
+        def register_hookspec(self):
+            return TestHookSpec
+
+    return HookSpecPlugin()
+
+
+@pytest.fixture(scope='function')
+def hook_implementation_plugin():
+    class HookImplementationPlugin(Plugin):
+        name = 'hook_implementation'
+
+        @hookimpl
+        def hello(self):
+            return 'world'
+
+    return HookImplementationPlugin()
 
 
 def test_init_cache_kws(airtemp_ds):
@@ -136,6 +182,47 @@ def test_custom_app_routers_conflict(airtemp_ds):
         Rest(airtemp_ds, routers=[(router1, {'prefix': '/same'}), router2])
 
 
+def test_custom_dataset_plugin(airtemp_ds, dataset_plugin):
+    rest = Rest({})
+    rest.register_plugin(dataset_plugin)
+
+    client = TestClient(rest.app)
+
+    datasets_response = client.get('/datasets')
+    assert 'airtemp' in datasets_response.json()
+
+    info_response = client.get('/datasets/airtemp/info')
+    json_response = info_response.json()
+    assert json_response['dimensions'] == airtemp_ds.dims
+    assert list(json_response['variables'].keys()) == list(airtemp_ds.variables.keys())
+
+
+def test_custom_plugin_hooks_register(hook_spec_plugin, hook_implementation_plugin):
+    rest = Rest({})
+    rest.register_plugin(hook_implementation_plugin)
+    rest.register_plugin(hook_spec_plugin)
+
+    assert 'world' == rest.pm.hook.hello()
+
+
+def test_custom_plugin_hooks_init(hook_spec_plugin, hook_implementation_plugin):
+    rest = Rest(
+        {},
+        plugins={'hook_implementation': hook_implementation_plugin, 'hook_spec': hook_spec_plugin},
+    )
+
+    assert 'world' == rest.pm.hook.hello()
+
+
+def test_custom_plugin_not_initialized():
+    class TestPlugin(Plugin):
+        pass
+
+    rest = Rest({})
+    with pytest.raises(AttributeError):
+        rest.register_plugin(TestPlugin)
+
+
 def test_keys(airtemp_ds, airtemp_app_client):
     response = airtemp_app_client.get('/keys')
     assert response.status_code == 200
@@ -163,6 +250,27 @@ def test_versions(airtemp_app_client):
     response = airtemp_app_client.get('/versions')
     assert response.status_code == 200
     assert response.json()['xarray'] == xr.__version__
+
+
+def test_plugin_versions(airtemp_app_client):
+    response = airtemp_app_client.get('/plugins')
+    assert response.status_code == 200
+
+    plugins = response.json()
+
+    assert plugins['info']['version'] == xpublish.__version__
+
+
+def test_plugins_loaded(airtemp_app_client):
+    response = airtemp_app_client.get('/plugins')
+    assert response.status_code == 200
+
+    plugins = response.json()
+
+    assert 'info' in plugins
+    assert 'module_version' in plugins
+    assert 'plugin_info' in plugins
+    assert 'zarr' in plugins
 
 
 def test_repr(airtemp_ds, airtemp_app_client):

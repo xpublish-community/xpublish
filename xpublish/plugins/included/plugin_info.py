@@ -37,8 +37,8 @@ class PluginInfoPlugin(Plugin):
                 try:
                     mod = importlib.import_module(module_name)
                     version = getattr(mod, '__version__', None)
-                except ImportError:
-                    version = None
+                except ImportError:  # pragma: no cover
+                    version = None  # pragma: no cover
 
                 plugin_info[name] = PluginInfo(
                     path=f'{plugin_type.__module__}.{plugin.__repr_name__()}', version=version

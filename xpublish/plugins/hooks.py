@@ -21,7 +21,7 @@ class Dependencies(BaseModel):
 
     def __hash__(self):
         """Dependency functions aren't easy to hash"""
-        return 0
+        return 0  # pragma: no cover
 
 
 class Plugin(BaseModel):
@@ -44,7 +44,7 @@ class Plugin(BaseModel):
 
         for e in self.dict():
             if isinstance(e, list):
-                things_to_hash.append(tuple(e))
+                things_to_hash.append(tuple(e))  # pragma: no cover
             else:
                 things_to_hash.append(e)
 

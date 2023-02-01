@@ -12,7 +12,7 @@ from .utils.api import DATASET_ID_ATTR_KEY
 from .utils.zarr import create_zmetadata, create_zvariables, zarr_metadata_key
 
 if TYPE_CHECKING:
-    from .plugins import Plugin
+    from .plugins import Plugin  # pragma: no cover
 
 
 def get_dataset_ids() -> List[str]:
@@ -39,7 +39,7 @@ def get_dataset(dataset_id: str) -> xr.Dataset:
     application.
 
     """
-    return xr.Dataset()
+    return xr.Dataset()  # pragma: no cover
 
 
 def get_cache() -> cachey.Cache:
@@ -53,7 +53,7 @@ def get_cache() -> cachey.Cache:
     application.
 
     """
-    return cachey.Cache(available_bytes=1e6)
+    return cachey.Cache(available_bytes=1e6)  # pragma: no cover
 
 
 def get_zvariables(
@@ -95,7 +95,7 @@ def get_zmetadata(
 def get_plugins() -> Dict[str, 'Plugin']:
     """FastAPI dependency that returns the a dictionary of loaded plugins"""
 
-    return {}
+    return {}  # pragma: no cover
 
 
 def get_plugin_manager() -> pluggy.PluginManager:
