@@ -61,16 +61,15 @@ xpublish could always use more documentation. What exactly is needed?
 You can also edit documentation files directly in the GitHub web interface,
 without using a local copy. This can be convenient for small fixes.
 
-To build the documentation locally, you first need to install the following
-tools:
-
-- `Sphinx <https://github.com/sphinx-doc/sphinx>`__
-- `sphinx_rtd_theme <https://github.com/readthedocs/sphinx_rtd_theme>`__
-- `sphinx-autosummary-accessors <https://github.com/xarray-contrib/sphinx-autosummary-accessors>`__
+To build the documentation locally, you first need to have a local development environment setup
+by following the the steps in `Preparing Pull Requests <#pull-requests>`__ through the **Install
+dependencies into a new conda environment** step.
 
 You can then build the documentation with the following commands::
 
+    $ conda activate xpublish-dev
     $ cd docs
+    $ pip install -r requirements.txt
     $ make html
 
 The built documentation should be available in the ``docs/_build/`` folder.
@@ -91,9 +90,9 @@ Preparing Pull Requests
     $ git clone git@github.com:YOUR_GITHUB_USERNAME/xpublish.git
     $ cd xpublish
 
-    # now, to fix a bug or add feature create your own branch off "master":
+    # now, to fix a bug or add feature create your own branch off "main":
 
-    $ git checkout -b your-bugfix-feature-branch-name master
+    $ git checkout -b your-bugfix-feature-branch-name main
 
 #. Install `pre-commit <https://pre-commit.com>`_ and its hook on the Xpublish repo::
 
@@ -107,17 +106,19 @@ Preparing Pull Requests
 
 #. Install dependencies into a new conda environment::
 
-    $ conda env update -f ci/environment-dev-3.7.yml
+    $ conda create -n xpublish-dev
+    $ conda activate xpublish-dev
+    $ pip install -r dev-requirements.txt
+    $ pip install --no-deps -e .
 
 #. Run all the tests
 
    Now running tests is as simple as issuing this command::
 
     $ conda activate xpublish-dev
-    $ pytest --junitxml=test-reports/junit.xml --cov=./ --verbose
+    $ pytest
 
-
-   This command will run tests via the "pytest" tool against Python 3.7.
+   This command will run tests via the "pytest" tool.
 
 #. You can now edit your local working copy and run the tests again as necessary. Please follow PEP-8 for naming.
 
@@ -134,4 +135,4 @@ Preparing Pull Requests
     compare: your-branch-name
 
     base-fork: xarray-contrib/xpublish
-    base: master
+    base: main
