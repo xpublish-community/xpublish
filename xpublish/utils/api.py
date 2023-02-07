@@ -57,7 +57,6 @@ def normalize_app_routers(routers: list, prefix: str) -> List[Tuple[APIRouter, D
 
 
 def check_route_conflicts(routers):
-
     paths = []
 
     for router, kws in routers:
@@ -95,7 +94,6 @@ class SingleDatasetOpenAPIOverrider:
         self._app = app
 
     def openapi(self):
-
         if self._app.openapi_schema:
             return self._app.openapi_schema
 
