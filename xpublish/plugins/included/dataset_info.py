@@ -3,22 +3,13 @@ from typing import Any, Sequence
 
 import xarray as xr
 from fastapi import APIRouter, Depends
-from starlette.responses import HTMLResponse, JSONResponse  # type: ignore
+from starlette.responses import HTMLResponse  # type: ignore
 from zarr.storage import attrs_key  # type: ignore
+
+from xpublish.utils.api import JSONResponse
 
 from ...dependencies import get_zmetadata, get_zvariables
 from .. import Dependencies, Plugin, hookimpl
-
-
-class JsonInfoResponse(JSONResponse):
-    def render(self, content: Any) -> bytes:
-        return json.dumps(
-            content,
-            ensure_ascii=False,
-            allow_nan=True,
-            indent=None,
-            separators=(',', ':'),
-        ).encode('utf-8')
 
 
 class DatasetInfoPlugin(Plugin):
@@ -44,13 +35,13 @@ class DatasetInfoPlugin(Plugin):
         def list_keys(
             dataset=Depends(deps.dataset),
         ):
-            return list(dataset.variables)
+            return JSONResponse(list(dataset.variables))
 
         @router.get('/dict')
         def to_dict(
             dataset=Depends(deps.dataset),
         ):
-            return dataset.to_dict(data=False)
+            return JSONResponse(dataset.to_dict(data=False))
 
         @router.get('/info')
         def info(
@@ -79,6 +70,6 @@ class DatasetInfoPlugin(Plugin):
 
             info['global_attributes'] = meta[attrs_key]
 
-            return JsonInfoResponse(info)
+            return JSONResponse(info)
 
         return router

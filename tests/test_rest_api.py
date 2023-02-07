@@ -1,3 +1,5 @@
+import json
+
 import pytest
 import uvicorn
 import xarray as xr
@@ -281,7 +283,9 @@ def test_repr(airtemp_ds, airtemp_app_client):
 def test_zmetadata(airtemp_ds, airtemp_app_client):
     response = airtemp_app_client.get('/.zmetadata')
     assert response.status_code == 200
-    assert response.json() == jsonify_zmetadata(airtemp_ds, create_zmetadata(airtemp_ds))
+    assert json.dumps(response.json()) == json.dumps(
+        jsonify_zmetadata(airtemp_ds, create_zmetadata(airtemp_ds))
+    )
 
 
 def test_bad_key(airtemp_app_client):

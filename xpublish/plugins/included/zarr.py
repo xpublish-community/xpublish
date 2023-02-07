@@ -8,6 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from starlette.responses import Response  # type: ignore
 from zarr.storage import array_meta_key, attrs_key, group_meta_key  # type: ignore
 
+from xpublish.utils.api import JSONResponse
+
 from ...dependencies import get_zmetadata, get_zvariables
 from ...utils.api import DATASET_ID_ATTR_KEY
 from ...utils.cache import CostTimer
@@ -39,7 +41,7 @@ class ZarrPlugin(Plugin):
 
             zjson = jsonify_zmetadata(dataset, zmetadata)
 
-            return Response(json.dumps(zjson).encode('ascii'), media_type='application/json')
+            return JSONResponse(zjson)
 
         @router.get(f'/{group_meta_key}')
         def get_zarr_group(
@@ -49,7 +51,7 @@ class ZarrPlugin(Plugin):
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
 
-            return zmetadata['metadata'][group_meta_key]
+            return JSONResponse(zmetadata['metadata'][group_meta_key])
 
         @router.get(f'/{attrs_key}')
         def get_zarr_attrs(
@@ -59,7 +61,7 @@ class ZarrPlugin(Plugin):
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
 
-            return zmetadata['metadata'][attrs_key]
+            return JSONResponse(zmetadata['metadata'][attrs_key])
 
         @router.get('/{var}/{chunk}')
         def get_variable_chunk(
@@ -80,7 +82,7 @@ class ZarrPlugin(Plugin):
             if array_meta_key in chunk:
                 return zmetadata['metadata'][f'{var}/{array_meta_key}']
             elif attrs_key in chunk:
-                return zmetadata['metadata'][f'{var}/{attrs_key}']
+                return JSONResponse(zmetadata['metadata'][f'{var}/{attrs_key}'])
             elif group_meta_key in chunk:
                 raise HTTPException(status_code=404, detail='No subgroups')
             else:
