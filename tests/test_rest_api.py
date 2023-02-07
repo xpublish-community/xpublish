@@ -236,6 +236,13 @@ def test_info(airtemp_ds, airtemp_app_client):
     assert json_response['dimensions'] == airtemp_ds.dims
     assert list(json_response['variables'].keys()) == list(airtemp_ds.variables.keys())
 
+    # Second request, to make sure the cached data wasn't changed
+    response = airtemp_app_client.get('/info')
+    assert response.status_code == 200
+    json_response = response.json()
+    assert json_response['dimensions'] == airtemp_ds.dims
+    assert list(json_response['variables'].keys()) == list(airtemp_ds.variables.keys())
+
 
 def test_dict(airtemp_ds, airtemp_app_client):
     response = airtemp_app_client.get('/dict')
