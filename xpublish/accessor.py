@@ -13,7 +13,6 @@ class RestAccessor:
     """
 
     def __init__(self, xarray_obj):
-
         self._obj = xarray_obj
         self._rest = None
 
