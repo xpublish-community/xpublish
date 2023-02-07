@@ -1,12 +1,24 @@
-from typing import Sequence
+import json
+from typing import Any, Sequence
 
 import xarray as xr
 from fastapi import APIRouter, Depends
-from starlette.responses import HTMLResponse  # type: ignore
+from starlette.responses import HTMLResponse, JSONResponse  # type: ignore
 from zarr.storage import attrs_key  # type: ignore
 
 from ...dependencies import get_zmetadata, get_zvariables
 from .. import Dependencies, Plugin, hookimpl
+
+
+class JsonInfoResponse(JSONResponse):
+    def render(self, content: Any) -> bytes:
+        return json.dumps(
+            content,
+            ensure_ascii=False,
+            allow_nan=True,
+            indent=None,
+            separators=(',', ':'),
+        ).encode('utf-8')
 
 
 class DatasetInfoPlugin(Plugin):
@@ -67,6 +79,6 @@ class DatasetInfoPlugin(Plugin):
 
             info['global_attributes'] = meta[attrs_key]
 
-            return info
+            return JsonInfoResponse(info)
 
         return router
