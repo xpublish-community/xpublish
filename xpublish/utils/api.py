@@ -1,9 +1,11 @@
+import json
 from collections.abc import Mapping
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import xarray as xr
 from fastapi import APIRouter
 from fastapi.openapi.utils import get_openapi
+from starlette.responses import JSONResponse as StarletteJSONResponse  # type: ignore
 
 DATASET_ID_ATTR_KEY = '_xpublish_id'
 
@@ -118,3 +120,15 @@ class SingleDatasetOpenAPIOverrider:
         self._app.openapi_schema = openapi_schema
 
         return self._app.openapi_schema
+
+
+class JSONResponse(StarletteJSONResponse):
+    def __init__(self, *args, **kwargs):
+        self._render_kwargs = dict(
+            ensure_ascii=True, allow_nan=True, indent=None, separators=(',', ':')
+        )
+        self._render_kwargs.update(kwargs.pop('render_kwargs', {}))
+        super().__init__(*args, **kwargs)
+
+    def render(self, content: Any) -> bytes:
+        return json.dumps(content, **self._render_kwargs).encode('utf-8')
