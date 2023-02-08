@@ -1,5 +1,4 @@
-import json
-from typing import Any, Sequence
+from typing import Sequence
 
 import xarray as xr
 from fastapi import APIRouter, Depends
