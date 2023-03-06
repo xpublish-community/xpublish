@@ -8,7 +8,7 @@ Top-level Rest class
 ====================
 
 The :class:`~xpublish.Rest` class can be used for publishing a
-:class:`xarray.Dataset` object or a collection of Dataset objects.
+a collection of :class:`xarray.Dataset` objects.
 
 .. autosummary::
    :toctree: generated/
@@ -18,12 +18,19 @@ The :class:`~xpublish.Rest` class can be used for publishing a
    Rest.cache
    Rest.serve
 
+For serving a single dataset the :class:`~xpublish.SingleDatasetRest` is used instead.
+
+.. autosummary::
+   :toctree: generated/
+
+   SingleDatasetRest
+
 Dataset.rest (xarray accessor)
 ==============================
 
 This accessor extends :py:class:`xarray.Dataset` with the same interface than
-:class:`~xpublish.Rest`. It is a convenient method for publishing one single
-dataset. Proper use of this accessor should be like:
+:class:`~xpublish.Rest` or :class:`~xpublish.SingleDatasetRest`. It is a convenient
+method for publishing one single dataset. Proper use of this accessor should be like:
 
 .. code-block:: python
 
@@ -77,3 +84,22 @@ when creating custom API endpoints.
    get_cache
    get_zvariables
    get_zmetadata
+
+Plugins
+=======
+
+Plugins are inherit from the :class:`~xpublish.Plugin` class, and implement various hooks.
+
+.. currentmodule:: xpublish
+
+.. autosummary::
+   :toctree: generated/
+
+   Plugin
+   hookimpl
+   hookspec
+   Dependencies
+   plugins.hooks.PluginSpec
+   plugins.manage.find_default_plugins
+   plugins.manage.load_default_plugins
+   plugins.manage.configure_plugins
