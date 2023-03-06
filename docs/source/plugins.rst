@@ -14,10 +14,10 @@ There are a few main varieties of plugins that Xpublish supports, but those
 provide a lot of flexibility, and can enable whole new categories of plugins
 and functionality.
 
-- `Dataset router <Dataset Router Plugins_>`_
-- `App router <App Router Plugins_>`_
-- `Dataset provider <Dataset Provider Plugins_>`_
-- `Hook spec <Hook Spec Plugins_>`_
+* `Dataset router <Dataset Router Plugins_>`_
+* `App router <App Router Plugins_>`_
+* `Dataset provider <Dataset Provider Plugins_>`_
+* `Hook spec <Hook Spec Plugins_>`_
 
 Plugins work by implementing specific methods to support a variety of usage,
 and marking the implementations with a decorator. A plugin can also implement
