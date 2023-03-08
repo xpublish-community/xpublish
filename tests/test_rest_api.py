@@ -267,7 +267,7 @@ def test_plugin_versions(airtemp_app_client):
 
     plugins = response.json()
 
-    assert plugins['info']['version'] == xpublish.__version__
+    assert plugins['dataset_info']['version'] == xpublish.__version__
 
 
 def test_plugins_loaded(airtemp_app_client):
@@ -276,7 +276,7 @@ def test_plugins_loaded(airtemp_app_client):
 
     plugins = response.json()
 
-    assert 'info' in plugins
+    assert 'dataset_info' in plugins
     assert 'module_version' in plugins
     assert 'plugin_info' in plugins
     assert 'zarr' in plugins
