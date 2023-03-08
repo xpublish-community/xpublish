@@ -63,14 +63,14 @@ def test_overwrite_plugins(airtemp_ds):
     app = rest.app
     client = TestClient(app)
 
-    # Original plugin shouldn't respond... it's gone
+    # /info (default) plugin shouldn't respond... it's gone
     assert client.get('/datasets/airtemp/info').status_code == 404
-
-    # # Original plugin shouldn't respond... it's gone
-    # assert client.get('/datasets/airtemp/meta').status_code == 200
-
-    # New plugin should respond correctly
-    info_response = client.get('/datasets/airtemp/newmeta/info')
+    # /newmeta plugin should respond correctly
+    assert client.get('/datasets/airtemp/newmeta').status_code == 200
+    # /meta was never registered
+    assert client.get('/datasets/airtemp/meta').status_code == 404
+    # /newinfo plugin should respond correctly
+    info_response = client.get('/datasets/airtemp/newinfo/info')
     json_response = info_response.json()
     assert json_response['dimensions'] == airtemp_ds.dims
     assert list(json_response['variables'].keys()) == list(airtemp_ds.variables.keys())
