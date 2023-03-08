@@ -312,7 +312,7 @@ A plugin that provides the Xarray tutorial ``air_temperature`` dataset.
             return ["air"]
 
         @hookimpl
-        def get_dataset(dataset_id: str):
+        def get_dataset(self, dataset_id: str):
             if dataset_id == "air":
                 return xr.tutorial.open_dataset("air_temperature")
 
