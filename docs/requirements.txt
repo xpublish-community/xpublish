@@ -1,4 +1,4 @@
 sphinx>=3.1
 sphinx-autosummary-accessors
-sphinx_rtd_theme
+sphinx_rtd_theme>=1.0
 autodoc_pydantic
