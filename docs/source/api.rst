@@ -10,19 +10,49 @@ Top-level Rest class
 The :class:`~xpublish.Rest` class can be used for publishing a
 :class:`xarray.Dataset` object or a collection of Dataset objects.
 
+The main interfaces to Xpublish that many users may use.
+
 .. autosummary::
    :toctree: generated/
 
    Rest
    Rest.app
    Rest.cache
+   Rest.plugins
    Rest.serve
+   Rest.register_plugin
+   Rest.dependencies
+
+There are also a handful of methods that are more likely to be used
+when subclassing `xpublish.Rest` to modify functionality, or are used
+by plugin dependencies.
+
+.. autosummary::
+   :toctree: generated/
+
+   Rest.setup_datasets
+   Rest.get_datasets_from_plugins
+   Rest.get_dataset_from_plugins
+   Rest.setup_plugins
+   Rest.init_cache_kwargs
+   Rest.init_app_kwargs
+   Rest.plugin_routers
+
+There is also a specialized version of :class:`xpublish.Rest` for use
+when only a single dataset is being served, instead of a collection
+of datasets.
+
+.. autosummary::
+   :toctree: generated/
+
+   SingleDatasetRest
+   SingleDatasetRest.setup_datasets
 
 Dataset.rest (xarray accessor)
 ==============================
 
 This accessor extends :py:class:`xarray.Dataset` with the same interface than
-:class:`~xpublish.Rest`. It is a convenient method for publishing one single
+:class:`~xpublish.SingleDatasetRest`. It is a convenient method for publishing one single
 dataset. Proper use of this accessor should be like:
 
 .. code-block:: python
@@ -65,7 +95,10 @@ FastAPI dependencies
 
 The functions below are defined in module ``xpublish.dependencies`` and can
 be used as `FastAPI dependencies <https://fastapi.tiangolo.com/tutorial/dependencies>`_
-when creating custom API endpoints.
+when creating custom API endpoints directly.
+
+When creating routers with plugins, instead use ``xpublish.Dependency`` that will be
+passed in to the ``Plugin.app_router`` or ``Plugin.dataset_router`` method.
 
 .. currentmodule:: xpublish.dependencies
 
@@ -77,3 +110,5 @@ when creating custom API endpoints.
    get_cache
    get_zvariables
    get_zmetadata
+   get_plugins
+   get_plugin_manager
