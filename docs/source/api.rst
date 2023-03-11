@@ -12,6 +12,8 @@ a collection of :class:`xarray.Dataset` objects.
 
 The main interfaces to Xpublish that many users may use.
 
+The main interfaces to Xpublish that many users may use.
+
 .. autosummary::
    :toctree: generated/
 
