@@ -121,7 +121,7 @@ pygments_style = 'sphinx'
 # -- Intersphinx links ---------------------------------------------------------
 
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3.6/', None),
+    'python': ('https://docs.python.org/3.11/', None),
     'xarray': ('https://xarray.pydata.org/en/stable/', None),
     # sadly, there is no intersphinx for fastapi docs
 }
@@ -130,12 +130,29 @@ intersphinx_mapping = {
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'pydata_sphinx_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-# html_theme_options = {}
+html_theme_options = {
+    'icon_links': [
+        {
+            'name': 'GitHub',
+            'url': 'https://github.com/xarray-contrib/xpublish',  # required
+            'icon': 'fa-brands fa-square-github',
+            'type': 'fontawesome',
+        }
+    ],
+    'use_edit_page_button': True,
+}
+
+html_context = {
+    'github_user': 'xarray-contrib',
+    'github_repo': 'xpublish',
+    'github_version': 'main',
+    'doc_path': 'docs/source/',
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 # html_theme_path = []

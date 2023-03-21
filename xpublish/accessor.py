@@ -30,7 +30,7 @@ class RestAccessor:
         Parameters
         ----------
         **kwargs
-            Arguments passed to :func:`xpublish.Rest.__init__`.
+            Arguments passed to :func:`xpublish.SingleDatasetRest.__init__`.
 
         Notes
         -----
@@ -63,7 +63,7 @@ class RestAccessor:
         Parameters
         ----------
         **kwargs :
-            Arguments passed to :func:`xpublish.Rest.serve`.
+            Arguments passed to :func:`xpublish.SingleDatasetRest.serve`.
 
         Notes
         -----
