@@ -1,5 +1,6 @@
 fsspec
 httpx
+importlib-metadata>=4.13.0
 netcdf4
 pooch
 pytest
