@@ -67,6 +67,7 @@ API with the following endpoints:
 
    installation
    tutorial
+   plugins
    api
    contributing
 

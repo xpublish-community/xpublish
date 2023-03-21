@@ -43,6 +43,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.extlinks',
     'sphinx.ext.napoleon',
+    'sphinxcontrib.autodoc_pydantic',
     'sphinx_autosummary_accessors',
 ]
 

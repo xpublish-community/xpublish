@@ -4,20 +4,42 @@ import cachey  # type: ignore
 import pluggy  # type: ignore
 import xarray as xr
 from fastapi import APIRouter
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from ..dependencies import get_cache, get_dataset, get_dataset_ids, get_plugin_manager, get_plugins
 
+# Decorator helper to mark functions as Xpublish hook specifications
 hookspec = pluggy.HookspecMarker('xpublish')
+
+# Decorator helper to mark functions as Xpublish hook implementations
 hookimpl = pluggy.HookimplMarker('xpublish')
 
 
 class Dependencies(BaseModel):
-    dataset_ids: Callable[..., List[str]] = get_dataset_ids
-    dataset: Callable[..., xr.Dataset] = get_dataset
-    cache: Callable[..., cachey.Cache] = get_cache
-    plugins: Callable[..., Dict[str, 'Plugin']] = get_plugins
-    plugin_manager: Callable[..., pluggy.PluginManager] = get_plugin_manager
+    """
+    A set of dependencies that are passed into plugin routers.
+
+    Some routers may be 'borrowed' by other routers to expose different
+    geometries of data, thus the default dependencies may need to be overridden.
+    By depending on the passed in version of this class, the dependencies
+    can be overridden predictably.
+    """
+
+    dataset_ids: Callable[..., List[str]] = Field(
+        get_dataset_ids, description='Returns a list of all valid dataset ids'
+    )
+    dataset: Callable[[str], xr.Dataset] = Field(
+        get_dataset, description='Returns a dataset using ``/<dataset_id>/`` in the path.'
+    )
+    cache: Callable[..., cachey.Cache] = Field(
+        get_cache, description='Provide access to :py:class:`cachey.Cache`'
+    )
+    plugins: Callable[..., Dict[str, 'Plugin']] = Field(
+        get_plugins, description='A dictionary of plugins allowing direct access'
+    )
+    plugin_manager: Callable[..., pluggy.PluginManager] = Field(
+        get_plugin_manager, description='The plugin manager itself, allowing for maximum creativity'
+    )
 
     def __hash__(self):
         """Dependency functions aren't easy to hash"""
@@ -29,14 +51,14 @@ class Plugin(BaseModel):
     Xpublish plugins provide ways to extend the core of xpublish with
     new routers and other functionality.
 
-    To create a plugin, subclass ``Plugin` and add attributes that are
+    To create a plugin, subclass `Plugin` and add attributes that are
     subclasses of `PluginType` (`Router` for instance).
 
     The specific attributes correspond to how Xpublish should use
     the plugin.
     """
 
-    name: str
+    name: str = Field(..., description='Fallback name of plugin')
 
     def __hash__(self):
         """Make sure that the plugin is hashable to load with pluggy"""
@@ -64,7 +86,11 @@ class Plugin(BaseModel):
 
 
 class PluginSpec(Plugin):
-    """Plugin extension points"""
+    """Plugin extension points
+
+    Plugins do not need to implement all of the methods defined here,
+    instead they implement
+    """
 
     @hookspec
     def app_router(self, deps: Dependencies) -> APIRouter:  # type: ignore
@@ -97,4 +123,4 @@ class PluginSpec(Plugin):
 
     @hookspec
     def register_hookspec(self):  # type: ignore
-        """Return additional hookspec classes to register with the plugin manager"""
+        """Return additional hookspec class to register with the plugin manager"""
