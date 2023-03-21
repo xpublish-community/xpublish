@@ -167,9 +167,9 @@ class Rest:
         Register a plugin with the xpublish system
 
         Args:
-            plugin (Plugin): Instantiated Plugin object
-            plugin_name (str, optional): Plugin name
-            overwrite (bool, optional): If a plugin of the same name exist,
+            plugin: Instantiated Plugin object
+            plugin_name: Plugin name
+            overwrite: If a plugin of the same name exist,
                 setting this to True will remove the existing plugin before
                 registering the new plugin. Defaults to False.
 
