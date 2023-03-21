@@ -124,11 +124,35 @@ class Rest:
         for hookspec in self.pm.hook.register_hookspec():
             self.pm.add_hookspecs(hookspec)
 
-    def register_plugin(self, plugin: Plugin, plugin_name: Optional[str] = None):
-        """Register a plugin"""
+    def register_plugin(
+        self, plugin: Plugin, plugin_name: Optional[str] = None, overwrite: bool = False
+    ):
+        """
+        Register a plugin with the xpublish system
+
+        Args:
+            plugin (Plugin): Instantiated Plugin object
+            plugin_name (str, optional): Plugin name
+            overwrite (bool, optional): If a plugin of the same name exist,
+                setting this to True will remove the existing plugin before
+                registering the new plugin. Defaults to False.
+
+        Raises:
+            AttributeError: Plugin can not be registered
+            ValueError: Plugin already registered, try setting overwrite to True
+        """
+        plugin_name = plugin_name or plugin.name
+
+        if overwrite is True and plugin_name in dict(self.pm.list_name_plugin()):
+            # If a plugin exist with the same name, unregister it.
+            # If configured using entry_points, the name of the
+            # entry_point should be the same as the plugin.name.
+            self.pm.unregister(name=plugin_name)
+
+        # Get existing plugins again
         existing_plugins = self.pm.get_plugins()
         try:
-            self.pm.register(plugin, plugin_name or plugin.name)
+            self.pm.register(plugin, plugin_name)
         except AttributeError as e:
             raise AttributeError(
                 f'Plugin {plugin} is likely not initialized before registration'
