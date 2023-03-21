@@ -25,6 +25,9 @@ def get_dataset_ids() -> List[str]:
     This dummy dependency will be overridden when creating the FastAPI
     application.
 
+    Returns:
+        A list of unique keys for datasets
+
     """
     return []  # pragma: no cover
 
@@ -37,6 +40,13 @@ def get_dataset(dataset_id: str) -> xr.Dataset:
 
     This dummy dependency will be overridden when creating the FastAPI
     application.
+
+    Parameters:
+        dataset_id:
+            Unique path-safe key identifying dataset
+
+    Returns:
+        Requested Xarray dataset
 
     """
     return xr.Dataset()  # pragma: no cover
@@ -93,7 +103,11 @@ def get_zmetadata(
 
 
 def get_plugins() -> Dict[str, 'Plugin']:
-    """FastAPI dependency that returns the a dictionary of loaded plugins"""
+    """FastAPI dependency that returns the a dictionary of loaded plugins
+
+    Returns:
+        Dictionary of names to initialized plugins.
+    """
 
     return {}  # pragma: no cover
 

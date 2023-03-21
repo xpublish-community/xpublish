@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Tuple
 
 import cachey
 import pluggy
@@ -16,6 +16,9 @@ from .utils.api import (
     normalize_datasets,
 )
 
+RouterKwargs = Dict
+RouterAndKwargs = Tuple[APIRouter, RouterKwargs]
+
 
 class Rest:
     """Used to publish multiple Xarray Datasets via a REST API (FastAPI application).
@@ -27,10 +30,10 @@ class Rest:
 
     Parameters
     ----------
-    datasets : dict
+    datasets :
         A mapping of datasets objects to be served. If a mapping is given, keys
         are used as dataset ids and are converted to strings. See also the notes below.
-    routers : list, optional
+    routers :
         A list of dataset-specific :class:`fastapi.APIRouter` instances to
         include in the fastAPI application. These routers are in addition
         to any loaded via plugins.
@@ -39,15 +42,15 @@ class Rest:
         the 1st tuple element is a :class:`fastapi.APIRouter` instance and the
         2nd element is a dictionary that is used to pass keyword arguments to
         :meth:`fastapi.FastAPI.include_router`.
-    cache_kws : dict, optional
+    cache_kws :
         Dictionary of keyword arguments to be passed to
         :meth:`cachey.Cache.__init__()`.
         By default, the cache size is set to 1MB, but this can be changed with
         ``available_bytes``.
-    app_kws : dict, optional
+    app_kws :
         Dictionary of keyword arguments to be passed to
         :meth:`fastapi.FastAPI.__init__()`.
-    plugins : dict, optional
+    plugins :
         Optional dictionary of loaded, configured plugins.
         Overrides automatic loading of plugins.
         If no plugins are desired, set to an empty dict.
@@ -67,8 +70,8 @@ class Rest:
         self,
         datasets: Optional[Dict[str, xr.Dataset]] = None,
         routers: Optional[APIRouter] = None,
-        cache_kws=None,
-        app_kws=None,
+        cache_kws: Optional[Dict] = None,
+        app_kws: Optional[Dict] = None,
         plugins: Optional[Dict[str, Plugin]] = None,
     ):
         self.setup_datasets(datasets or {})
@@ -81,16 +84,28 @@ class Rest:
         self.init_app_kwargs(app_kws)
         self.init_cache_kwargs(cache_kws)
 
-    def setup_datasets(self, datasets: Dict[str, xr.Dataset]):
-        """Initialize datasets and getter functions"""
+    def setup_datasets(self, datasets: Dict[str, xr.Dataset]) -> str:
+        """Initialize datasets and dataset accessor function
+
+        Returns:
+            Prefix for dataset routers
+        """
         self._datasets = normalize_datasets(datasets)
 
         self._get_dataset_func = self.get_dataset_from_plugins
         self._dataset_route_prefix = '/datasets/{dataset_id}'
         return self._dataset_route_prefix
 
-    def get_datasets_from_plugins(self):
-        """Get dataset ids from directly loaded datasets and plugins"""
+    def get_datasets_from_plugins(self) -> List[str]:
+        """Return dataset ids from directly loaded datasets and plugins
+
+        Used as a FastAPI dependency in dataset router plugins
+        via :meth:`Rest.dependencies`.
+
+        Returns:
+            Dataset IDs from plugins and datasets loaded into
+            :class:`xpublish.Rest` at initialization.
+        """
         dataset_ids = list(self._datasets)
 
         for plugin_dataset_ids in self.pm.hook.get_datasets():
@@ -98,8 +113,20 @@ class Rest:
 
         return dataset_ids
 
-    def get_dataset_from_plugins(self, dataset_id: str):
-        """Attempt to load dataset from plugins, otherwise load"""
+    def get_dataset_from_plugins(self, dataset_id: str) -> xr.Dataset:
+        """Attempt to load dataset from plugins, otherwise return dataset from passed in dictionary of datasets
+
+        Parameters:
+            dataset_id:
+                Unique key of dataset to attempt to load from plugins or
+                those provided to :class:`xpublish.Rest` at initialization.
+
+        Returns:
+            Dataset for selected ``dataset_id``
+
+        Raises:
+            FastAPI.HTTPException: When a dataset is not found a 404 error is returned.
+        """
         dataset = self.pm.hook.get_dataset(dataset_id=dataset_id)
 
         if dataset:
@@ -111,7 +138,16 @@ class Rest:
         return self._datasets[dataset_id]
 
     def setup_plugins(self, plugins: Optional[Dict[str, Plugin]] = None):
-        """Initialize and load plugins from entry_points"""
+        """Initialize and load plugins from entry_points unless explicitly provided
+
+        Parameters:
+            plugins:
+                If a dictionary of initialized plugins is provided,
+                then the automatic loading of plugins is disabled.
+
+                Providing an empty dictionary will also disable
+                automatic loading of plugins.
+        """
         if plugins is None:
             plugins = load_default_plugins()
 
@@ -131,9 +167,9 @@ class Rest:
         Register a plugin with the xpublish system
 
         Args:
-            plugin (Plugin): Instantiated Plugin object
-            plugin_name (str, optional): Plugin name
-            overwrite (bool, optional): If a plugin of the same name exist,
+            plugin: Instantiated Plugin object
+            plugin_name: Plugin name
+            overwrite: If a plugin of the same name exist,
                 setting this to True will remove the existing plugin before
                 registering the new plugin. Defaults to False.
 
@@ -207,8 +243,13 @@ class Rest:
 
         self._app_routers = app_routers
 
-    def plugin_routers(self):
-        """Load the app and dataset routers for plugins"""
+    def plugin_routers(self) -> Tuple[List[RouterAndKwargs], List[RouterAndKwargs]]:
+        """Load the app and dataset routers for plugins
+
+        Returns:
+            A tuple containing a list of top-level routers from plugins
+            and a list of per-dataset routers from plugins
+        """
         app_routers = []
         dataset_routers = []
 
@@ -223,6 +264,7 @@ class Rest:
         return app_routers, dataset_routers
 
     def dependencies(self) -> Dependencies:
+        """FastAPI dependencies to pass to plugin router methods"""
         deps = Dependencies(
             dataset_ids=self.get_datasets_from_plugins,
             dataset=self._get_dataset_func,
@@ -258,21 +300,27 @@ class Rest:
 
     @property
     def app(self) -> FastAPI:
-        """Returns the :class:`fastapi.FastAPI` application instance."""
+        """Returns the :class:`fastapi.FastAPI` application instance.
+
+        Notes
+        -----
+        Plugins registered with :meth:`xpublish.Rest.register_plugin` after :meth:`xpublish.Rest.app`
+        is accessed or :meth:`xpublish.Rest.serve` is called once may not take effect.
+        """
         if self._app is None:
             self._app = self._init_app()
         return self._app
 
-    def serve(self, host='0.0.0.0', port=9000, log_level='debug', **kwargs):
+    def serve(self, host: str = '0.0.0.0', port: int = 9000, log_level: str = 'debug', **kwargs):
         """Serve this FastAPI application via :func:`uvicorn.run`.
 
         Parameters
         ----------
-        host : str
+        host :
             Bind socket to this host.
-        port : int
+        port :
             Bind socket to this port.
-        log_level : str
+        log_level :
             App logging level, valid options are
             {'critical', 'error', 'warning', 'info', 'debug', 'trace'}.
         **kwargs :
@@ -309,6 +357,8 @@ class SingleDatasetRest(Rest):
         super().__init__({}, routers, cache_kws, app_kws, plugins)
 
     def setup_datasets(self, datasets):
+        """Modifies the dataset loading to instead connect to the
+        single dataset"""
         self._dataset_route_prefix = ''
         self._datasets = {}
 

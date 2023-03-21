@@ -45,6 +45,7 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinxcontrib.autodoc_pydantic',
     'sphinx_autosummary_accessors',
+    'sphinx_autodoc_typehints',
 ]
 
 extlinks = {
