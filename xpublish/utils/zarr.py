@@ -111,10 +111,10 @@ def create_zmetadata(dataset):
     zmeta['metadata'][group_meta_key] = {'zarr_format': zarr_format}
     zmeta['metadata'][attrs_key] = _extract_dataset_zattrs(dataset)
 
-    for key in dataset.variables.keys():
+    for key, dvar in dataset.variables.items():
         da = dataset[key]
-        encoded_da = encode_zarr_variable(da, name=key)
-        encoding = extract_zarr_variable_encoding(da)
+        encoded_da = encode_zarr_variable(dvar, name=key)
+        encoding = extract_zarr_variable_encoding(dvar)
         zattrs = _extract_dataarray_zattrs(encoded_da)
         zattrs = _extract_dataarray_coords(da, zattrs)
         zmeta['metadata'][f'{key}/{attrs_key}'] = zattrs
