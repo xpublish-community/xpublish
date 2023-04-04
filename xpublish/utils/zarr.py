@@ -42,6 +42,10 @@ def _extract_dataarray_zattrs(da):
     zattrs = {}
     for k, v in da.attrs.items():
         zattrs[k] = encode_zarr_attr_value(v)
+
+    if da.coords:
+        zattrs['coordinates'] = encode_zarr_attr_value(' '.join(list(da.coords)))
+
     zattrs[DIMENSION_KEY] = list(da.dims)
 
     # We don't want `_FillValue` in `.zattrs`
@@ -104,10 +108,11 @@ def create_zmetadata(dataset):
     zmeta['metadata'][group_meta_key] = {'zarr_format': zarr_format}
     zmeta['metadata'][attrs_key] = _extract_dataset_zattrs(dataset)
 
-    for key, da in dataset.variables.items():
+    for key in dataset.variables.keys():
+        da = dataset[key]
         encoded_da = encode_zarr_variable(da, name=key)
         encoding = extract_zarr_variable_encoding(da)
-        zmeta['metadata'][f'{key}/{attrs_key}'] = _extract_dataarray_zattrs(encoded_da)
+        zmeta['metadata'][f'{key}/{attrs_key}'] = _extract_dataarray_zattrs(da)
         zmeta['metadata'][f'{key}/{array_meta_key}'] = _extract_zarray(
             encoded_da, encoding, encoded_da.dtype
         )
