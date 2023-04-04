@@ -8,9 +8,7 @@ Top-level Rest class
 ====================
 
 The :class:`~xpublish.Rest` class can be used for publishing a
-a collection of :class:`xarray.Dataset` objects.
-
-The main interfaces to Xpublish that many users may use.
+:class:`xarray.Dataset` object or a collection of Dataset objects.
 
 The main interfaces to Xpublish that many users may use.
 
@@ -123,7 +121,6 @@ passed in to the ``Plugin.app_router`` or ``Plugin.dataset_router`` method.
    get_plugin_manager
 
 Plugins
-=======
 
 Plugins are inherit from the :class:`~xpublish.Plugin` class, and implement various hooks.
 
