@@ -42,16 +42,19 @@ def _extract_dataarray_zattrs(da):
     zattrs = {}
     for k, v in da.attrs.items():
         zattrs[k] = encode_zarr_attr_value(v)
-
-    if da.coords:
-        zattrs['coordinates'] = encode_zarr_attr_value(' '.join(list(da.coords)))
-
     zattrs[DIMENSION_KEY] = list(da.dims)
 
     # We don't want `_FillValue` in `.zattrs`
     # It should go in `fill_value` section of `.zarray`
     _ = zattrs.pop('_FillValue', None)
 
+    return zattrs
+
+
+def _extract_dataarray_coords(da, zattrs):
+    '''helper function to extract coords from DataArray into a directionary'''
+    if da.coords:
+        zattrs['coordinates'] = encode_zarr_attr_value(' '.join(list(da.coords)))
     return zattrs
 
 
@@ -112,7 +115,9 @@ def create_zmetadata(dataset):
         da = dataset[key]
         encoded_da = encode_zarr_variable(da, name=key)
         encoding = extract_zarr_variable_encoding(da)
-        zmeta['metadata'][f'{key}/{attrs_key}'] = _extract_dataarray_zattrs(da)
+        zattrs = _extract_dataarray_zattrs(encoded_da)
+        zattrs = _extract_dataarray_coords(da, zattrs)
+        zmeta['metadata'][f'{key}/{attrs_key}'] = zattrs
         zmeta['metadata'][f'{key}/{array_meta_key}'] = _extract_zarray(
             encoded_da, encoding, encoded_da.dtype
         )
