@@ -53,8 +53,11 @@ def _extract_dataarray_zattrs(da):
 
 def _extract_dataarray_coords(da, zattrs):
     '''helper function to extract coords from DataArray into a directionary'''
-    if da.coords:
-        zattrs['coordinates'] = encode_zarr_attr_value(' '.join(list(da.coords)))
+    if da.coords: 
+        # Coordinates are only encoded if there are non-dimension coordinates
+        nondim_coords = set(da.coords) - set(da.dims)
+        if len(nondim_coords) > 0:
+            zattrs['coordinates'] = encode_zarr_attr_value(' '.join(list(da.coords)))
     return zattrs
 
 
