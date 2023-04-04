@@ -64,6 +64,7 @@ API with the following endpoints:
 .. toctree::
    :maxdepth: 2
    :caption: Documentation Contents
+   :hidden:
 
    installation
    tutorial
