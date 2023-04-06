@@ -108,13 +108,13 @@ def hook_implementation_plugin():
 
 
 def test_init_cache_kws(airtemp_ds):
-    rest = Rest(airtemp_ds, cache_kws={'available_bytes': 999})
+    rest = Rest({'airtemp': airtemp_ds}, cache_kws={'available_bytes': 999})
     assert rest.cache.available_bytes == 999
 
 
 def test_init_app_kws(airtemp_ds):
     rest = Rest(
-        airtemp_ds,
+        {'airtemp': airtemp_ds},
         app_kws=dict(
             title='My Dataset',
             description='Dataset Description',
@@ -164,7 +164,7 @@ def test_custom_app_routers(airtemp_ds, dims_router, router_kws, path):
 
 def test_custom_app_routers_error(airtemp_ds):
     with pytest.raises(TypeError, match='Invalid type/format.*'):
-        Rest(airtemp_ds, routers=['not_a_router'])
+        Rest({'airtemp': airtemp_ds}, routers=['not_a_router'])
 
 
 def test_custom_app_routers_conflict(airtemp_ds):
@@ -181,7 +181,7 @@ def test_custom_app_routers_conflict(airtemp_ds):
         pass
 
     with pytest.raises(ValueError, match='Found multiple routes.*'):
-        Rest(airtemp_ds, routers=[(router1, {'prefix': '/same'}), router2])
+        Rest({'airtemp': airtemp_ds}, routers=[(router1, {'prefix': '/same'}), router2])
 
 
 def test_custom_dataset_plugin(airtemp_ds, dataset_plugin):

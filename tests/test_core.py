@@ -22,6 +22,17 @@ def test_dask_chunks_become_zarr_chunks():
     assert zmeta['metadata']['bar/.zarray']['chunks'] == list(data2.shape)
 
 
+def test_single_dataset_raise(airtemp_ds):
+    """A single dataset should throw a TypeError if it's passed to
+    xpublish.Rest rather than xpublish.SingleDatasetRest.
+    """
+    with pytest.raises(TypeError) as excinfo:
+        xpublish.Rest(airtemp_ds)
+    excinfo.match(
+        'xpublish.Rest no longer directly handles single datasets. Please use xpublish.SingleDatasetRest instead'
+    )
+
+
 def test_invalid_dask_chunks_raise():
     data1 = dask.array.zeros((10, 20, 30), chunks=(4, 10, 1))
     data2 = dask.array.zeros((10, 20, 30), chunks=(4, 5, 1))
