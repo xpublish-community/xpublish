@@ -95,7 +95,7 @@ def create_dataset(
     if use_xy_dim:
         lats, lons = np.meshgrid(lats, lons)
         shape = (times.size, *lats.shape)
-    else: 
+    else:
         shape = (times.size, lats.size, lons.size)
 
     num = reduce(mul, shape)
@@ -119,21 +119,21 @@ def create_dataset(
     ds = xr.Dataset(
         {
             'tmin': xr.DataArray(
-                tmin_values.astype('float32'), 
+                tmin_values.astype('float32'),
                 dims=('time', 'lat', 'lon') if not use_xy_dim else ('time', 'y', 'x'),
-                name='tmin'
+                name='tmin',
             ),
             'tmax': xr.DataArray(
                 tmax_values.astype('float32'),
                 dims=('time', 'lat', 'lon') if not use_xy_dim else ('time', 'y', 'x'),
-                name='tmax'
+                name='tmax',
             ),
             'time_bounds': time_bounds,
         },
         coords={
-            'time': times, 
-            'lat': ('lat' if not use_xy_dim else ['y', 'x'], lats), 
-            'lon': ('lon' if not use_xy_dim else ['y', 'x'], lons)
+            'time': times,
+            'lat': ('lat' if not use_xy_dim else ['y', 'x'], lats),
+            'lon': ('lon' if not use_xy_dim else ['y', 'x'], lons),
         },
     )
 

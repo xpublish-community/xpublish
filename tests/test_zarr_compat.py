@@ -44,7 +44,9 @@ def test_zmetadata_identical(start, end, freq, nlats, nlons, var_const, calendar
         ('2018-01-01', '2021-01-01', 'MS', 15, 30, True, 'standard', False),
     ],
 )
-def test_zmetadata_identical_coords(start, end, freq, nlats, nlons, var_const, calendar, use_cftime):
+def test_zmetadata_identical_coords(
+    start, end, freq, nlats, nlons, var_const, calendar, use_cftime
+):
     ds = create_dataset(
         start=start,
         end=end,
@@ -54,7 +56,7 @@ def test_zmetadata_identical_coords(start, end, freq, nlats, nlons, var_const, c
         var_const=var_const,
         use_cftime=use_cftime,
         calendar=calendar,
-        use_xy_dim=True
+        use_xy_dim=True,
     )
 
     ds = ds.chunk(ds.dims)
