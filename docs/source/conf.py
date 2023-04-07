@@ -46,7 +46,12 @@ extensions = [
     'sphinxcontrib.autodoc_pydantic',
     'sphinx_autosummary_accessors',
     'sphinx_autodoc_typehints',
+    'sphinx_design',
+    'myst_parser',
 ]
+
+myst_enable_extensions = ['colon_fence']
+myst_heading_anchors = 6
 
 extlinks = {
     'issue': ('https://github.com/xarray-contrib/xpublish/issues/%s', 'GH#'),

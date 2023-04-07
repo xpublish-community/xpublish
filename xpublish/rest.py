@@ -336,20 +336,20 @@ class Rest:
 
 class SingleDatasetRest(Rest):
     """Used to publish a single Xarray dataset via a REST API (FastAPI application).
-    Use xpublish.Rest to publish multiple datasets.
+    Use :class:`xpublish.Rest` to publish multiple datasets.
 
     Parameters:
     -----------
-    dataset : :class:`xarray.Dataset`
+    dataset :
         A single :class:`xarray.Dataset` object to be served.
     """
 
     def __init__(
         self,
         dataset: xr.Dataset,
-        routers=None,
-        cache_kws=None,
-        app_kws=None,
+        routers: Optional[APIRouter] = None,
+        cache_kws: Optional[Dict] = None,
+        app_kws: Optional[Dict] = None,
         plugins: Optional[Dict[str, Plugin]] = None,
     ):
         self._dataset = dataset
