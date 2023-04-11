@@ -3,8 +3,8 @@ Xpublish
 
 Publish Xarray Datasets via a REST API.
 
-.. image:: https://github.com/xarray-contrib/xpublish/actions/workflows/main.yaml/badge.svg
-   :target: https://github.com/xarray-contrib/xpublish/actions/workflows/main.yaml
+.. image:: https://github.com/xpublish-community/xpublish/actions/workflows/main.yaml/badge.svg
+   :target: https://github.com/xpublish-community/xpublish/actions/workflows/main.yaml
    :alt: GitHub Workflow Status
 
 .. image:: https://readthedocs.org/projects/xpublish/badge/?version=latest
