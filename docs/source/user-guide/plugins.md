@@ -25,7 +25,7 @@ data providers.
 :::{warning}
 Plugins are new to Xpublish, so we're learning how everything works best together.
 
-If you have any questions, please ask in [Github Discussions](https://github.com/xarray-contrib/xpublish/discussions)
+If you have any questions, please ask in [Github Discussions](https://github.com/xpublish-community/xpublish/discussions)
 (and feel free to tag `@abkfenris` for help with the plugin system).
 :::
 
@@ -98,7 +98,7 @@ Currently we're starting with a minimum set of arguments as we can always expand
 but currently it is much harder to reduce the number of arguments.
 
 If there is a new argument that you would like your plugin hooks to have,
-please raise an [issue](https://github.com/xarray-contrib/xpublish/issues)
+please raise an [issue](https://github.com/xpublish-community/xpublish/issues)
 to discuss including it in a future version.
 :::
 
@@ -209,7 +209,7 @@ Most dataset routers will have a prefix on their paths, and apply tags.
 To make this reasonably standard, those should be specified as `dataset_router_prefix`
 and `dataset_router_tags` on the plugin allowing them to be reasonably overridden.
 
-Adapted from [xpublish/plugins/included/dataset_info.py](https://github.com/xarray-contrib/xpublish/blob/main/xpublish/plugins/included/dataset_info.py)
+Adapted from [xpublish/plugins/included/dataset_info.py](https://github.com/xpublish-community/xpublish/blob/main/xpublish/plugins/included/dataset_info.py)
 
 ```python
 from fastapi import APIRouter, Depends

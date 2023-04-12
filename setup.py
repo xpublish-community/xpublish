@@ -36,7 +36,7 @@ setup(
     maintainer='Joe Hamman',
     maintainer_email='jhamman@ucar.edu',
     classifiers=CLASSIFIERS,
-    url='https://github.com/xarray-contrib/xpublish',
+    url='https://github.com/xpublish-community/xpublish',
     packages=find_packages(exclude=('tests',)),
     package_dir={'xpublish': 'xpublish'},
     include_package_data=True,

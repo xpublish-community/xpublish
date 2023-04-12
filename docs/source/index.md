@@ -4,7 +4,7 @@
 Don't mind the mess, our docs are currently being restructured.
 ```
 
-**Useful links:** [Installation](getting-started/installation) | [Source Repository](https://github.com/xarray-contrib/xpublish/) | [Issue Tracker](https://github.com/xarray-contrib/xpublish/issues) | [Q&A Support](https://github.com/xarray-contrib/xpublish/discussions/categories/q-a?discussions_q=category%3AQ%26A+) | [Slack Channel](./ecosystem/index.md#slack)
+**Useful links:** [Installation](getting-started/installation) | [Source Repository](https://github.com/xpublish-community/xpublish/) | [Issue Tracker](https://github.com/xpublish-community/xpublish/issues) | [Q&A Support](https://github.com/xpublish-community/xpublish/discussions/categories/q-a?discussions_q=category%3AQ%26A+) | [Slack Channel](./ecosystem/index.md#slack)
 
 Xpublish is:
 
@@ -77,7 +77,7 @@ The contributing guidelines will guide you through the process of improving Xpub
 
 **Xpublish lets you easily publish Xarray Datasets via a REST API.**
 
-_You can run a short example application in a live session here:_ [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/xarray-contrib/xpublish/master)
+_You can run a short example application in a live session here:_ [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/xpublish-community/xpublish/master)
 
 On the server-side, one or more datasets can be published using the
 {class}`xpublish.Rest` class or the {attr}`xarray.Dataset.rest` accessor, e.g.,
@@ -135,4 +135,4 @@ Contributing <contributing>
 ### Feedback
 
 If you encounter any errors or problems with **Xpublish**, please open an issue
-on [GitHub](http://github.com/xarray-contrib/xpublish).
+on [GitHub](http://github.com/xpublish-community/xpublish).

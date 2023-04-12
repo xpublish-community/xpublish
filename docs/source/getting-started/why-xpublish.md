@@ -31,5 +31,5 @@ A 'neurological community Xpublish server' may look very different from the need
 An additional power of Xpublish is for the server admins. When a community decides on a specific 'Xpublish server distribution', but the distributions opinions of how data should be stored don't match the environment, the admin can add or replace the distributions data provider plugins to adapt to their own infrastructure.
 
 ```{admonition} For more background
-Check out [Alex's manifesto](https://github.com/xarray-contrib/xpublish/discussions/139) that kicked off this phase of development.
+Check out [Alex's manifesto](https://github.com/xpublish-community/xpublish/discussions/139) that kicked off this phase of development.
 ```

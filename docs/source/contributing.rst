@@ -16,7 +16,7 @@ Feature requests and feedback
 Do you like Xpublish? Share some love on Twitter or in your blog posts!
 
 We'd also like to hear about your propositions and suggestions.  Feel free to
-`submit them as issues <https://github.com/xarray-contrib/xpublish>`_ and:
+`submit them as issues <https://github.com/xpublish-community/xpublish>`_ and:
 
 * Explain in detail how they should work.
 * Keep the scope as narrow as possible.  This will make it easier to implement.
@@ -26,7 +26,7 @@ We'd also like to hear about your propositions and suggestions.  Feel free to
 Report bugs
 -----------
 
-Report bugs for Xpublish in the `issue tracker <https://github.com/xarray-contrib/xpublish>`_.
+Report bugs for Xpublish in the `issue tracker <https://github.com/xpublish-community/xpublish>`_.
 
 If you are reporting a bug, please include:
 
@@ -45,7 +45,7 @@ fix the bug itself.
 Fix bugs
 --------
 
-Look through the `GitHub issues for bugs <https://github.com/xarray-contrib/xpublish/labels/type:%20bug>`_.
+Look through the `GitHub issues for bugs <https://github.com/xpublish-community/xpublish/labels/type:%20bug>`_.
 
 Talk to developers to find out how you can fix specific bugs.
 
@@ -81,7 +81,7 @@ Preparing Pull Requests
 -----------------------
 
 #. Fork the
-   `xpublish GitHub repository <https://github.com/xarray-contrib/xpublish>`__.  It's
+   `xpublish GitHub repository <https://github.com/xpublish-community/xpublish>`__.  It's
    fine to use ``xpublish`` as your fork repository name because it will live
    under your user.
 
@@ -134,5 +134,5 @@ Preparing Pull Requests
     head-fork: YOUR_GITHUB_USERNAME/xpublish
     compare: your-branch-name
 
-    base-fork: xarray-contrib/xpublish
+    base-fork: xpublish-community/xpublish
     base: main

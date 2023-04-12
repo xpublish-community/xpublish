@@ -8,7 +8,7 @@ We have two main venues for discussing Xpublish and it's ecosystem, Github Discu
 
 ### Github Discussions
 
-For longer form discussions, we can be found in [Github Discussions](https://github.com/xarray-contrib/xpublish/discussions?discussions_q=).
+For longer form discussions, we can be found in [Github Discussions](https://github.com/xpublish-community/community/discussions?discussions_q=).
 
 ### Slack
 
@@ -17,9 +17,15 @@ Xpublish has a channel (`#xpublish`) on [ESIP](https://www.esipfed.org/)'s (Eart
 ## Server distributions
 
 - [XREDS](https://github.com/asascience-open/xreds) from RPS
+- [Xpublish Host](https://github.com/axiom-data-science/xpublish-host) from Axiom Data Science
 
 ## Plugins
 
-- [OGC EDR](https://github.com/gulfofmaine/xpublish-edr/)
-- [OpenDAP](https://github.com/gulfofmaine/xpublish-opendap/)
-- [WMS](https://github.com/asascience-open/xpublish-wms)
+- [OGC EDR](https://github.com/xpublish-community/xpublish-edr/)
+- [OpenDAP](https://github.com/xpublish-community/xpublish-opendap/)
+- [WMS](https://github.com/xpublish-community/xpublish-wms)
+- [Intake](https://github.com/axiom-data-science/xpublish-intake)
+
+## Experiments
+
+We have a separate Github organization ([xpublish-experiments](https://github.com/xpublish-experiments)) for things that you've tried and want to share with the community, but don't necessarily want to maintain.

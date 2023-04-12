@@ -54,8 +54,8 @@ myst_enable_extensions = ['colon_fence']
 myst_heading_anchors = 6
 
 extlinks = {
-    'issue': ('https://github.com/xarray-contrib/xpublish/issues/%s', 'GH#'),
-    'pr': ('https://github.com/xarray-contrib/xpublish/pull/%s', 'GH#'),
+    'issue': ('https://github.com/xpublish-community/xpublish/issues/%s', 'GH#'),
+    'pr': ('https://github.com/xpublish-community/xpublish/pull/%s', 'GH#'),
 }
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates', sphinx_autosummary_accessors.templates_path]
@@ -145,7 +145,7 @@ html_theme_options = {
     'icon_links': [
         {
             'name': 'GitHub',
-            'url': 'https://github.com/xarray-contrib/xpublish',  # required
+            'url': 'https://github.com/xpublish-community/xpublish',  # required
             'icon': 'fa-brands fa-square-github',
             'type': 'fontawesome',
         }
@@ -154,7 +154,7 @@ html_theme_options = {
 }
 
 html_context = {
-    'github_user': 'xarray-contrib',
+    'github_user': 'xpublish-community',
     'github_repo': 'xpublish',
     'github_version': 'main',
     'doc_path': 'docs/source/',
