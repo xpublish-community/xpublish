@@ -23,7 +23,7 @@ class ZarrPlugin(Plugin):
 
     name = 'zarr'
 
-    dataset_router_prefix: str = ''
+    dataset_router_prefix: str = '/zarr'
     dataset_router_tags: Sequence[str] = ['zarr']
 
     @hookimpl
