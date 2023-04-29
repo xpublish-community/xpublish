@@ -1,10 +1,10 @@
 cachey
 dask
-fastapi>=0.59
+fastapi
 numcodecs
-numpy>=1.17
+numpy
 pluggy
 toolz
 uvicorn
-xarray>=0.16
+xarray
 zarr
