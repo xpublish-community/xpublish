@@ -5,8 +5,9 @@ The Xpublish tutorial is designed for an experienced Xarray user (but not a serv
 If you are interested in developing plugins or administering servers, you may want to jump ahead to [using plugins](./using-plugins.md) or look to [deployment](../../user-guide/deployment/index.md) in the user guide..
 
 ```{toctree}
-:hidden:
-
+---
+hidden:
+---
 introduction
 dataset-router
 serving-multiple-datasets

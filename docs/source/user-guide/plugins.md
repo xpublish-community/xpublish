@@ -22,12 +22,12 @@ and marking the implementations with a decorator. A plugin can also implement
 methods for multiple varieties, which may be useful for things like dynamic
 data providers.
 
-:::{warning}
+```{warning}
 Plugins are new to Xpublish, so we're learning how everything works best together.
 
 If you have any questions, please ask in [Github Discussions](https://github.com/xpublish-community/xpublish/discussions)
 (and feel free to tag `@abkfenris` for help with the plugin system).
-:::
+```
 
 ## Functionality
 
@@ -36,8 +36,9 @@ and descend from {py:class}`xpublish.plugins.hooks.Plugin`.
 This allows there to be a common way of configuring plugins and their functionality.
 
 ```{code-block} python
-:emphasize-lines: 5
-
+---
+emphasize-lines: 5
+---
 from xpublish import Plugin
 
 
@@ -54,8 +55,9 @@ method that a plugin is hoping to expose to the rest of Xpublish needs to be mar
 with a `@hookimpl` decorator.
 
 ```{code-block} python
-:emphasize-lines: 7
-
+---
+emphasize-lines: 7
+---
 from xpublish import Plugin, hookimpl
 from fastapi import APIRouter
 
@@ -90,7 +92,7 @@ Plugins can then re-implement these methods with all or a subset of the argument
 which are then marked with `@hookimpl`
 to tell Pluggy to make them accessible to Xpublish (and other plugins).
 
-:::{note}
+```{note}
 Over time Xpublish will most likely end up expanding the number of arugments passed
 into most hook methods.
 
@@ -100,7 +102,7 @@ but currently it is much harder to reduce the number of arguments.
 If there is a new argument that you would like your plugin hooks to have,
 please raise an [issue](https://github.com/xpublish-community/xpublish/issues)
 to discuss including it in a future version.
-:::
+```
 
 In the specification, Xpublish defines if it's supposed to get responses from all
 implementations ({py:meth}`xpublish.plugins.hooks.PluginSpec.get_dataset_ids`),
@@ -128,14 +130,14 @@ rest = Rest(datasets)
 rest.register_plugin(HelloWorldPlugin())
 ```
 
-:::{caution}
+```{caution}
 When plugins are provided directly to the {py:class}`xpublish.Rest` initializer
 as keyword arguments, it prevents Xpublish from automatically loading other plugins
 that are installed.
 
 For more details of the automatic plugin loading system,
-see [entry points] below.
-:::
+see \[entry points\] below.
+```
 
 ### Entry Points
 
@@ -180,6 +182,7 @@ router hook methods.
 from fastapi import APIRouter, Depends
 from xpublish import Plugin, Dependencies, hookimpl
 
+
 class DatasetAttrs(Plugin):
     name = "dataset-attrs"
 
@@ -188,7 +191,7 @@ class DatasetAttrs(Plugin):
         router = APIRouter()
 
         @router.get("/attrs")
-        def get_attrs(ds = Depends(deps.dataset)):
+        def get_attrs(ds=Depends(deps.dataset)):
             return ds.attrs
 
         return router
@@ -215,6 +218,7 @@ Adapted from [xpublish/plugins/included/dataset_info.py](https://github.com/xpub
 from fastapi import APIRouter, Depends
 from xpublish import Plugin, Dependencies, hookimpl
 
+
 class DatasetInfoPlugin(Plugin):
     name = "dataset-info"
 
@@ -223,10 +227,12 @@ class DatasetInfoPlugin(Plugin):
 
     @hookimpl
     def dataset_router(self, deps: Dependencies):
-        router = APIRouter(prefix=self.dataset_router_prefix, tags=self.dataset_router_tags)
+        router = APIRouter(
+            prefix=self.dataset_router_prefix, tags=self.dataset_router_tags
+        )
 
         @router.get("/keys")
-        def list_keys(dataset=Depends(deps.dataset):
+        def list_keys(dataset=Depends(deps.dataset)):
             return dataset.variables
 
         return router
@@ -244,6 +250,7 @@ Similar to dataset routers, these should have a prefix (`app_router_prefix`) and
 ```python
 from fastapi import APIRouter, Depends
 from xpublish import Plugin, Dependencies, hookimpl
+
 
 class PluginInfo(Plugin):
     name = "plugin_info"

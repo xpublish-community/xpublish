@@ -8,27 +8,27 @@ Don't mind the mess, our docs are currently being restructured.
 
 Xpublish is:
 
-::::{grid} 3
+````{grid} 3
 
-:::{grid-item-card} A quick way to serve a single Xarray dataset
+```{grid-item-card} A quick way to serve a single Xarray dataset over HTTP using FastAPI
 :link: getting-started/tutorial/introduction
 
 Add a REST API to your dataset with `ds.rest.serve()`!
-:::
+```
 
-:::{grid-item-card} An extendable core of a dataset server
+```{grid-item-card} An extendable core of a dataset server
 :link: getting-started/why-xpublish
 
 By building a server based around Xarray datasets, we can build on top of the rapid progress of Xarray and the greater PyData ecosystem.
-:::
+```
 
-:::{grid-item-card} A community and ecosystem of plugins, servers, and their builders and users
+```{grid-item-card} A community and ecosystem of plugins, servers, and their builders and users
 :link: ecosystem/index
 
 Explore the [Xpublish ecosystem](./ecosystem/index.md).
-:::
+```
 
-::::
+````
 
 I want to:
 
@@ -37,43 +37,44 @@ I want to:
 - [Build plugins to serve datasets in new ways](getting-started/tutorial/dataset-router-plugin)
 - [Connect to a new source of datasets](getting-started/tutorial/dataset-provider-plugin)
 
-::::{grid} 1 1 2 2
-:gutter: 2
-
-:::{grid-item-card} Getting started
+````{grid} 1 1 2 2
+---
+gutter: 2
+---
+```{grid-item-card} Getting started
 :link: getting-started/index
 :link-type: doc
 
 New to _Xpublish_? Check out the getting started guides. They contain an introduction
 to _Xpublish's_ main concepts.
-:::
+```
 
-:::{grid-item-card} User guide
+```{grid-item-card} User guide
 :link: user-guide/index
 :link-type: doc
 
 The user guide contains in-depth information on the key concepts of Xpublish
 with useful background information and explanation.
-:::
+```
 
-:::{grid-item-card} API Reference
+```{grid-item-card} API Reference
 :link: api
 :link-type: doc
 
 The reference guide contains a detailed description of the Xpublish API/
 The reference describes how the methods work and which parameters can be used.
 It assumes that you have an an understanding of the key concepts.
-:::
+```
 
-:::{grid-item-card} Developer guide
+```{grid-item-card} Developer guide
 :link: contributing
 :link-type: doc
 
 Saw a typo in the documentation? Want to improve existing functionalities?
 The contributing guidelines will guide you through the process of improving Xpublish.
-:::
+```
 
-::::
+````
 
 **Xpublish lets you easily publish Xarray Datasets via a REST API.**
 
@@ -95,10 +96,10 @@ import zarr
 from fsspec.implementations.http import HTTPFileSystem
 
 fs = HTTPFileSystem()
-http_map = fs.get_mapper('http://0.0.0.0:9000')
+http_map = fs.get_mapper("http://0.0.0.0:9000/zarr/")
 
 # open as a zarr group
-zg = zarr.open_consolidated(http_map, mode='r')
+zg = zarr.open_consolidated(http_map, mode="r")
 
 # or open as another Xarray Dataset
 ds = xr.open_zarr(http_map, consolidated=True)
@@ -121,10 +122,11 @@ We are exploring applications of Xpublish that include:
 For more information on where Xpublish is going, see [Why Xpublish](./getting-started/why-xpublish)
 
 ```{toctree}
-:caption: Documentation Contents
-:hidden: true
-:maxdepth: 2
-
+---
+caption: Documentation Contents
+hidden: true
+maxdepth: 2
+---
 getting-started/index
 user-guide/index
 api

@@ -50,7 +50,7 @@ extensions = [
     'myst_parser',
 ]
 
-myst_enable_extensions = ['colon_fence']
+myst_enable_extensions = []
 myst_heading_anchors = 6
 
 extlinks = {

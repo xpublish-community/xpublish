@@ -11,6 +11,7 @@ from xpublish.dependencies import get_dataset
 
 myrouter = APIRouter()
 
+
 @myrouter.get("/{var_name}/mean")
 def get_mean(var_name: str, dataset: xr.Dataset = Depends(get_dataset)):
     if var_name not in dataset.variables:
@@ -19,6 +20,7 @@ def get_mean(var_name: str, dataset: xr.Dataset = Depends(get_dataset)):
         )
 
     return float(dataset[var_name].mean())
+
 
 ds.rest(routers=[myrouter])
 

@@ -1,13 +1,14 @@
 # Serving multiple datasets
 
 Xpublish also lets you serve multiple datasets via one FastAPI application. You
-just need to provide a mapping (dictionary) when creating a
+provide a mapping (dictionary) when creating a
 {class}`~xpublish.Rest` instance, e.g.,
 
 ```python
-ds2 = xr.tutorial.open_dataset('rasm')
+ds = xr.tutorial.open_dataset("air_temperature")
+ds2 = xr.tutorial.open_dataset("rasm")
 
-rest_collection = xpublish.Rest({'air_temperature': ds, 'rasm': ds2})
+rest_collection = xpublish.Rest({"air_temperature": ds, "rasm": ds2})
 
 rest_collection.serve()
 ```
@@ -22,13 +23,12 @@ The application also has one more API endpoint:
 
 - `/datasets`: returns the list of the ids (keys) of all published datasets
 
-Note that custom routes work for multiple datasets just as well as for a single
+Note that custom routes work for multiple datasets as well as for a single
 dataset. No code change is required. Taking the example above,
 
 ```python
 rest_collection = xpublish.Rest(
-    {'air_temperature': ds, 'rasm': ds2},
-    routers=[myrouter]
+    {"air_temperature": ds, "rasm": ds2}, routers=[myrouter]
 )
 
 rest_collection.serve()

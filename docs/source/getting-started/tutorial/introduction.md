@@ -13,11 +13,12 @@ import xarray as xr
 import xpublish
 
 ds = xr.tutorial.open_dataset(
-    "air_temperature", chunks=dict(lat=5, lon=5),
+    "air_temperature",
+    chunks=dict(lat=5, lon=5),
 )
 ```
 
-Publishing the dataset above is straightforward, just use the
+To publish the dataset, use the
 {class}`~xpublish.SingleDatasetRest` class:
 
 ```python
@@ -40,7 +41,7 @@ ds.rest(
         description="Dataset Description",
         openapi_url="/dataset.JSON",
     ),
-    cache_kws=dict(available_bytes=1e9)
+    cache_kws=dict(available_bytes=1e9),
 )
 ```
 
@@ -96,10 +97,10 @@ from fsspec.implementations.http import HTTPFileSystem
 fs = HTTPFileSystem()
 
 # The URL 'http://0.0.0.0:9000' here serves one dataset
-http_map = fs.get_mapper('http://0.0.0.0:9000')
+http_map = fs.get_mapper("http://0.0.0.0:9000")
 
 # open as a zarr group
-zg = zarr.open_consolidated(http_map, mode='r')
+zg = zarr.open_consolidated(http_map, mode="r")
 
 # or open as another Xarray Dataset
 ds = xr.open_zarr(http_map, consolidated=True)
@@ -110,7 +111,7 @@ Xpublish's endpoints can also be queried programmatically. For example:
 ```python
 import requests
 
-response = requests.get('http://0.0.0.0:9000/info').json()
+response = requests.get("http://0.0.0.0:9000/info").json()
 ```
 
 [swagger ui]: https://github.com/swagger-api/swagger-ui

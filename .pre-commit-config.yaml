@@ -9,6 +9,20 @@ repos:
       - id: check-yaml
       - id: double-quote-string-fixer
 
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 0.7.16
+    hooks:
+      - id: mdformat
+        additional_dependencies:
+          - mdformat-myst
+
+  - repo: https://github.com/adamchainz/blacken-docs
+    rev: "1.13.0"
+    hooks:
+      - id: blacken-docs
+        additional_dependencies:
+          - black==23.1.0
+
   - repo: https://github.com/psf/black
     rev: 23.1.0
     hooks:
@@ -33,3 +47,5 @@ repos:
     hooks:
       - id: prettier
         language_version: system
+        exclude_types:
+          - markdown # managed by mdformat

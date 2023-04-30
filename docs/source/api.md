@@ -68,7 +68,7 @@ This accessor extends {py:class}`xarray.Dataset` with the same interface than
 {class}`~xpublish.SingleDatasetRest`. It is a convenient method for publishing one single
 dataset. Proper use of this accessor should be like:
 
-```python
+```
 >>> import xarray as xr         # first import xarray
 >>> import xpublish             # import xpublish (the dataset 'rest' accessor is registered)
 >>> ds = xr.Dataset()           # create or load an xarray Dataset
