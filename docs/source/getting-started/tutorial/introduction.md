@@ -1,6 +1,6 @@
 # Introduction
 
-If you've read through [Why Xpublish](../why-xpublish.md) you'll know that Xpublish is a foundational building block for data servers. The real trick behind Xpublish is that it builds upon the Xarray datasets that you are used too.
+If you've read through [Why Xpublish](../why-xpublish.md) you'll know that Xpublish is a foundational building block for data servers. The real trick behind Xpublish is that it builds upon the Xarray datasets that the Python data community is used too.
 
 To introduce new users to Xpublish, quickly serve a single dataset, and to allow for quick development, Xpublish includes an [Xarray accessor](https://docs.xarray.dev/en/stable/internals/extending-xarray.html).
 
@@ -45,7 +45,7 @@ ds.rest(
 )
 ```
 
-Serving the dataset then simply requires calling the
+Serving the dataset then requires calling the
 {meth}`~xpublish.Rest.serve` method on the {class}`~xpublish.Rest` instance or
 the {attr}`xarray.Dataset.rest` accessor:
 
@@ -74,8 +74,8 @@ endpoints to get some information about the published dataset:
 The application also provides data access through a [Zarr] compatible API with the
 following endpoints:
 
-- `/.zmetadata`: returns a JSON dictionary representing the consolidated Zarr metadata.
-- `/{var}/{key}`: returns a single chunk of an array.
+- `/zarr/.zmetadata`: returns a JSON dictionary representing the consolidated Zarr metadata.
+- `/zarr/{var}/{key}`: returns a single chunk of an array.
 
 ### API Docs
 
@@ -96,8 +96,8 @@ from fsspec.implementations.http import HTTPFileSystem
 
 fs = HTTPFileSystem()
 
-# The URL 'http://0.0.0.0:9000' here serves one dataset
-http_map = fs.get_mapper("http://0.0.0.0:9000")
+# The URL 'http://0.0.0.0:9000/zarr/' here serves one dataset
+http_map = fs.get_mapper("http://0.0.0.0:9000/zarr/")
 
 # open as a zarr group
 zg = zarr.open_consolidated(http_map, mode="r")

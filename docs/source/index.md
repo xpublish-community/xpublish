@@ -6,14 +6,14 @@ Don't mind the mess, our docs are currently being restructured.
 
 **Useful links:** [Installation](getting-started/installation) | [Source Repository](https://github.com/xpublish-community/xpublish/) | [Issue Tracker](https://github.com/xpublish-community/xpublish/issues) | [Q&A Support](https://github.com/xpublish-community/xpublish/discussions/categories/q-a?discussions_q=category%3AQ%26A+) | [Slack Channel](./ecosystem/index.md#slack)
 
-Xpublish is:
+## Xpublish is
 
 ````{grid} 3
 
 ```{grid-item-card} A quick way to serve a single Xarray dataset over HTTP using FastAPI
 :link: getting-started/tutorial/introduction
 
-Add a REST API to your dataset with `ds.rest.serve()`!
+Get started with `ds.rest.serve()` to explore serving data with Xpublish
 ```
 
 ```{grid-item-card} An extendable core of a dataset server
@@ -30,12 +30,13 @@ Explore the [Xpublish ecosystem](./ecosystem/index.md).
 
 ````
 
-I want to:
+## I want to
 
 - [Quickly serve a single dataset for my own use](getting-started/tutorial/introduction)
 - Serve a collection of datasets with pre-configured server
 - [Build plugins to serve datasets in new ways](getting-started/tutorial/dataset-router-plugin)
 - [Connect to a new source of datasets](getting-started/tutorial/dataset-provider-plugin)
+- [Discuss Xpublish with others](ecosystem/index.md#connect)
 
 ````{grid} 1 1 2 2
 ---
@@ -76,7 +77,7 @@ The contributing guidelines will guide you through the process of improving Xpub
 
 ````
 
-**Xpublish lets you easily publish Xarray Datasets via a REST API.**
+### Xpublish lets you easily publish Xarray Datasets via a REST API.
 
 _You can run a short example application in a live session here:_ [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/xpublish-community/xpublish/master)
 
@@ -105,21 +106,7 @@ zg = zarr.open_consolidated(http_map, mode="r")
 ds = xr.open_zarr(http_map, consolidated=True)
 ```
 
-## Why?
-
-Xpublish lets you serve, share and publish Xarray Datasets via a web
-application.
-
-The data and/or metadata in the Xarray Datasets can be exposed in various forms
-through pluggable REST API endpoints. Efficient, on-demand delivery of large
-datasets may be enabled with Dask on the server-side.
-
-We are exploring applications of Xpublish that include:
-
-- publish on-demand or derived data products
-- turning xarray objects into streaming services (e.g. OPeNDAP)
-
-For more information on where Xpublish is going, see [Why Xpublish](./getting-started/why-xpublish)
+Or to explore other access methods, open [http://0.0.0.0:9000/docs](http://0.0.0.0:9000/docs) in a browser.
 
 ```{toctree}
 ---
@@ -134,7 +121,7 @@ ecosystem/index
 Contributing <contributing>
 ```
 
-### Feedback
+## Feedback
 
 If you encounter any errors or problems with **Xpublish**, please open an issue
 on [GitHub](http://github.com/xpublish-community/xpublish).

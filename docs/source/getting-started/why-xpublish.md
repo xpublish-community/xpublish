@@ -1,7 +1,7 @@
 # Why Xpublish
 
-Xarray has been key to new ways of interacting with and storing multi-dimensional datasets.
-It's grown a huge ecosystem and is constantly making forward progress.
+Xarray provides an intuitive API on top of a foundational data model, labeled arrays and datasets.
+This API and data model has formed the basis for a large and growing ecosystem of tools.
 
 Xpublish stands on the shoulders of Xarray and the greater PyData ecosystem enabling both new and old users, interactions, and clients.
 Xpublish does this by using Xarray datasets as the core data interchange format within the server, and surrounding that with an ecosystem of plugins.

@@ -24,7 +24,7 @@ The application also has one more API endpoint:
 - `/datasets`: returns the list of the ids (keys) of all published datasets
 
 Note that custom routes work for multiple datasets as well as for a single
-dataset. No code change is required. Taking the example above,
+dataset. No code change is required. Taking the example previously,
 
 ```python
 rest_collection = xpublish.Rest(
