@@ -8,10 +8,10 @@ if __name__ == '__main__':
     print(client.cluster)
     print(client.cluster.dashboard_link)
 
-    ds = xr.tutorial.open_dataset('air_temperature', chunks=dict(lat=5, lon=5), decode_cf=False)
+    ds = xr.tutorial.open_dataset('air_temperature', chunks={'lat': 5, 'lon': 5}, decode_cf=False)
     print(ds)
 
-    for k, da in ds.variables.items():
+    for _k, da in ds.variables.items():
         da.encoding['compressor'] = None
 
     app = ds.rest.app
