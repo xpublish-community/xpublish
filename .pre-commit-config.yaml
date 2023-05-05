@@ -25,3 +25,6 @@ repos:
     hooks:
       - id: prettier
         language_version: system
+
+ci:
+  autofix_prs: false
