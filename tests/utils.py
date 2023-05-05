@@ -16,9 +16,10 @@ class TestMapper(TestClient, BaseStore):
     """
 
     def __getitem__(self, key):
-        response = self.get(key)
+        zarr_key = f'/zarr/{key}'
+        response = self.get(zarr_key)
         if response.status_code != 200:
-            raise KeyError('{} not found. status_code = {}'.format(key, response.status_code))
+            raise KeyError('{} not found. status_code = {}'.format(zarr_key, response.status_code))
         return response.content
 
     def __delitem__(self, key):

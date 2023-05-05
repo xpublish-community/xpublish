@@ -58,7 +58,7 @@ def _extract_dataarray_coords(da, zattrs):
         nondim_coords = set(da.coords) - set(da.dims)
 
         if len(nondim_coords) > 0 and da.name not in nondim_coords:
-            coords = ' '.join(list(nondim_coords))
+            coords = ' '.join(sorted(list(nondim_coords)))
             zattrs['coordinates'] = encode_zarr_attr_value(coords)
     return zattrs
 

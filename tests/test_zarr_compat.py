@@ -41,7 +41,19 @@ def test_zmetadata_identical(start, end, freq, nlats, nlons, var_const, calendar
 @pytest.mark.parametrize(
     'start, end, freq, nlats, nlons, var_const, calendar, use_cftime',
     [
-        ('2018-01-01', '2021-01-01', 'MS', 15, 30, True, 'standard', False),
+        pytest.param(
+            '2018-01-01',
+            '2021-01-01',
+            'MS',
+            15,
+            30,
+            True,
+            'standard',
+            False,
+            marks=pytest.mark.xfail(
+                reason="Xarray's ordering of metadata coords in a string can very"
+            ),
+        ),
     ],
 )
 def test_zmetadata_identical_coords(
@@ -65,6 +77,53 @@ def test_zmetadata_identical_coords(
     mapper = TestMapper(SingleDatasetRest(ds).app)
     actual = json.loads(mapper['.zmetadata'].decode())
     expected = json.loads(zarr_dict['.zmetadata'].decode())
+    assert (
+        actual == expected
+    ), "Zarr metadata did not match, likely because array coordinates aren't sorted by Xarray"
+
+
+@pytest.mark.parametrize(
+    'start, end, freq, nlats, nlons, var_const, calendar, use_cftime',
+    [
+        (
+            '2018-01-01',
+            '2021-01-01',
+            'MS',
+            15,
+            30,
+            True,
+            'standard',
+            False,
+        ),
+    ],
+)
+def test_zmetadata_identical_coords_sorted(
+    start, end, freq, nlats, nlons, var_const, calendar, use_cftime
+):
+    """Test that zmetadata passes when coords are explicitly sorted"""
+    ds = create_dataset(
+        start=start,
+        end=end,
+        freq=freq,
+        nlats=nlats,
+        nlons=nlons,
+        var_const=var_const,
+        use_cftime=use_cftime,
+        calendar=calendar,
+        use_xy_dim=True,
+    )
+
+    ds = ds.chunk(ds.dims)
+    zarr_dict = {}
+    ds.to_zarr(zarr_dict, consolidated=True)
+    mapper = TestMapper(SingleDatasetRest(ds).app)
+    actual = json.loads(mapper['.zmetadata'].decode())
+    expected = json.loads(zarr_dict['.zmetadata'].decode())
+
+    for key in ['tmin/.zattrs', 'tmax/.zattrs']:
+        coords = expected['metadata'][key]['coordinates']
+        expected['metadata'][key]['coordinates'] = ' '.join(sorted(coords.split(' ')))
+
     assert actual == expected
 
 
