@@ -1,9 +1,5 @@
 # Xpublish
 
-```{warning}
-Don't mind the mess, our docs are currently being restructured.
-```
-
 **Useful links:** [Installation](getting-started/installation) | [Source Repository](https://github.com/xpublish-community/xpublish/) | [Issue Tracker](https://github.com/xpublish-community/xpublish/issues) | [Q&A Support](https://github.com/xpublish-community/xpublish/discussions/categories/q-a?discussions_q=category%3AQ%26A+) | [Slack Channel](./ecosystem/index.md#slack)
 
 ## Xpublish is
@@ -124,4 +120,4 @@ Contributing <contributing>
 ## Feedback
 
 If you encounter any errors or problems with **Xpublish**, please open an issue
-on [GitHub](http://github.com/xpublish-community/xpublish).
+on [GitHub](http://github.com/xpublish-community/xpublish), or ask questions in [Github Discussions](https://github.com/xpublish-community/xpublish/discussions/categories/q-a?discussions_q=category%3AQ%26A+) or on our [Slack Channel](./ecosystem/index.md#slack).

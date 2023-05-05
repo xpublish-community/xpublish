@@ -1,10 +1,5 @@
 # Building a dataset provider plugin
 
-```{warning}
-Under construction.
-For now see the [plugin user guide](../../user-guide/plugins.rst)
-```
-
 So far, we've been eagerly loading datasets for Xpublish to serve, but this tends not to scale well between memory needs and slow startup. Xpublish plugins can also be __Dataset Providers__ and handle loading of datasets on request.
 
 This also allows organizations to quickly be able to adapt Xpublish to work in their own environment, rather than needing Xpublish to explicitly support it.
