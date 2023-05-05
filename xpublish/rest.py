@@ -74,6 +74,11 @@ class Rest:
         app_kws: Optional[Dict] = None,
         plugins: Optional[Dict[str, Plugin]] = None,
     ):
+        if isinstance(datasets, xr.Dataset):
+            raise TypeError(
+                'xpublish.Rest no longer directly handles single datasets. Please use xpublish.SingleDatasetRest instead'
+            )
+
         self.setup_datasets(datasets or {})
         self.setup_plugins(plugins)
 

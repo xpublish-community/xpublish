@@ -16,9 +16,10 @@ class TestMapper(TestClient, BaseStore):
     """
 
     def __getitem__(self, key):
-        response = self.get(key)
+        zarr_key = f'/zarr/{key}'
+        response = self.get(zarr_key)
         if response.status_code != 200:
-            raise KeyError('{} not found. status_code = {}'.format(key, response.status_code))
+            raise KeyError('{} not found. status_code = {}'.format(zarr_key, response.status_code))
         return response.content
 
     def __delitem__(self, key):
@@ -45,6 +46,7 @@ def create_dataset(
     nlats=1,
     nlons=1,
     var_const=None,
+    use_xy_dim=False,
 ):
     """Utility function for creating test data"""
 
@@ -91,7 +93,12 @@ def create_dataset(
     lats = np.linspace(start=-90, stop=90, num=nlats, dtype='float32')
     lons = np.linspace(start=-180, stop=180, num=nlons, dtype='float32')
 
-    shape = (times.size, lats.size, lons.size)
+    if use_xy_dim:
+        lats, lons = np.meshgrid(lats, lons)
+        shape = (times.size, *lats.shape)
+    else:
+        shape = (times.size, lats.size, lons.size)
+
     num = reduce(mul, shape)
 
     if var_const is None:
@@ -113,14 +120,22 @@ def create_dataset(
     ds = xr.Dataset(
         {
             'tmin': xr.DataArray(
-                tmin_values.astype('float32'), dims=('time', 'lat', 'lon'), name='tmin'
+                tmin_values.astype('float32'),
+                dims=('time', 'lat', 'lon') if not use_xy_dim else ('time', 'y', 'x'),
+                name='tmin',
             ),
             'tmax': xr.DataArray(
-                tmax_values.astype('float32'), dims=('time', 'lat', 'lon'), name='tmax'
+                tmax_values.astype('float32'),
+                dims=('time', 'lat', 'lon') if not use_xy_dim else ('time', 'y', 'x'),
+                name='tmax',
             ),
             'time_bounds': time_bounds,
         },
-        {'time': times, 'lat': lats, 'lon': lons},
+        coords={
+            'time': times,
+            'lat': ('lat' if not use_xy_dim else ['y', 'x'], lats),
+            'lon': ('lon' if not use_xy_dim else ['y', 'x'], lons),
+        },
     )
 
     ds.tmin.encoding['_FillValue'] = np.float32(-9999999)

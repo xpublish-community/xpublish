@@ -24,7 +24,7 @@ repos:
           - black==23.1.0
 
   - repo: https://github.com/psf/black
-    rev: 23.1.0
+    rev: 23.3.0
     hooks:
       - id: black
         args: ["--line-length", "100", "--skip-string-normalization"]

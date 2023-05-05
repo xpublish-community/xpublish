@@ -108,13 +108,13 @@ def hook_implementation_plugin():
 
 
 def test_init_cache_kws(airtemp_ds):
-    rest = Rest(airtemp_ds, cache_kws={'available_bytes': 999})
+    rest = Rest({'airtemp': airtemp_ds}, cache_kws={'available_bytes': 999})
     assert rest.cache.available_bytes == 999
 
 
 def test_init_app_kws(airtemp_ds):
     rest = Rest(
-        airtemp_ds,
+        {'airtemp': airtemp_ds},
         app_kws=dict(
             title='My Dataset',
             description='Dataset Description',
@@ -164,7 +164,7 @@ def test_custom_app_routers(airtemp_ds, dims_router, router_kws, path):
 
 def test_custom_app_routers_error(airtemp_ds):
     with pytest.raises(TypeError, match='Invalid type/format.*'):
-        Rest(airtemp_ds, routers=['not_a_router'])
+        Rest({'airtemp': airtemp_ds}, routers=['not_a_router'])
 
 
 def test_custom_app_routers_conflict(airtemp_ds):
@@ -181,7 +181,7 @@ def test_custom_app_routers_conflict(airtemp_ds):
         pass
 
     with pytest.raises(ValueError, match='Found multiple routes.*'):
-        Rest(airtemp_ds, routers=[(router1, {'prefix': '/same'}), router2])
+        Rest({'airtemp': airtemp_ds}, routers=[(router1, {'prefix': '/same'}), router2])
 
 
 def test_custom_dataset_plugin(airtemp_ds, dataset_plugin):
@@ -288,7 +288,7 @@ def test_repr(airtemp_ds, airtemp_app_client):
 
 
 def test_zmetadata(airtemp_ds, airtemp_app_client):
-    response = airtemp_app_client.get('/.zmetadata')
+    response = airtemp_app_client.get('/zarr/.zmetadata')
     assert response.status_code == 200
     assert json.dumps(response.json()) == json.dumps(
         jsonify_zmetadata(airtemp_ds, create_zmetadata(airtemp_ds))
@@ -296,34 +296,34 @@ def test_zmetadata(airtemp_ds, airtemp_app_client):
 
 
 def test_bad_key(airtemp_app_client):
-    response = airtemp_app_client.get('/notakey')
+    response = airtemp_app_client.get('/zarr/notakey')
     assert response.status_code == 404
 
 
 def test_zgroup(airtemp_app_client):
-    response = airtemp_app_client.get('/.zgroup')
+    response = airtemp_app_client.get('/zarr/.zgroup')
     assert response.status_code == 200
 
 
 def test_zarray(airtemp_app_client):
-    response = airtemp_app_client.get('/air/.zarray')
+    response = airtemp_app_client.get('/zarr/air/.zarray')
     assert response.status_code == 200
 
 
 def test_zattrs(airtemp_app_client):
-    response = airtemp_app_client.get('/air/.zattrs')
+    response = airtemp_app_client.get('/zarr/air/.zattrs')
     assert response.status_code == 200
-    response = airtemp_app_client.get('/.zattrs')
+    response = airtemp_app_client.get('/zarr/.zattrs')
     assert response.status_code == 200
 
 
 def test_get_chunk(airtemp_app_client):
-    response = airtemp_app_client.get('/air/0.0.0')
+    response = airtemp_app_client.get('/zarr/air/0.0.0')
     assert response.status_code == 200
 
 
 def test_array_group_raises_404(airtemp_app_client):
-    response = airtemp_app_client.get('/air/.zgroup')
+    response = airtemp_app_client.get('/zarr/air/.zgroup')
     assert response.status_code == 404
 
 
@@ -333,12 +333,12 @@ def test_cache(airtemp_ds):
 
     client = TestClient(rest.app)
 
-    response1 = client.get('/air/0.0.0')
+    response1 = client.get('/zarr/air/0.0.0')
     assert response1.status_code == 200
     assert '/air/0.0.0' in rest.cache
 
     # test that we can retrieve
-    response2 = client.get('/air/0.0.0')
+    response2 = client.get('/zarr/air/0.0.0')
     assert response2.status_code == 200
     assert response1.content == response2.content
 
@@ -377,7 +377,7 @@ def test_ds_dict_keys(ds_dict, ds_dict_app_client):
     assert response.status_code == 200
     assert response.json() == list(ds_dict)
 
-    response = ds_dict_app_client.get('/datasets/not_in_dict')
+    response = ds_dict_app_client.get('/datasets/zarr/not_in_dict')
     assert response.status_code == 404
 
 
@@ -386,7 +386,7 @@ def test_ds_dict_cache(ds_dict):
 
     client = TestClient(rest.app)
 
-    response1 = client.get('/datasets/ds1/var/0')
+    response1 = client.get('/datasets/ds1/zarr/var/0')
     assert response1.status_code == 200
     assert 'ds1/var/0' in rest.cache
 
