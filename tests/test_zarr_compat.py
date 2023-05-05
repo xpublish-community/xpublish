@@ -65,7 +65,9 @@ def test_zmetadata_identical_coords(
     mapper = TestMapper(SingleDatasetRest(ds).app)
     actual = json.loads(mapper['.zmetadata'].decode())
     expected = json.loads(zarr_dict['.zmetadata'].decode())
-    assert actual == expected
+    assert (
+        actual == expected
+    ), "Zarr metadata did not match, likely because array coordinates aren't sorted by Xarray: {expected} Xpublish: {actual}"
 
 
 @pytest.mark.parametrize(
