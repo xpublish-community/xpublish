@@ -41,10 +41,10 @@ Here is an example of directly accessing the data from within Python:
    from fsspec.implementations.http import HTTPFileSystem
 
    fs = HTTPFileSystem()
-   http_map = fs.get_mapper('http://0.0.0.0:9000')
+   http_map = fs.get_mapper("http://0.0.0.0:9000")
 
    # open as a zarr group
-   zg = zarr.open_consolidated(http_map, mode='r')
+   zg = zarr.open_consolidated(http_map, mode="r")
 
    # or open as another Xarray Dataset
    ds = xr.open_zarr(http_map, consolidated=True)

@@ -178,7 +178,7 @@ def get_data_chunk(da, chunk_id, out_shape):
     if isinstance(da, dask_array_type):
         chunk_data = da.blocks[ikeys]
     else:
-        if ikeys != ((0,) * da.ndim):
+        if da.ndim > 0 and ikeys != ((0,) * da.ndim):
             raise ValueError(
                 'Invalid chunk_id for numpy array: %s. Should have been: %s'
                 % (chunk_id, ((0,) * da.ndim))
