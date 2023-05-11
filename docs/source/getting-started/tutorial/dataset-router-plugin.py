@@ -29,7 +29,7 @@ class MeanPlugin(Plugin):
 
 ds = xr.tutorial.open_dataset(
     'air_temperature',
-    chunks=dict(lat=5, lon=5),
+    chunks={'lat': 5, 'lon': 5},
 )
 
 rest = SingleDatasetRest(ds)
