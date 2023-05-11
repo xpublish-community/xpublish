@@ -48,6 +48,7 @@ extensions = [
     'sphinx_autodoc_typehints',
     'sphinx_design',
     'myst_parser',
+    'sphinx_github_changelog',
 ]
 
 myst_enable_extensions = []
@@ -151,6 +152,7 @@ html_theme_options = {
         }
     ],
     'use_edit_page_button': True,
+    'header_links_before_dropdown': 4,
 }
 
 html_context = {
