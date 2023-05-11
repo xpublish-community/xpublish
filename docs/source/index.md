@@ -2,6 +2,13 @@
 
 **Useful links:** [Installation](getting-started/installation) | [Source Repository](https://github.com/xpublish-community/xpublish/) | [Issue Tracker](https://github.com/xpublish-community/xpublish/issues) | [Q&A Support](https://github.com/xpublish-community/xpublish/discussions/categories/q-a?discussions_q=category%3AQ%26A+) | [Slack Channel](./ecosystem/index.md#slack)
 
+```{include} ../../README.md
+---
+start-after: <!-- badges-start -->
+end-before: <!-- badges-end -->
+---
+```
+
 ## Xpublish is
 
 ````{grid} 3
@@ -73,36 +80,26 @@ The contributing guidelines will guide you through the process of improving Xpub
 
 ````
 
-### Xpublish lets you easily publish Xarray Datasets via a REST API.
+## A quick intro
 
 _You can run a short example application in a live session here:_ [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/xpublish-community/xpublish/master)
 
 On the server-side, one or more datasets can be published using the
 {class}`xpublish.Rest` class or the {attr}`xarray.Dataset.rest` accessor, e.g.,
 
-```python
-ds.rest.serve(host="0.0.0.0", port=9000)
+```{include} ../../README.md
+---
+start-after: <!-- server-example-start -->
+end-before: <!-- server-example-end -->
+---
 ```
 
-Those datasets can be accessed from various kinds of client applications, e.g.,
-from within Python using Zarr and fsspec.
-
-```python
-import xarray as xr
-import zarr
-from fsspec.implementations.http import HTTPFileSystem
-
-fs = HTTPFileSystem()
-http_map = fs.get_mapper("http://0.0.0.0:9000/zarr/")
-
-# open as a zarr group
-zg = zarr.open_consolidated(http_map, mode="r")
-
-# or open as another Xarray Dataset
-ds = xr.open_zarr(http_map, consolidated=True)
+```{include} ../../README.md
+---
+start-after: <!-- client-example-start -->
+end-before: <!-- client-example-end -->
+---
 ```
-
-Or to explore other access methods, open [http://0.0.0.0:9000/docs](http://0.0.0.0:9000/docs) in a browser.
 
 ```{toctree}
 ---

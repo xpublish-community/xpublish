@@ -1,5 +1,9 @@
 # Plugins
 
+```{versionadded} 0.3.0
+Plugins were released in [0.3.0](https://github.com/xpublish-community/xpublish/releases/tag/0.3.0).
+```
+
 While {py:class}`fastapi.APIRouter` can get you started building new endpoints
 for datasets quickly, the real extendability of Xpublish comes from it's plugin system.
 
