@@ -25,7 +25,7 @@ def normalize_datasets(datasets) -> Dict[str, xr.Dataset]:
     if isinstance(datasets, xr.Dataset):
         return {}
     elif isinstance(datasets, Mapping):
-        if not all([isinstance(obj, xr.Dataset) for obj in datasets.values()]):
+        if not all(isinstance(obj, xr.Dataset) for obj in datasets.values()):
             raise TypeError(error_msg)
         return {str(k): ds.assign_attrs({DATASET_ID_ATTR_KEY: k}) for k, ds in datasets.items()}
     else:
@@ -97,14 +97,14 @@ class SingleDatasetOpenAPIOverrider:
         if self._app.openapi_schema:
             return self._app.openapi_schema
 
-        kwargs = dict(
-            title=self._app.title,
-            version=self._app.version,
-            description=self._app.description,
-            routes=self._app.routes,
-            tags=self._app.openapi_tags,
-            servers=self._app.servers,
-        )
+        kwargs = {
+            'title': self._app.title,
+            'version': self._app.version,
+            'description': self._app.description,
+            'routes': self._app.routes,
+            'tags': self._app.openapi_tags,
+            'servers': self._app.servers,
+        }
 
         openapi_schema = get_openapi(**kwargs)
 
@@ -124,9 +124,12 @@ class SingleDatasetOpenAPIOverrider:
 
 class JSONResponse(StarletteJSONResponse):
     def __init__(self, *args, **kwargs):
-        self._render_kwargs = dict(
-            ensure_ascii=True, allow_nan=True, indent=None, separators=(',', ':')
-        )
+        self._render_kwargs = {
+            'ensure_ascii': True,
+            'allow_nan': True,
+            'indent': None,
+            'separators': (',', ':'),
+        }
         self._render_kwargs.update(kwargs.pop('render_kwargs', {}))
         super().__init__(*args, **kwargs)
 

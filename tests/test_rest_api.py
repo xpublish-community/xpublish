@@ -14,13 +14,13 @@ from xpublish.utils.zarr import create_zmetadata, jsonify_zmetadata
 
 @pytest.fixture(scope='function')
 def airtemp_rest(airtemp_ds):
-    app_kws = dict(
-        title='My Dataset',
-        description='Dataset Description',
-        version='1.0.0',
-        openapi_url='/dataset.json',
-        docs_url='/data-docs',
-    )
+    app_kws = {
+        'title': 'My Dataset',
+        'description': 'Dataset Description',
+        'version': '1.0.0',
+        'openapi_url': '/dataset.json',
+        'docs_url': '/data-docs',
+    }
 
     return SingleDatasetRest(airtemp_ds, app_kws=app_kws)
 
@@ -115,13 +115,13 @@ def test_init_cache_kws(airtemp_ds):
 def test_init_app_kws(airtemp_ds):
     rest = Rest(
         {'airtemp': airtemp_ds},
-        app_kws=dict(
-            title='My Dataset',
-            description='Dataset Description',
-            version='1.0.0',
-            openapi_url='/dataset.json',
-            docs_url='/data-docs',
-        ),
+        app_kws={
+            'title': 'My Dataset',
+            'description': 'Dataset Description',
+            'version': '1.0.0',
+            'openapi_url': '/dataset.json',
+            'docs_url': '/data-docs',
+        },
     )
 
     assert rest.app.title == 'My Dataset'
@@ -353,8 +353,8 @@ def test_rest_accessor(airtemp_ds):
 
 def test_rest_accessor_kws(airtemp_ds):
     airtemp_ds.rest(
-        app_kws=dict(docs_url='/data-docs'),
-        cache_kws=dict(available_bytes=1e9),
+        app_kws={'docs_url': '/data-docs'},
+        cache_kws={'available_bytes': 1e9},
     )
 
     assert airtemp_ds.rest.cache.available_bytes == 1e9
@@ -414,14 +414,14 @@ def test_single_dataset_openapi_override(airtemp_rest):
 
 
 def test_serve(airtemp_rest, mocker):
-    kwargs = dict(host='0.0.0.0', log_level='debug', port=9000)
+    kwargs = {'host': '0.0.0.0', 'log_level': 'debug', 'port': 9000}
     mocker.patch('uvicorn.run')
     airtemp_rest.serve(**kwargs)
     uvicorn.run.assert_called_once_with(airtemp_rest.app, **kwargs)
 
 
 def test_accessor_serve(airtemp_ds, mocker):
-    kwargs = dict(host='0.0.0.0', log_level='debug', port=9000)
+    kwargs = {'host': '0.0.0.0', 'log_level': 'debug', 'port': 9000}
     mocker.patch('uvicorn.run')
     airtemp_ds.rest.serve(**kwargs)
     uvicorn.run.assert_called_once_with(airtemp_ds.rest.app, **kwargs)

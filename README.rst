@@ -18,6 +18,10 @@ Publish Xarray Datasets via a REST API.
 .. image:: https://codecov.io/gh/xarray-contrib/xpublish/branch/main/graph/badge.svg
    :target: https://codecov.io/gh/xarray-contrib/xpublish
 
+.. image:: https://results.pre-commit.ci/badge/github/xpublish-community/xpublish/main.svg
+   :target: https://results.pre-commit.ci/latest/github/xpublish-community/xpublish/main
+   :alt: pre-commit.ci status
+
 **Serverside: Publish a Xarray Dataset through a rest API**
 
 .. code-block:: python

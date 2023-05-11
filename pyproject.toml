@@ -1,0 +1,61 @@
+
+[tool.black]
+line-length = 100
+skip-string-normalization = true
+
+[tool.pytest.ini_options]
+log_cli = true
+log_level = "INFO"
+addopts = "--cov=./ --cov-report=xml --verbose"
+
+[tool.ruff]
+select = [
+    "B", # flake8-bugbear
+    "C",
+    "E", # pycodestyle
+    "F", # Pyflakes
+    "I", # isort
+    "W", # pycodestyle
+    # "T4",
+    "B9",
+]
+ignore = [
+    # "E203",
+    # "E266",
+    "E501",
+    # "W503",
+    "E722",
+    "E402",
+    "C901",
+]
+line-length = 100
+
+[tool.ruff.mccabe]
+# Unlike Flake8, default to a complexity level of 10.
+max-complexity = 18
+
+[tool.ruff.isort]
+combine-as-imports = true
+known-first-party = ["xpublish"]
+known-third-party = [
+    "cachey",
+    "dask",
+    "fastapi",
+    "numcodecs",
+    "numpy",
+    "pandas",
+    "pkg_resources",
+    "pluggy",
+    "pydantic",
+    "pytest",
+    "setuptools",
+    "sphinx_autosummary_accessors",
+    "starlette",
+    "uvicorn",
+    "xarray",
+    "zarr",
+]
+
+[tool.ruff.flake8-bugbear]
+# Allow fastapi.Depends and other dependency injection style function arguments
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
