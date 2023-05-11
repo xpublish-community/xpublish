@@ -1,5 +1,6 @@
 import json
 
+import numpy as np
 import pytest
 import xarray as xr
 
@@ -247,5 +248,21 @@ def test_roundtrip_custom_chunks(
     ds = ds.chunk(chunks)
     mapper = TestMapper(SingleDatasetRest(ds).app)
     actual = xr.open_zarr(mapper, consolidated=True, decode_times=decode_times)
+
+    xr.testing.assert_identical(actual, ds)
+
+
+def test_scalar_variable():
+    ds = xr.Dataset(
+        {
+            'scalar': xr.DataArray(
+                np.float32(0.0),
+                dims=(),
+                name='scalar',
+            )
+        }
+    )
+    mapper = TestMapper(SingleDatasetRest(ds).app)
+    actual = xr.open_zarr(mapper, consolidated=True)
 
     xr.testing.assert_identical(actual, ds)
