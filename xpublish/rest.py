@@ -119,7 +119,7 @@ class Rest:
         return dataset_ids
 
     def get_dataset_from_plugins(
-        self, dataset_id: str = Path(default=None, description='Unique ID of dataset')
+        self, dataset_id: str = Path(description='Unique ID of dataset')
     ) -> xr.Dataset:
         """Attempt to load dataset from plugins, otherwise return dataset from passed in dictionary of datasets
 

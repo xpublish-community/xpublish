@@ -64,8 +64,8 @@ class ZarrPlugin(Plugin):
 
         @router.get('/{var}/{chunk}')
         def get_variable_chunk(
-            var: str = Path(default=None, description='Variable in dataset'),
-            chunk: str = Path(default=None, description='Zarr chunk'),
+            var: str = Path(description='Variable in dataset'),
+            chunk: str = Path(description='Zarr chunk'),
             dataset: xr.Dataset = Depends(deps.dataset),
             cache: cachey.Cache = Depends(deps.cache),
         ):
