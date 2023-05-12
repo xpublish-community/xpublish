@@ -48,6 +48,7 @@ extensions = [
     'sphinx_autodoc_typehints',
     'sphinx_design',
     'myst_parser',
+    'sphinx_github_changelog',
 ]
 
 myst_enable_extensions = []
@@ -151,6 +152,7 @@ html_theme_options = {
         }
     ],
     'use_edit_page_button': True,
+    'header_links_before_dropdown': 4,
 }
 
 html_context = {
@@ -165,7 +167,7 @@ html_context = {
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
-# html_title = None
+html_title = f'{project} {version}'
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 # html_short_title = None
