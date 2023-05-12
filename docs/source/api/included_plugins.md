@@ -8,6 +8,8 @@ Xpublish includes a set of built in plugins with associated endpoints.
 
 ## Dataset Info
 
+The dataset info plugin provides a handful of default ways to display datasets and their metadata.
+
 ```{eval-rst}
 .. autosummary::
    :toctree: generated/
@@ -15,13 +17,16 @@ Xpublish includes a set of built in plugins with associated endpoints.
    plugins.included.dataset_info.DatasetInfoPlugin
 
 .. openapi:: ./openapi.json
-   :include:
+   :paths:
+    /datasets/{dataset_id}/
     /datasets/{dataset_id}/keys
     /datasets/{dataset_id}/dict
     /datasets/{dataset_id}/info
 ```
 
 ## Module Version
+
+The module version plugin returns the versions of key libraries powering the Xpublish server.
 
 ```{eval-rst}
 .. autosummary::
@@ -36,6 +41,8 @@ Xpublish includes a set of built in plugins with associated endpoints.
 
 ## Plugin Info
 
+Similarly the versions of the plugins currently enabled on the Xpublish server.
+
 ```{eval-rst}
 .. autosummary::
    :toctree: generated/
@@ -48,6 +55,8 @@ Xpublish includes a set of built in plugins with associated endpoints.
 ```
 
 ## Zarr
+
+The Zarr plugin provides consolidated Zarr v2 access to the loaded datasets.
 
 ```{eval-rst}
 .. autosummary::

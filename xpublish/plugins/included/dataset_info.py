@@ -12,6 +12,8 @@ from .. import Dependencies, Plugin, hookimpl
 
 
 class DatasetInfoPlugin(Plugin):
+    """Dataset metadata"""
+
     name = 'dataset_info'
 
     dataset_router_prefix: str = ''
@@ -25,7 +27,7 @@ class DatasetInfoPlugin(Plugin):
         def html_representation(
             dataset=Depends(deps.dataset),
         ):
-            """Returns a HTML representation of the dataset."""
+            """Returns the xarray HTML representation of the dataset."""
 
             with xr.set_options(display_style='html'):
                 return HTMLResponse(dataset._repr_html_())
@@ -33,13 +35,16 @@ class DatasetInfoPlugin(Plugin):
         @router.get('/keys')
         def list_keys(
             dataset=Depends(deps.dataset),
-        ):
+        ) -> list[str]:
+            """List of the keys in a dataset"""
+
             return JSONResponse(list(dataset.variables))
 
         @router.get('/dict')
         def to_dict(
             dataset=Depends(deps.dataset),
         ):
+            """The full dataset as a dictionary"""
             return JSONResponse(dataset.to_dict(data=False))
 
         @router.get('/info')

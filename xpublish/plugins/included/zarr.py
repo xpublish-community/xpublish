@@ -35,6 +35,7 @@ class ZarrPlugin(Plugin):
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
         ):
+            """Consolidated Zarr metadata"""
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
 
@@ -47,6 +48,7 @@ class ZarrPlugin(Plugin):
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
         ):
+            """Zarr group data"""
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
 
@@ -57,6 +59,7 @@ class ZarrPlugin(Plugin):
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
         ):
+            """Zarr attributes"""
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
 
