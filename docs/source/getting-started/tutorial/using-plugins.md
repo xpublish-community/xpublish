@@ -1,5 +1,9 @@
 # Using Plugins
 
+```{versionadded} 0.3.0
+Plugins were released in [0.3.0](https://github.com/xpublish-community/xpublish/releases/tag/0.3.0).
+```
+
 Much of the power of Xpublish comes from it's [ecosystem](../../ecosystem/index) of plugins, which can quickly extend Xpublish with new capabilities.
 
 ```{note}
