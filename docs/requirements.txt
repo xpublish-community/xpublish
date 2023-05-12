@@ -6,3 +6,4 @@ autodoc_pydantic
 myst-nb
 sphinx-design
 sphinx_github_changelog
+sphinxcontrib-openapi

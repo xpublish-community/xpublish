@@ -4,7 +4,7 @@ import cachey
 import pluggy
 import uvicorn
 import xarray as xr
-from fastapi import APIRouter, FastAPI, HTTPException
+from fastapi import APIRouter, FastAPI, HTTPException, Path
 
 from .dependencies import get_cache, get_dataset, get_dataset_ids, get_plugin_manager
 from .plugins import Dependencies, Plugin, PluginSpec, get_plugins, load_default_plugins
@@ -118,7 +118,9 @@ class Rest:
 
         return dataset_ids
 
-    def get_dataset_from_plugins(self, dataset_id: str) -> xr.Dataset:
+    def get_dataset_from_plugins(
+        self, dataset_id: str = Path(default=None, description='Unique ID of dataset')
+    ) -> xr.Dataset:
         """Attempt to load dataset from plugins, otherwise return dataset from passed in dictionary of datasets
 
         Parameters:

@@ -3,7 +3,7 @@ from typing import Sequence
 
 import cachey  # type: ignore
 import xarray as xr
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Path
 from starlette.responses import Response  # type: ignore
 from zarr.storage import array_meta_key, attrs_key, group_meta_key  # type: ignore
 
@@ -64,8 +64,8 @@ class ZarrPlugin(Plugin):
 
         @router.get('/{var}/{chunk}')
         def get_variable_chunk(
-            var: str,
-            chunk: str,
+            var: str = Path(default=None, description='Variable in dataset'),
+            chunk: str = Path(default=None, description='Zarr chunk'),
             dataset: xr.Dataset = Depends(deps.dataset),
             cache: cachey.Cache = Depends(deps.cache),
         ):

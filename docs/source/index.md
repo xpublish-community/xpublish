@@ -62,7 +62,7 @@ with useful background information and explanation.
 ```
 
 ```{grid-item-card} API Reference
-:link: api
+:link: api/index
 :link-type: doc
 
 The reference guide contains a detailed description of the Xpublish API/
@@ -109,7 +109,7 @@ maxdepth: 2
 ---
 getting-started/index
 user-guide/index
-api
+api/index
 ecosystem/index
 Contributing <contributing>
 changelog

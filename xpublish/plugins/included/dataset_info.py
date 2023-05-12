@@ -15,7 +15,7 @@ class DatasetInfoPlugin(Plugin):
     name = 'dataset_info'
 
     dataset_router_prefix: str = ''
-    dataset_router_tags: Sequence[str] = []
+    dataset_router_tags: Sequence[str] = ['dataset_info']
 
     @hookimpl
     def dataset_router(self, deps: Dependencies):

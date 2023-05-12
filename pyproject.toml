@@ -58,4 +58,4 @@ known-third-party = [
 
 [tool.ruff.flake8-bugbear]
 # Allow fastapi.Depends and other dependency injection style function arguments
-extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path"]
