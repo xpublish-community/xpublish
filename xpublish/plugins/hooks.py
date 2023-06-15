@@ -3,6 +3,7 @@ from typing import Callable, Dict, Iterable, List, Optional
 import cachey  # type: ignore
 import pluggy  # type: ignore
 import xarray as xr
+from dask import distributed
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
@@ -40,6 +41,8 @@ class Dependencies(BaseModel):
     plugin_manager: Callable[..., pluggy.PluginManager] = Field(
         get_plugin_manager, description='The plugin manager itself, allowing for maximum creativity'
     )
+    dask_sync_client: Callable[..., distributed.Client]
+    dask_async_client: Callable[..., distributed.Client]
 
     def __hash__(self):
         """Dependency functions aren't easy to hash"""
@@ -111,11 +114,11 @@ class PluginSpec(Plugin):
         """
 
     @hookspec
-    def get_datasets(self) -> Iterable[str]:  # type: ignore
+    def get_datasets(self, deps: Dependencies) -> Iterable[str]:  # type: ignore
         """Return an iterable of dataset ids that the plugin can provide"""
 
     @hookspec(firstresult=True)
-    def get_dataset(self, dataset_id: str) -> Optional[xr.Dataset]:  # type: ignore
+    def get_dataset(self, dataset_id: str, deps: Dependencies) -> Optional[xr.Dataset]:  # type: ignore
         """Return a dataset by requested dataset_id.
 
         If the plugin does not have the dataset, return None
@@ -124,3 +127,15 @@ class PluginSpec(Plugin):
     @hookspec
     def register_hookspec(self):  # type: ignore
         """Return additional hookspec class to register with the plugin manager"""
+
+    @hookspec(firstresult=True)
+    def get_dask_cluster(self) -> distributed.SpecCluster:
+        """Return the active dask cluster"""
+
+    @hookspec(firstresult=True)
+    def get_dask_sync_client(self, cluster: distributed.SpecCluster) -> distributed.Client:
+        """Return a synchronous Dask client"""
+
+    @hookspec(firstresult=True)
+    def get_dask_async_client(self, cluster: distributed.SpecCluster) -> distributed.Client:
+        """Return an async Dask client"""
