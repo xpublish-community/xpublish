@@ -4,6 +4,7 @@ import cachey
 import pluggy
 import uvicorn
 import xarray as xr
+from dask import distributed
 from fastapi import APIRouter, FastAPI, HTTPException
 
 from .dependencies import get_cache, get_dataset, get_dataset_ids, get_plugin_manager
@@ -113,7 +114,7 @@ class Rest:
         """
         dataset_ids = list(self._datasets)
 
-        for plugin_dataset_ids in self.pm.hook.get_datasets():
+        for plugin_dataset_ids in self.pm.hook.get_datasets(deps=self.dependencies()):
             dataset_ids.extend(plugin_dataset_ids)
 
         return dataset_ids
@@ -132,7 +133,7 @@ class Rest:
         Raises:
             FastAPI.HTTPException: When a dataset is not found a 404 error is returned.
         """
-        dataset = self.pm.hook.get_dataset(dataset_id=dataset_id)
+        dataset = self.pm.hook.get_dataset(dataset_id=dataset_id, deps=self.dependencies())
 
         if dataset:
             return dataset
@@ -231,6 +232,33 @@ class Rest:
         """Returns the loaded plugins"""
         return dict(self.pm.list_name_plugin())
 
+    def dask_cluster(self) -> distributed.SpecCluster:
+        """Currently active Dask cluster"""
+        try:
+            return self._dask_cluster
+        except AttributeError:
+            self._dask_cluster = self.pm.hook.get_dask_cluster()
+
+        return self._dask_cluster
+
+    def dask_sync_client(self) -> distributed.Client:
+        """Syncronous Dask client"""
+        try:
+            return self._dask_sync_client
+        except AttributeError:
+            self._dask_sync_client = self.pm.hook.get_dask_sync_client(cluster=self.dask_cluster())
+
+        return self._dask_client
+
+    def dask_async_client(self) -> distributed.Client:
+        """Asyncronous Dask client"""
+        try:
+            return self._dask_async_client
+        except AttributeError:
+            self._dask_async_client = self.pm.hook.get_dask_async_client()
+
+        return self._dask_async_client
+
     def _init_routers(self, dataset_routers: Optional[APIRouter]):
         """Setup plugin and dataset routers. Needs to run after dataset and plugin setup"""
         app_routers, plugin_dataset_routers = self.plugin_routers()
@@ -276,6 +304,8 @@ class Rest:
             cache=lambda: self.cache,
             plugins=lambda: self.plugins,
             plugin_manager=lambda: self.pm,
+            dask_sync_client=self.dask_sync_client,
+            dask_async_client=self.dask_async_client,
         )
 
         return deps

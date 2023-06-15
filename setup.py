@@ -52,6 +52,8 @@ setup(
             'zarr = xpublish.plugins.included.zarr:ZarrPlugin',
             'module_version = xpublish.plugins.included.module_version:ModuleVersionPlugin',
             'plugin_info = xpublish.plugins.included.plugin_info:PluginInfoPlugin',
+            # 'dask_client = xpublish.plugins.included.dask_client:DaskClientPlugin',
+            # 'dask_local_cluster = xpublish.plugins.included.dask_local_cluster:DaskLocalClusterPlugin',
         ]
     },
 )
