@@ -4,6 +4,15 @@
 
 # API reference
 
+```{toctree}
+---
+hidden:
+---
+endpoints
+included_plugins
+plugins
+```
+
 ## Top-level Rest class
 
 The {class}`~xpublish.Rest` class can be used for publishing a
@@ -135,26 +144,4 @@ passed in to the `Plugin.app_router` or `Plugin.dataset_router` method.
    get_zmetadata
    get_plugins
    get_plugin_manager
-```
-
-## Plugins
-
-Plugins are inherit from the {class}`~xpublish.Plugin` class, and implement various hooks.
-
-```{eval-rst}
-.. currentmodule:: xpublish
-```
-
-```{eval-rst}
-.. autosummary::
-   :toctree: generated/
-
-   Plugin
-   hookimpl
-   hookspec
-   Dependencies
-   plugins.hooks.PluginSpec
-   plugins.manage.find_default_plugins
-   plugins.manage.load_default_plugins
-   plugins.manage.configure_plugins
 ```

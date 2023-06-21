@@ -16,10 +16,12 @@ class PluginInfo(BaseModel):
 
 
 class PluginInfoPlugin(Plugin):
+    """Expose plugin source and version"""
+
     name = 'plugin_info'
 
     app_router_prefix: str = ''
-    app_router_tags: Sequence[str] = []
+    app_router_tags: Sequence[str] = ['plugin_info']
 
     @hookimpl
     def app_router(self, deps: Dependencies):
@@ -29,6 +31,7 @@ class PluginInfoPlugin(Plugin):
         def get_plugins(
             plugins: Dict[str, Plugin] = Depends(deps.plugins)
         ) -> Dict[str, PluginInfo]:
+            """Return the source and version of the currently loaded plugins"""
             plugin_info = {}
 
             for name, plugin in plugins.items():
