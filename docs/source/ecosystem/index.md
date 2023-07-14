@@ -18,6 +18,7 @@ Xpublish has a channel (`#xpublish`) on [ESIP](https://www.esipfed.org/)'s (Eart
 
 - [XREDS](https://github.com/asascience-open/xreds) from RPS
 - [Xpublish Host](https://github.com/axiom-data-science/xpublish-host) from Axiom Data Science
+- [Catalog-To-Xpublish](https://github.com/xpublish-experiments/Catalog-To-Xpublish) from LimnoTech
 
 ## Plugins
 
