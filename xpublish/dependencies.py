@@ -9,7 +9,7 @@ import xarray as xr
 from fastapi import Depends
 
 from .utils.api import DATASET_ID_ATTR_KEY
-from .utils.zarr import create_zmetadata, create_zvariables, ZARR_METADATA_KEY
+from .utils.zarr import ZARR_METADATA_KEY, create_zmetadata, create_zvariables
 
 if TYPE_CHECKING:
     from .plugins import Plugin  # pragma: no cover

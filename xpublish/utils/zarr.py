@@ -1,15 +1,15 @@
 import copy
 import logging
-
-import dask.array
-import numpy as np
-import xarray as xr
 from typing import (
     Any,
     Optional,
 )
-from numcodecs.compat import ensure_ndarray
+
+import dask.array
+import numpy as np
+import xarray as xr
 from numcodecs.abc import Codec
+from numcodecs.compat import ensure_ndarray
 from xarray.backends.zarr import (
     DIMENSION_KEY,
     encode_zarr_attr_value,

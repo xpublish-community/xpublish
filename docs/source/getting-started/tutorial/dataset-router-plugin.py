@@ -1,6 +1,7 @@
+from typing import Sequence
+
 import xarray as xr
 from fastapi import APIRouter, Depends, HTTPException
-from typing import Sequence
 
 from xpublish import Dependencies, Plugin, SingleDatasetRest, hookimpl
 

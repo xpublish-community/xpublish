@@ -8,7 +8,6 @@ import platform
 import struct
 import subprocess
 import sys
-from typing import Optional
 
 
 def get_sys_info() -> list:
