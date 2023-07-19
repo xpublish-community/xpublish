@@ -47,10 +47,10 @@ from xpublish import Plugin
 
 
 class HelloWorldPlugin(Plugin):
-    name = "hello_world"
+    name: str = "hello_world"
 ```
 
-At the minimum, a plugin needs to specify a `name` attribute.
+At the minimum, a plugin needs to specify a `name` attribute with a type annotation. For example, `name: str = my_plugin_name`.
 
 ### Marking implementation methods
 
@@ -66,7 +66,7 @@ from xpublish import Plugin, hookimpl
 from fastapi import APIRouter
 
 class HelloWorldPlugin(Plugin):
-    name = "hello_world"
+    name: str = "hello_world"
 
     @hookimpl
     def app_router(self):
@@ -188,7 +188,7 @@ from xpublish import Plugin, Dependencies, hookimpl
 
 
 class DatasetAttrs(Plugin):
-    name = "dataset-attrs"
+    name: str = "dataset-attrs"
 
     @hookimpl
     def dataset_router(self, deps: Dependencies):
@@ -224,7 +224,7 @@ from xpublish import Plugin, Dependencies, hookimpl
 
 
 class DatasetInfoPlugin(Plugin):
-    name = "dataset-info"
+    name: str = "dataset-info"
 
     dataset_router_prefix = "/info"
     dataset_router_tags = ["info"]
@@ -257,7 +257,7 @@ from xpublish import Plugin, Dependencies, hookimpl
 
 
 class PluginInfo(Plugin):
-    name = "plugin_info"
+    name: str = "plugin_info"
 
     app_router_prefix = "/info"
     app_router_tags = ["info"]
@@ -298,7 +298,7 @@ from xpublish import Plugin, hookimpl
 
 
 class TutorialDataset(Plugin):
-    name = "xarray-tutorial-dataset"
+    name: str = "xarray-tutorial-dataset"
 
     @hookimpl
     def get_datasets(self):
