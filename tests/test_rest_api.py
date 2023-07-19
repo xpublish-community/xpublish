@@ -64,7 +64,7 @@ def dims_router():
 @pytest.fixture(scope='function')
 def dataset_plugin(airtemp_ds):
     class AirtempPlugin(Plugin):
-        name = 'airtemp'
+        name: str = 'airtemp'
 
         @hookimpl
         def get_dataset(self, dataset_id: str):
@@ -86,7 +86,7 @@ def hook_spec_plugin():
             pass
 
     class HookSpecPlugin(Plugin):
-        name = 'hook_spec'
+        name: str = 'hook_spec'
 
         @hookimpl
         def register_hookspec(self):
@@ -98,7 +98,7 @@ def hook_spec_plugin():
 @pytest.fixture(scope='function')
 def hook_implementation_plugin():
     class HookImplementationPlugin(Plugin):
-        name = 'hook_implementation'
+        name: str = 'hook_implementation'
 
         @hookimpl
         def hello(self):
