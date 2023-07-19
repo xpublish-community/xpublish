@@ -90,7 +90,7 @@ class ZarrPlugin(Plugin):
 
             # First check that this request wasn't for variable metadata
             if array_meta_key in chunk:
-                return JSONResponse(zmetadata['metadata'][f'{var}/{array_meta_key}'])
+                return zmetadata['metadata'][f'{var}/{array_meta_key}']
             elif attrs_key in chunk:
                 return JSONResponse(zmetadata['metadata'][f'{var}/{attrs_key}'])
             elif group_meta_key in chunk:
