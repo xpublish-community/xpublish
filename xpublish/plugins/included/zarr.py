@@ -13,10 +13,10 @@ from ...dependencies import get_zmetadata, get_zvariables
 from ...utils.api import DATASET_ID_ATTR_KEY
 from ...utils.cache import CostTimer
 from ...utils.zarr import (
-    ZARR_METADATA_KEY,
     encode_chunk,
     get_data_chunk,
     jsonify_zmetadata,
+    ZARR_METADATA_KEY,
 )
 from .. import Dependencies, Plugin, hookimpl
 
@@ -79,7 +79,7 @@ class ZarrPlugin(Plugin):
             chunk: str = Path(description='Zarr chunk'),
             dataset: xr.Dataset = Depends(deps.dataset),
             cache: cachey.Cache = Depends(deps.cache),
-        ) -> dict | JSONResponse | Response:
+        ) -> Response:
             """Get a zarr array chunk.
 
             This will return cached responses when available.
@@ -90,7 +90,7 @@ class ZarrPlugin(Plugin):
 
             # First check that this request wasn't for variable metadata
             if array_meta_key in chunk:
-                return zmetadata['metadata'][f'{var}/{array_meta_key}']
+                return JSONResponse(zmetadata['metadata'][f'{var}/{array_meta_key}'])
             elif attrs_key in chunk:
                 return JSONResponse(zmetadata['metadata'][f'{var}/{attrs_key}'])
             elif group_meta_key in chunk:
