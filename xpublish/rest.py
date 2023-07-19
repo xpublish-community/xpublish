@@ -83,7 +83,7 @@ class Rest:
         self.setup_plugins(plugins)
 
         routers = normalize_app_routers(
-            routers or [], 
+            routers or [],
             self._dataset_route_prefix,
         )
         check_route_conflicts(routers)
@@ -122,7 +122,7 @@ class Rest:
         return dataset_ids
 
     def get_dataset_from_plugins(
-        self, 
+        self,
         dataset_id: str = Path(description='Unique ID of dataset'),
     ) -> xr.Dataset:
         """Attempt to load dataset from plugins, otherwise return dataset from passed in dictionary of datasets
@@ -144,13 +144,12 @@ class Rest:
             return dataset
 
         if dataset_id not in self._datasets:
-            raise HTTPException(
-                status_code=404, detail=f"Dataset '{dataset_id}' not found")
+            raise HTTPException(status_code=404, detail=f"Dataset '{dataset_id}' not found")
 
         return self._datasets[dataset_id]
 
     def setup_plugins(
-        self, 
+        self,
         plugins: Optional[Dict[str, Plugin]] = None,
     ) -> None:
         """Initialize and load plugins from entry_points unless explicitly provided
@@ -253,8 +252,7 @@ class Rest:
 
         app_routers.extend(
             normalize_app_routers(
-                plugin_dataset_routers +
-                (dataset_routers or []), self._dataset_route_prefix
+                plugin_dataset_routers + (dataset_routers or []), self._dataset_route_prefix
             )
         )
 
@@ -331,10 +329,10 @@ class Rest:
         return self._app
 
     def serve(
-        self, 
-        host: str = '0.0.0.0', 
-        port: int = 9000, 
-        log_level: str = 'debug', 
+        self,
+        host: str = '0.0.0.0',
+        port: int = 9000,
+        log_level: str = 'debug',
         **kwargs,
     ) -> None:
         """Serve this FastAPI application via :func:`uvicorn.run`.
@@ -357,10 +355,10 @@ class Rest:
 
         """
         uvicorn.run(
-            self.app, 
-            host=host, 
+            self.app,
+            host=host,
             port=port,
-            log_level=log_level, 
+            log_level=log_level,
             **kwargs,
         )
 

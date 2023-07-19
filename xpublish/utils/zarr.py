@@ -221,9 +221,7 @@ def get_data_chunk(
             )
         chunk_data = np.asarray(da)
 
-    logger.debug(
-        'checking chunk output size, %s == %s' % (chunk_data.shape, out_shape)
-    )
+    logger.debug('checking chunk output size, %s == %s' % (chunk_data.shape, out_shape))
 
     if isinstance(chunk_data, DaskArrayType):
         chunk_data = chunk_data.compute()

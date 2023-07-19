@@ -38,7 +38,7 @@ def load_default_plugins(
 
 
 def configure_plugins(
-    plugins: Dict[str, Type[Plugin]], 
+    plugins: Dict[str, Type[Plugin]],
     plugin_configs: Optional[Dict] = None,
 ) -> Dict[str, Plugin]:
     """Initialize and configure plugins with given dictionary of configurations"""

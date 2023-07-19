@@ -33,7 +33,7 @@ def normalize_datasets(datasets) -> Dict[str, xr.Dataset]:
 
 
 def normalize_app_routers(
-    routers: list, 
+    routers: list,
     prefix: str,
 ) -> List[Tuple[APIRouter, Dict]]:
     """Normalise the given list of (dataset-specific) API routers.

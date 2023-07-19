@@ -69,7 +69,7 @@ class DatasetInfoPlugin(Plugin):
             for name, var in zvariables.items():
                 attrs = meta[f'{name}/{attrs_key}'].copy()
                 attrs.pop('_ARRAY_DIMENSIONS')
-                
+
                 info['variables'][name] = {
                     'type': var.data.dtype.name,
                     'dimensions': list(var.dims),
