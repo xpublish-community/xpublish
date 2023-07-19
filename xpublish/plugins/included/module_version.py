@@ -14,17 +14,20 @@ from .. import Plugin, hookimpl
 class ModuleVersionPlugin(Plugin):
     """Share the currently loaded versions of key libraries"""
 
-    name = 'module_version'
+    name: str = 'module_version'
 
     app_router_prefix: str = ''
     app_router_tags: List[str] = ['module_version']
 
     @hookimpl
-    def app_router(self):
-        router = APIRouter(prefix=self.app_router_prefix, tags=self.app_router_tags)
+    def app_router(self) -> APIRouter:
+        router = APIRouter(
+            prefix=self.app_router_prefix,
+            tags=self.app_router_tags,
+        )
 
         @router.get('/versions')
-        def get_versions():
+        def get_versions() -> dict:
             """Currently loaded versions of key libraries"""
             versions = dict(get_sys_info() + netcdf_and_hdf5_versions())
             modules = [
