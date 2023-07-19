@@ -32,7 +32,10 @@ def normalize_datasets(datasets) -> Dict[str, xr.Dataset]:
         raise TypeError(error_msg)
 
 
-def normalize_app_routers(routers: list, prefix: str) -> List[Tuple[APIRouter, Dict]]:
+def normalize_app_routers(
+    routers: list, 
+    prefix: str,
+) -> List[Tuple[APIRouter, Dict]]:
     """Normalise the given list of (dataset-specific) API routers.
 
     Add or prepend ``prefix`` to all routers.
@@ -56,7 +59,7 @@ def normalize_app_routers(routers: list, prefix: str) -> List[Tuple[APIRouter, D
     return new_routers
 
 
-def check_route_conflicts(routers):
+def check_route_conflicts(routers) -> None:
     paths = []
 
     for router, kws in routers:
@@ -90,10 +93,10 @@ class SingleDatasetOpenAPIOverrider:
 
     """
 
-    def __init__(self, app):
+    def __init__(self, app) -> None:
         self._app = app
 
-    def openapi(self):
+    def openapi(self) -> dict:
         if self._app.openapi_schema:
             return self._app.openapi_schema
 
@@ -123,7 +126,7 @@ class SingleDatasetOpenAPIOverrider:
 
 
 class JSONResponse(StarletteJSONResponse):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         self._render_kwargs = {
             'ensure_ascii': True,
             'allow_nan': True,
