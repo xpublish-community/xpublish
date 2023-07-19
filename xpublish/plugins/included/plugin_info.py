@@ -12,7 +12,7 @@ from .. import Dependencies, Plugin, hookimpl
 
 class PluginInfo(BaseModel):
     path: str
-    version: Optional[str]
+    version: Optional[str] = None
 
 
 class PluginInfoPlugin(Plugin):
