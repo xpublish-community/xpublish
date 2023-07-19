@@ -13,10 +13,10 @@ from ...dependencies import get_zmetadata, get_zvariables
 from ...utils.api import DATASET_ID_ATTR_KEY
 from ...utils.cache import CostTimer
 from ...utils.zarr import (
+    ZARR_METADATA_KEY,
     encode_chunk,
     get_data_chunk,
     jsonify_zmetadata,
-    ZARR_METADATA_KEY,
 )
 from .. import Dependencies, Plugin, hookimpl
 
