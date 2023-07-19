@@ -27,10 +27,10 @@ from zarr.util import normalize_shape
 
 from .api import DATASET_ID_ATTR_KEY
 
-dask_array_type = (dask.array.Array,)
-zarr_format = 2
-zarr_consolidated_format = 1
-zarr_metadata_key = '.zmetadata'
+DaskArrayType = (dask.array.Array,)
+ZARR_FORMAT = 2
+ZARR_CONSOLIDATED_FORMAT = 1
+ZARR_METADATA_KEY = '.zmetadata'
 
 logger = logging.getLogger('api')
 
@@ -99,14 +99,14 @@ def _extract_zarray(
         'fill_value': _extract_fill_value(da, dtype),
         'order': 'C',
         'shape': list(normalize_shape(da.shape)),
-        'zarr_format': zarr_format,
+        'zarr_format': ZARR_FORMAT,
     }
 
     if meta['chunks'] is None:
         meta['chunks'] = da.shape
 
     # validate chunks
-    if isinstance(da.data, dask_array_type):
+    if isinstance(da.data, DaskArrayType):
         var_chunks = tuple([c[0] for c in da.data.chunks])
     else:
         var_chunks = da.shape
@@ -133,10 +133,10 @@ def create_zmetadata(dataset: xr.Dataset) -> dict:
     """Helper function to create a consolidated zmetadata dictionary."""
 
     zmeta = {
-        'zarr_consolidated_format': zarr_consolidated_format,
+        'zarr_consolidated_format': ZARR_CONSOLIDATED_FORMAT,
         'metadata': {},
     }
-    zmeta['metadata'][group_meta_key] = {'zarr_format': zarr_format}
+    zmeta['metadata'][group_meta_key] = {'zarr_format': ZARR_FORMAT}
     zmeta['metadata'][attrs_key] = _extract_dataset_zattrs(dataset)
 
     for key, dvar in dataset.variables.items():
@@ -211,7 +211,7 @@ def get_data_chunk(
     If this is an incomplete edge chunk, pad the returned array to match out_shape.
     """
     ikeys = tuple(map(int, chunk_id.split('.')))
-    if isinstance(da, dask_array_type):
+    if isinstance(da, DaskArrayType):
         chunk_data = da.blocks[ikeys]
     else:
         if da.ndim > 0 and ikeys != ((0,) * da.ndim):
@@ -225,7 +225,7 @@ def get_data_chunk(
         'checking chunk output size, %s == %s' % (chunk_data.shape, out_shape)
     )
 
-    if isinstance(chunk_data, dask_array_type):
+    if isinstance(chunk_data, DaskArrayType):
         chunk_data = chunk_data.compute()
 
     # zarr expects full edge chunks, contents out of bounds for the array are undefined

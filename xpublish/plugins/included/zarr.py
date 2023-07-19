@@ -12,7 +12,12 @@ from xpublish.utils.api import JSONResponse
 from ...dependencies import get_zmetadata, get_zvariables
 from ...utils.api import DATASET_ID_ATTR_KEY
 from ...utils.cache import CostTimer
-from ...utils.zarr import encode_chunk, get_data_chunk, jsonify_zmetadata, zarr_metadata_key
+from ...utils.zarr import (
+    encode_chunk,
+    get_data_chunk,
+    jsonify_zmetadata,
+    ZARR_METADATA_KEY,
+)
 from .. import Dependencies, Plugin, hookimpl
 
 logger = logging.getLogger('zarr_api')
@@ -33,7 +38,7 @@ class ZarrPlugin(Plugin):
             tags=list(self.dataset_router_tags),
         )
 
-        @router.get(f'/{zarr_metadata_key}')
+        @router.get(f'/{ZARR_METADATA_KEY}')
         def get_zarr_metadata(
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),

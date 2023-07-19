@@ -9,7 +9,7 @@ import xarray as xr
 from fastapi import Depends
 
 from .utils.api import DATASET_ID_ATTR_KEY
-from .utils.zarr import create_zmetadata, create_zvariables, zarr_metadata_key
+from .utils.zarr import create_zmetadata, create_zvariables, ZARR_METADATA_KEY
 
 if TYPE_CHECKING:
     from .plugins import Plugin  # pragma: no cover
@@ -90,7 +90,7 @@ def get_zmetadata(
 ):
     """FastAPI dependency that returns a consolidated zmetadata dictionary."""
 
-    cache_key = dataset.attrs.get(DATASET_ID_ATTR_KEY, '') + '/' + zarr_metadata_key
+    cache_key = dataset.attrs.get(DATASET_ID_ATTR_KEY, '') + '/' + ZARR_METADATA_KEY
     zmeta = cache.get(cache_key)
 
     if zmeta is None:
