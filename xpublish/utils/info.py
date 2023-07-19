@@ -8,6 +8,7 @@ import platform
 import struct
 import subprocess
 import sys
+from typing import Union
 
 
 def get_sys_info() -> list:
@@ -57,7 +58,7 @@ def get_sys_info() -> list:
     return blob
 
 
-def netcdf_and_hdf5_versions() -> list[tuple[str, str | None]]:
+def netcdf_and_hdf5_versions() -> list[tuple[str, Union[str, None]]]:
     libhdf5_version = None
     libnetcdf_version = None
     try:
