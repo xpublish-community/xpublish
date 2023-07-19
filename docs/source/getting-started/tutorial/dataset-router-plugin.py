@@ -1,14 +1,15 @@
 import xarray as xr
 from fastapi import APIRouter, Depends, HTTPException
+from typing import Sequence
 
 from xpublish import Dependencies, Plugin, SingleDatasetRest, hookimpl
 
 
 class MeanPlugin(Plugin):
-    name = 'mean'
+    name: str = 'mean'
 
-    dataset_router_prefix = ''
-    dataset_router_tags = ['mean']
+    dataset_router_prefix: str = ''
+    dataset_router_tags: Sequence[str] = ['mean']
 
     @hookimpl
     def dataset_router(self, deps: Dependencies):
