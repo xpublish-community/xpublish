@@ -3,7 +3,7 @@ Version information router
 """
 import importlib
 import sys
-from typing import List
+from typing import Sequence
 
 from fastapi import APIRouter
 
@@ -17,7 +17,7 @@ class ModuleVersionPlugin(Plugin):
     name: str = 'module_version'
 
     app_router_prefix: str = ''
-    app_router_tags: List[str] = ['module_version']
+    app_router_tags: Sequence[str] = ['module_version']
 
     @hookimpl
     def app_router(self) -> APIRouter:
