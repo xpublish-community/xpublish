@@ -38,7 +38,7 @@ class DatasetInfoPlugin(Plugin):
         @router.get('/keys')
         def list_keys(
             dataset=Depends(deps.dataset),
-        ) -> JSONResponse:
+        ) -> list[str]:
             """List of the keys in a dataset"""
 
             return JSONResponse(list(dataset.variables))
@@ -46,7 +46,7 @@ class DatasetInfoPlugin(Plugin):
         @router.get('/dict')
         def to_dict(
             dataset=Depends(deps.dataset),
-        ) -> JSONResponse:
+        ) -> dict:
             """The full dataset as a dictionary"""
             return JSONResponse(dataset.to_dict(data=False))
 
@@ -54,7 +54,7 @@ class DatasetInfoPlugin(Plugin):
         def info(
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
-        ) -> JSONResponse:
+        ) -> dict:
             """Dataset schema (close to the NCO-JSON schema)."""
 
             zvariables = get_zvariables(dataset, cache)

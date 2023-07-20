@@ -42,7 +42,7 @@ class ZarrPlugin(Plugin):
         def get_zarr_metadata(
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
-        ) -> JSONResponse:
+        ) -> dict:
             """Consolidated Zarr metadata"""
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
@@ -55,7 +55,7 @@ class ZarrPlugin(Plugin):
         def get_zarr_group(
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
-        ) -> JSONResponse:
+        ) -> dict:
             """Zarr group data"""
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
@@ -66,7 +66,7 @@ class ZarrPlugin(Plugin):
         def get_zarr_attrs(
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
-        ) -> JSONResponse:
+        ) -> dict:
             """Zarr attributes"""
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
@@ -79,7 +79,7 @@ class ZarrPlugin(Plugin):
             chunk: str = Path(description='Zarr chunk'),
             dataset: xr.Dataset = Depends(deps.dataset),
             cache: cachey.Cache = Depends(deps.cache),
-        ) -> Response:
+        ):
             """Get a zarr array chunk.
 
             This will return cached responses when available.
