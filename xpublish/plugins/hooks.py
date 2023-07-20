@@ -69,7 +69,11 @@ class Plugin(BaseModel):
         """Make sure that the plugin is hashable to load with pluggy"""
         things_to_hash = []
 
-        for e in self.model_dump():
+        try:
+            model_dict = self.model_dump()
+        except AttributeError:
+            model_dict = self.dict()
+        for e in model_dict:
             if isinstance(e, list):
                 things_to_hash.append(tuple(e))  # pragma: no cover
             else:
