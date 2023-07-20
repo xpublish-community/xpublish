@@ -1,11 +1,20 @@
+cachey
+dask
+fastapi>=0.78.0
 fsspec
 httpx
 importlib-metadata
 netcdf4
+numcodecs
+numpy
+pluggy
 pooch
 pytest
 pytest-mock
 pytest-sugar
 pytest-cov
 requests
--r requirements.txt
+toolz
+uvicorn
+xarray
+zarr

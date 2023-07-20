@@ -26,19 +26,24 @@ class Dependencies(BaseModel):
     """
 
     dataset_ids: Callable[..., List[str]] = Field(
-        get_dataset_ids, description='Returns a list of all valid dataset ids'
+        get_dataset_ids,
+        description='Returns a list of all valid dataset ids',
     )
     dataset: Callable[[str], xr.Dataset] = Field(
-        get_dataset, description='Returns a dataset using ``/<dataset_id>/`` in the path.'
+        get_dataset,
+        description='Returns a dataset using ``/<dataset_id>/`` in the path.',
     )
     cache: Callable[..., cachey.Cache] = Field(
-        get_cache, description='Provide access to :py:class:`cachey.Cache`'
+        get_cache,
+        description='Provide access to :py:class:`cachey.Cache`',
     )
     plugins: Callable[..., Dict[str, 'Plugin']] = Field(
-        get_plugins, description='A dictionary of plugins allowing direct access'
+        get_plugins,
+        description='A dictionary of plugins allowing direct access',
     )
     plugin_manager: Callable[..., pluggy.PluginManager] = Field(
-        get_plugin_manager, description='The plugin manager itself, allowing for maximum creativity'
+        get_plugin_manager,
+        description='The plugin manager itself, allowing for maximum creativity',
     )
 
     def __hash__(self):
@@ -64,7 +69,13 @@ class Plugin(BaseModel):
         """Make sure that the plugin is hashable to load with pluggy"""
         things_to_hash = []
 
-        for e in self.dict():
+        # try/except is for pydantic backwards compatibility
+        try:
+            model_dict = self.model_dump()
+        except AttributeError:
+            model_dict = self.dict()
+
+        for e in model_dict:
             if isinstance(e, list):
                 things_to_hash.append(tuple(e))  # pragma: no cover
             else:
@@ -115,7 +126,8 @@ class PluginSpec(Plugin):
         """Return an iterable of dataset ids that the plugin can provide"""
 
     @hookspec(firstresult=True)
-    def get_dataset(self, dataset_id: str) -> Optional[xr.Dataset]:  # type: ignore
+    # type: ignore
+    def get_dataset(self, dataset_id: str) -> Optional[xr.Dataset]:
         """Return a dataset by requested dataset_id.
 
         If the plugin does not have the dataset, return None
