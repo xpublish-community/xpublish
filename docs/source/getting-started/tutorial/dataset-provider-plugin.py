@@ -5,7 +5,7 @@ from xpublish import Plugin, Rest, hookimpl
 
 
 class TutorialDataset(Plugin):
-    name = 'xarray-tutorial-dataset'
+    name: str = 'xarray-tutorial-dataset'
 
     @hookimpl
     def get_datasets(self):

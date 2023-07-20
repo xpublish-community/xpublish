@@ -1,9 +1,14 @@
 import copy
 import logging
+from typing import (
+    Any,
+    Optional,
+)
 
 import dask.array
 import numpy as np
 import xarray as xr
+from numcodecs.abc import Codec
 from numcodecs.compat import ensure_ndarray
 from xarray.backends.zarr import (
     DIMENSION_KEY,
@@ -12,20 +17,25 @@ from xarray.backends.zarr import (
     extract_zarr_variable_encoding,
 )
 from zarr.meta import encode_fill_value
-from zarr.storage import array_meta_key, attrs_key, default_compressor, group_meta_key
+from zarr.storage import (
+    array_meta_key,
+    attrs_key,
+    default_compressor,
+    group_meta_key,
+)
 from zarr.util import normalize_shape
 
 from .api import DATASET_ID_ATTR_KEY
 
-dask_array_type = (dask.array.Array,)
-zarr_format = 2
-zarr_consolidated_format = 1
-zarr_metadata_key = '.zmetadata'
+DaskArrayType = (dask.array.Array,)
+ZARR_FORMAT = 2
+ZARR_CONSOLIDATED_FORMAT = 1
+ZARR_METADATA_KEY = '.zmetadata'
 
 logger = logging.getLogger('api')
 
 
-def _extract_dataset_zattrs(dataset: xr.Dataset):
+def _extract_dataset_zattrs(dataset: xr.Dataset) -> dict:
     """helper function to create zattrs dictionary from Dataset global attrs"""
     zattrs = {}
     for k, v in dataset.attrs.items():
@@ -37,7 +47,7 @@ def _extract_dataset_zattrs(dataset: xr.Dataset):
     return zattrs
 
 
-def _extract_dataarray_zattrs(da):
+def _extract_dataarray_zattrs(da: xr.DataArray) -> dict:
     """helper function to extract zattrs dictionary from DataArray"""
     zattrs = {}
     for k, v in da.attrs.items():
@@ -51,7 +61,10 @@ def _extract_dataarray_zattrs(da):
     return zattrs
 
 
-def _extract_dataarray_coords(da, zattrs):
+def _extract_dataarray_coords(
+    da: xr.DataArray,
+    zattrs: dict,
+) -> dict:
     '''helper function to extract coords from DataArray into a directionary'''
     if da.coords:
         # Coordinates are only encoded if there are non-dimension coordinates
@@ -63,13 +76,20 @@ def _extract_dataarray_coords(da, zattrs):
     return zattrs
 
 
-def _extract_fill_value(da, dtype):
+def _extract_fill_value(
+    da: xr.DataArray,
+    dtype: np.dtype,
+) -> Any:
     """helper function to extract fill value from DataArray."""
     fill_value = da.attrs.pop('_FillValue', None)
     return encode_fill_value(fill_value, dtype)
 
 
-def _extract_zarray(da, encoding, dtype):
+def _extract_zarray(
+    da: xr.DataArray,
+    encoding: dict,
+    dtype: np.dtype,
+) -> dict:
     """helper function to extract zarr array metadata."""
     meta = {
         'compressor': encoding.get('compressor', da.encoding.get('compressor', default_compressor)),
@@ -79,14 +99,14 @@ def _extract_zarray(da, encoding, dtype):
         'fill_value': _extract_fill_value(da, dtype),
         'order': 'C',
         'shape': list(normalize_shape(da.shape)),
-        'zarr_format': zarr_format,
+        'zarr_format': ZARR_FORMAT,
     }
 
     if meta['chunks'] is None:
         meta['chunks'] = da.shape
 
     # validate chunks
-    if isinstance(da.data, dask_array_type):
+    if isinstance(da.data, DaskArrayType):
         var_chunks = tuple([c[0] for c in da.data.chunks])
     else:
         var_chunks = da.shape
@@ -98,7 +118,7 @@ def _extract_zarray(da, encoding, dtype):
     return meta
 
 
-def create_zvariables(dataset):
+def create_zvariables(dataset: xr.Dataset) -> dict:
     """Helper function to create a dictionary of zarr encoded variables."""
     zvariables = {}
 
@@ -109,11 +129,14 @@ def create_zvariables(dataset):
     return zvariables
 
 
-def create_zmetadata(dataset):
+def create_zmetadata(dataset: xr.Dataset) -> dict:
     """Helper function to create a consolidated zmetadata dictionary."""
 
-    zmeta = {'zarr_consolidated_format': zarr_consolidated_format, 'metadata': {}}
-    zmeta['metadata'][group_meta_key] = {'zarr_format': zarr_format}
+    zmeta = {
+        'zarr_consolidated_format': ZARR_CONSOLIDATED_FORMAT,
+        'metadata': {},
+    }
+    zmeta['metadata'][group_meta_key] = {'zarr_format': ZARR_FORMAT}
     zmeta['metadata'][attrs_key] = _extract_dataset_zattrs(dataset)
 
     for key, dvar in dataset.variables.items():
@@ -124,13 +147,18 @@ def create_zmetadata(dataset):
         zattrs = _extract_dataarray_coords(da, zattrs)
         zmeta['metadata'][f'{key}/{attrs_key}'] = zattrs
         zmeta['metadata'][f'{key}/{array_meta_key}'] = _extract_zarray(
-            encoded_da, encoding, encoded_da.dtype
+            encoded_da,
+            encoding,
+            encoded_da.dtype,
         )
 
     return zmeta
 
 
-def jsonify_zmetadata(dataset: xr.Dataset, zmetadata: dict) -> dict:
+def jsonify_zmetadata(
+    dataset: xr.Dataset,
+    zmetadata: dict,
+) -> dict:
     """Helper function to convert zmetadata dictionary to a json
     compatible dictionary.
 
@@ -149,7 +177,11 @@ def jsonify_zmetadata(dataset: xr.Dataset, zmetadata: dict) -> dict:
     return zjson
 
 
-def encode_chunk(chunk, filters=None, compressor=None):
+def encode_chunk(
+    chunk: np.typing.ArrayLike,
+    filters: Optional[list[Codec]] = None,
+    compressor: Optional[Codec] = None,
+) -> np.typing.ArrayLike:
     """helper function largely copied from zarr.Array"""
     # apply filters
     if filters:
@@ -169,13 +201,17 @@ def encode_chunk(chunk, filters=None, compressor=None):
     return cdata
 
 
-def get_data_chunk(da, chunk_id, out_shape):
+def get_data_chunk(
+    da: xr.DataArray,
+    chunk_id: str,
+    out_shape: tuple,
+) -> np.typing.ArrayLike:
     """Get one chunk of data from this DataArray (da).
 
     If this is an incomplete edge chunk, pad the returned array to match out_shape.
     """
     ikeys = tuple(map(int, chunk_id.split('.')))
-    if isinstance(da, dask_array_type):
+    if isinstance(da, DaskArrayType):
         chunk_data = da.blocks[ikeys]
     else:
         if da.ndim > 0 and ikeys != ((0,) * da.ndim):
@@ -187,7 +223,7 @@ def get_data_chunk(da, chunk_id, out_shape):
 
     logger.debug('checking chunk output size, %s == %s' % (chunk_data.shape, out_shape))
 
-    if isinstance(chunk_data, dask_array_type):
+    if isinstance(chunk_data, DaskArrayType):
         chunk_data = chunk_data.compute()
 
     # zarr expects full edge chunks, contents out of bounds for the array are undefined
