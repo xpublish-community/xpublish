@@ -49,6 +49,7 @@ extensions = [
     'sphinx_design',
     'myst_parser',
     'sphinx_github_changelog',
+    'sphinxcontrib.openapi',
 ]
 
 myst_enable_extensions = []

@@ -3,7 +3,7 @@ from typing import Sequence
 
 import cachey  # type: ignore
 import xarray as xr
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Path
 from starlette.responses import Response  # type: ignore
 from zarr.storage import array_meta_key, attrs_key, group_meta_key  # type: ignore
 
@@ -12,7 +12,12 @@ from xpublish.utils.api import JSONResponse
 from ...dependencies import get_zmetadata, get_zvariables
 from ...utils.api import DATASET_ID_ATTR_KEY
 from ...utils.cache import CostTimer
-from ...utils.zarr import encode_chunk, get_data_chunk, jsonify_zmetadata, zarr_metadata_key
+from ...utils.zarr import (
+    ZARR_METADATA_KEY,
+    encode_chunk,
+    get_data_chunk,
+    jsonify_zmetadata,
+)
 from .. import Dependencies, Plugin, hookimpl
 
 logger = logging.getLogger('zarr_api')
@@ -21,20 +26,24 @@ logger = logging.getLogger('zarr_api')
 class ZarrPlugin(Plugin):
     """Adds Zarr-like accessing endpoints for datasets"""
 
-    name = 'zarr'
+    name: str = 'zarr'
 
     dataset_router_prefix: str = '/zarr'
     dataset_router_tags: Sequence[str] = ['zarr']
 
     @hookimpl
-    def dataset_router(self, deps: Dependencies):
-        router = APIRouter(prefix=self.dataset_router_prefix, tags=list(self.dataset_router_tags))
+    def dataset_router(self, deps: Dependencies) -> APIRouter:
+        router = APIRouter(
+            prefix=self.dataset_router_prefix,
+            tags=list(self.dataset_router_tags),
+        )
 
-        @router.get(f'/{zarr_metadata_key}')
+        @router.get(f'/{ZARR_METADATA_KEY}')
         def get_zarr_metadata(
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
-        ):
+        ) -> dict:
+            """Consolidated Zarr metadata"""
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
 
@@ -46,7 +55,8 @@ class ZarrPlugin(Plugin):
         def get_zarr_group(
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
-        ):
+        ) -> dict:
+            """Zarr group data"""
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
 
@@ -56,7 +66,8 @@ class ZarrPlugin(Plugin):
         def get_zarr_attrs(
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
-        ):
+        ) -> dict:
+            """Zarr attributes"""
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
 
@@ -64,8 +75,8 @@ class ZarrPlugin(Plugin):
 
         @router.get('/{var}/{chunk}')
         def get_variable_chunk(
-            var: str,
-            chunk: str,
+            var: str = Path(description='Variable in dataset'),
+            chunk: str = Path(description='Zarr chunk'),
             dataset: xr.Dataset = Depends(deps.dataset),
             cache: cachey.Cache = Depends(deps.cache),
         ):
@@ -96,7 +107,11 @@ class ZarrPlugin(Plugin):
                         arr_meta = zmetadata['metadata'][f'{var}/{array_meta_key}']
                         da = zvariables[var].data
 
-                        data_chunk = get_data_chunk(da, chunk, out_shape=arr_meta['chunks'])
+                        data_chunk = get_data_chunk(
+                            da,
+                            chunk,
+                            out_shape=arr_meta['chunks'],
+                        )
 
                         echunk = encode_chunk(
                             data_chunk.tobytes(),
@@ -104,7 +119,10 @@ class ZarrPlugin(Plugin):
                             compressor=arr_meta['compressor'],
                         )
 
-                        response = Response(echunk, media_type='application/octet-stream')
+                        response = Response(
+                            echunk,
+                            media_type='application/octet-stream',
+                        )
 
                     cache.put(cache_key, response, ct.time, len(echunk))
 

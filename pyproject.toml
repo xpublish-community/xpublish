@@ -3,11 +3,6 @@
 line-length = 100
 skip-string-normalization = true
 
-[tool.pytest.ini_options]
-log_cli = true
-log_level = "INFO"
-addopts = "--cov=./ --cov-report=xml --verbose"
-
 [tool.ruff]
 select = [
     "B", # flake8-bugbear
@@ -58,4 +53,9 @@ known-third-party = [
 
 [tool.ruff.flake8-bugbear]
 # Allow fastapi.Depends and other dependency injection style function arguments
-extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path"]
+
+[tool.pytest.ini_options]
+log_cli = true
+log_level = "INFO"
+addopts = "--cov=./ --cov-report=xml --verbose"

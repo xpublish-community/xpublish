@@ -25,7 +25,9 @@ def find_default_plugins(
     return plugins
 
 
-def load_default_plugins(exclude_plugins: Optional[Iterable[str]] = None) -> Dict[str, Plugin]:
+def load_default_plugins(
+    exclude_plugins: Optional[Iterable[str]] = None,
+) -> Dict[str, Plugin]:
     """Find and initialize plugins from entry point group `xpublish.plugin`"""
     initialized_plugins: Dict[str, Plugin] = {}
 
@@ -36,7 +38,8 @@ def load_default_plugins(exclude_plugins: Optional[Iterable[str]] = None) -> Dic
 
 
 def configure_plugins(
-    plugins: Dict[str, Type[Plugin]], plugin_configs: Optional[Dict] = None
+    plugins: Dict[str, Type[Plugin]],
+    plugin_configs: Optional[Dict] = None,
 ) -> Dict[str, Plugin]:
     """Initialize and configure plugins with given dictionary of configurations"""
     initialized_plugins: Dict[str, Plugin] = {}

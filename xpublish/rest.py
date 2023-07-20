@@ -4,7 +4,7 @@ import cachey
 import pluggy
 import uvicorn
 import xarray as xr
-from fastapi import APIRouter, FastAPI, HTTPException
+from fastapi import APIRouter, FastAPI, HTTPException, Path
 
 from .dependencies import get_cache, get_dataset, get_dataset_ids, get_plugin_manager
 from .plugins import Dependencies, Plugin, PluginSpec, get_plugins, load_default_plugins
@@ -82,7 +82,10 @@ class Rest:
         self.setup_datasets(datasets or {})
         self.setup_plugins(plugins)
 
-        routers = normalize_app_routers(routers or [], self._dataset_route_prefix)
+        routers = normalize_app_routers(
+            routers or [],
+            self._dataset_route_prefix,
+        )
         check_route_conflicts(routers)
         self._routers = routers
 
@@ -118,7 +121,10 @@ class Rest:
 
         return dataset_ids
 
-    def get_dataset_from_plugins(self, dataset_id: str) -> xr.Dataset:
+    def get_dataset_from_plugins(
+        self,
+        dataset_id: str = Path(description='Unique ID of dataset'),
+    ) -> xr.Dataset:
         """Attempt to load dataset from plugins, otherwise return dataset from passed in dictionary of datasets
 
         Parameters:
@@ -142,7 +148,10 @@ class Rest:
 
         return self._datasets[dataset_id]
 
-    def setup_plugins(self, plugins: Optional[Dict[str, Plugin]] = None):
+    def setup_plugins(
+        self,
+        plugins: Optional[Dict[str, Plugin]] = None,
+    ) -> None:
         """Initialize and load plugins from entry_points unless explicitly provided
 
         Parameters:
@@ -166,8 +175,11 @@ class Rest:
             self.pm.add_hookspecs(hookspec)
 
     def register_plugin(
-        self, plugin: Plugin, plugin_name: Optional[str] = None, overwrite: bool = False
-    ):
+        self,
+        plugin: Plugin,
+        plugin_name: Optional[str] = None,
+        overwrite: bool = False,
+    ) -> None:
         """
         Register a plugin with the xpublish system
 
@@ -204,14 +216,14 @@ class Rest:
         )():
             self.pm.add_hookspecs(hookspec)
 
-    def init_cache_kwargs(self, cache_kws):
+    def init_cache_kwargs(self, cache_kws: dict) -> None:
         """Set up cache kwargs"""
         self._cache = None
         self._cache_kws = {'available_bytes': 1e6}
         if cache_kws is not None:
             self._cache_kws.update(cache_kws)
 
-    def init_app_kwargs(self, app_kws):
+    def init_app_kwargs(self, app_kws: dict) -> None:
         """Set up FastAPI application kwargs"""
         self._app = None
         self._app_kws = {}
@@ -231,7 +243,7 @@ class Rest:
         """Returns the loaded plugins"""
         return dict(self.pm.list_name_plugin())
 
-    def _init_routers(self, dataset_routers: Optional[APIRouter]):
+    def _init_routers(self, dataset_routers: Optional[APIRouter]) -> None:
         """Setup plugin and dataset routers. Needs to run after dataset and plugin setup"""
         app_routers, plugin_dataset_routers = self.plugin_routers()
 
@@ -280,7 +292,7 @@ class Rest:
 
         return deps
 
-    def _init_dependencies(self):
+    def _init_dependencies(self) -> None:
         """Initialize dependencies"""
         deps = self.dependencies()
 
@@ -290,7 +302,7 @@ class Rest:
         self._app.dependency_overrides[get_plugins] = deps.plugins
         self._app.dependency_overrides[get_plugin_manager] = deps.plugin_manager
 
-    def _init_app(self):
+    def _init_app(self) -> FastAPI:
         """Initiate the FastAPI application."""
 
         self._app = FastAPI(**self._app_kws)
@@ -316,7 +328,13 @@ class Rest:
             self._app = self._init_app()
         return self._app
 
-    def serve(self, host: str = '0.0.0.0', port: int = 9000, log_level: str = 'debug', **kwargs):
+    def serve(
+        self,
+        host: str = '0.0.0.0',
+        port: int = 9000,
+        log_level: str = 'debug',
+        **kwargs,
+    ) -> None:
         """Serve this FastAPI application via :func:`uvicorn.run`.
 
         Parameters
@@ -336,7 +354,13 @@ class Rest:
         This method is blocking and does not return.
 
         """
-        uvicorn.run(self.app, host=host, port=port, log_level=log_level, **kwargs)
+        uvicorn.run(
+            self.app,
+            host=host,
+            port=port,
+            log_level=log_level,
+            **kwargs,
+        )
 
 
 class SingleDatasetRest(Rest):
@@ -361,7 +385,7 @@ class SingleDatasetRest(Rest):
 
         super().__init__({}, routers, cache_kws, app_kws, plugins)
 
-    def setup_datasets(self, datasets):
+    def setup_datasets(self, datasets) -> str:
         """Modifies the dataset loading to instead connect to the
         single dataset"""
         self._dataset_route_prefix = ''
@@ -371,7 +395,7 @@ class SingleDatasetRest(Rest):
 
         return self._dataset_route_prefix
 
-    def _init_app(self):
+    def _init_app(self) -> FastAPI:
         self._app = super()._init_app()
 
         self._app.openapi = SingleDatasetOpenAPIOverrider(self._app).openapi

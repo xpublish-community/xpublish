@@ -12,20 +12,25 @@ from .. import Dependencies, Plugin, hookimpl
 
 
 class DatasetInfoPlugin(Plugin):
-    name = 'dataset_info'
+    """Dataset metadata"""
+
+    name: str = 'dataset_info'
 
     dataset_router_prefix: str = ''
-    dataset_router_tags: Sequence[str] = []
+    dataset_router_tags: Sequence[str] = ['dataset_info']
 
     @hookimpl
-    def dataset_router(self, deps: Dependencies):
-        router = APIRouter(prefix=self.dataset_router_prefix, tags=list(self.dataset_router_tags))
+    def dataset_router(self, deps: Dependencies) -> APIRouter:
+        router = APIRouter(
+            prefix=self.dataset_router_prefix,
+            tags=list(self.dataset_router_tags),
+        )
 
         @router.get('/')
         def html_representation(
             dataset=Depends(deps.dataset),
-        ):
-            """Returns a HTML representation of the dataset."""
+        ) -> HTMLResponse:
+            """Returns the xarray HTML representation of the dataset."""
 
             with xr.set_options(display_style='html'):
                 return HTMLResponse(dataset._repr_html_())
@@ -33,20 +38,23 @@ class DatasetInfoPlugin(Plugin):
         @router.get('/keys')
         def list_keys(
             dataset=Depends(deps.dataset),
-        ):
+        ) -> list[str]:
+            """List of the keys in a dataset"""
+
             return JSONResponse(list(dataset.variables))
 
         @router.get('/dict')
         def to_dict(
             dataset=Depends(deps.dataset),
-        ):
+        ) -> dict:
+            """The full dataset as a dictionary"""
             return JSONResponse(dataset.to_dict(data=False))
 
         @router.get('/info')
         def info(
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
-        ):
+        ) -> dict:
             """Dataset schema (close to the NCO-JSON schema)."""
 
             zvariables = get_zvariables(dataset, cache)
@@ -61,6 +69,7 @@ class DatasetInfoPlugin(Plugin):
             for name, var in zvariables.items():
                 attrs = meta[f'{name}/{attrs_key}'].copy()
                 attrs.pop('_ARRAY_DIMENSIONS')
+
                 info['variables'][name] = {
                     'type': var.data.dtype.name,
                     'dimensions': list(var.dims),

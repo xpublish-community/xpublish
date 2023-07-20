@@ -13,10 +13,13 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.11"
+  jobs:
+    pre_build:
+      - python docs/source/api/generate_openapi.py
 
 # Optionally set the version of Python and requirements required to build your docs
 python:
   install:
-    - requirements: docs/requirements.txt
     - method: pip
       path: .
+    - requirements: docs/requirements.txt

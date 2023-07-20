@@ -1,4 +1,5 @@
 sphinx>=3.1
+pydantic<2.0
 sphinx-autosummary-accessors
 pydata-sphinx-theme
 sphinx-autodoc-typehints
@@ -6,3 +7,4 @@ autodoc_pydantic
 myst-nb
 sphinx-design
 sphinx_github_changelog
+sphinxcontrib-openapi

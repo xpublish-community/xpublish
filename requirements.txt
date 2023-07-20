@@ -1,6 +1,6 @@
 cachey
 dask
-fastapi
+fastapi>=0.78.0
 numcodecs
 numpy
 pluggy
