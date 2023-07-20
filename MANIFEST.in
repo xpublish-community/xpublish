@@ -1,0 +1,22 @@
+include *.txt
+include README.md
+include pyproject.toml
+
+graft xpublish
+
+prune docs
+prune tests
+prune notebooks
+prune *.egg-info
+
+global-exclude *.nc
+
+exclude .pre-commit-config.yaml
+exclude *.yml
+exclude *.enc
+exclude .gitignore
+exclude .binder/*
+exclude .coveragerc
+exclude .readthedocs.yml
+exclude **/*.ipynb
+exclude **/*.pyc
