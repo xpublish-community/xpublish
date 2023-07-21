@@ -1,3 +1,56 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [
+  "setuptools>=42",
+  "setuptools_scm[toml]>=6.2",
+]
+
+[project]
+name = "xpublish"
+description = "Publish Xarray Datasets via a REST API."
+readme = "README.md"
+keywords = [
+  'api',
+  'xarray',
+  'zarr',
+]
+license = { file = "LICENSE" }
+maintainers = [
+    { name = "Joe Hamman", email = "jhamman@ucar.edu" },
+    { name = "Alex Kerney", email = "akerney@gmri.org" },
+]
+requires-python = ">=3.9"
+classifiers = [
+  'Development Status :: 4 - Beta',
+  'Intended Audience :: Science/Research',
+  'License :: OSI Approved :: MIT License',
+  'Operating System :: OS Independent',
+  'Programming Language :: Python',
+  'Programming Language :: Python :: 3 :: Only',
+  'Programming Language :: Python :: 3.9',
+  'Programming Language :: Python :: 3.10',
+  'Programming Language :: Python :: 3.11',
+  'Topic :: Scientific/Engineering',
+]
+dynamic = [
+  "dependencies",
+  "version",
+]
+[project.urls]
+"documentation" = "https://xpublish.readthedocs.io/"
+"repository" = "https://github.com/xpublish-community/xpublish"
+[project.entry-points."xpublish.plugin"]
+dataset_info = "xpublish.plugins.included.dataset_info:DatasetInfoPlugin"
+module_version = "xpublish.plugins.included.module_version:ModuleVersionPlugin"
+plugin_info = "xpublish.plugins.included.plugin_info:PluginInfoPlugin"
+zarr = "xpublish.plugins.included.zarr:ZarrPlugin"
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[tool.setuptools_scm]
+version_scheme = "post-release"
+local_scheme = "dirty-tag"
 
 [tool.black]
 line-length = 100
