@@ -30,7 +30,7 @@ jobs:
       - name: Build binary wheel
         run: python -m build --sdist --wheel . --outdir dist
 
-      - name: CheckFiles
+      - name: Check files
         run: >
           ls dist
           && python -m pip install --upgrade check-manifest
