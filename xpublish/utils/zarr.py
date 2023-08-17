@@ -174,6 +174,14 @@ def jsonify_zmetadata(
             ].get_config()
             zjson['metadata'][f'{key}/{array_meta_key}']['compressor'] = compressor_config
 
+        # convert list of filters to dict
+        filters = zjson['metadata'][f'{key}/{array_meta_key}']['filters']
+        if filters is not None:
+            filters_configs = []
+            for Filter in zjson['metadata'][f'{key}/{array_meta_key}']['filters']:
+                filters_configs.append(Filter.get_config())
+            zjson['metadata'][f'{key}/{array_meta_key}']['filters'] = filters_configs
+
     return zjson
 
 
