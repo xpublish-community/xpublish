@@ -1,5 +1,5 @@
 sphinx>=3.1
-pydantic<2.0
+pydantic
 sphinx-autosummary-accessors
 pydata-sphinx-theme
 sphinx-autodoc-typehints
