@@ -32,6 +32,11 @@ Xpublish has a channel (`#xpublish`) on [ESIP](https://www.esipfed.org/)'s (Eart
   [![PyPI](https://img.shields.io/pypi/v/xpublish-wms)](https://pypi.org/project/xpublish-wms/)
   [![Conda Version](https://img.shields.io/conda/vn/conda-forge/xpublish-wms.svg)](https://anaconda.org/conda-forge/xpublish-wms)
 - [Intake](https://github.com/axiom-data-science/xpublish-intake)
+  [![PyPI](https://img.shields.io/pypi/v/xpublish-intake)](https://pypi.org/project/xpublish-intake/)
+  [![Conda Version](https://img.shields.io/conda/vn/conda-forge/xpublish-intake.svg)](https://anaconda.org/conda-forge/xpublish-intake)
+- [Intake Dataset Provider](https://github.com/xpublish-community/xpublish-intake-provider)
+  [![PyPI](https://img.shields.io/pypi/v/xpublish-intake-provider)](https://pypi.org/project/xpublish-intake-provider/)
+  [![Conda Version](https://img.shields.io/conda/vn/conda-forge/xpublish-intake-provider.svg)](https://anaconda.org/conda-forge/xpublish-intake-provider)
 
 ## Experiments
 
