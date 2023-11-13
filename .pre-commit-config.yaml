@@ -10,7 +10,7 @@ repos:
       - id: double-quote-string-fixer
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.1.4"
+    rev: "v0.1.5"
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
@@ -30,12 +30,12 @@ repos:
           - black==23.1.0
 
   - repo: https://github.com/psf/black
-    rev: 23.10.1
+    rev: 23.11.0
     hooks:
       - id: black
 
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.0.3
+    rev: v3.1.0
     hooks:
       - id: prettier
         language_version: system
@@ -43,7 +43,7 @@ repos:
           - markdown # managed by mdformat
 
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: "1.4.1"
+    rev: "1.5.1"
     hooks:
       - id: pyproject-fmt
 
