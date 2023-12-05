@@ -27,15 +27,13 @@ class RestAccessor:
     def __call__(self, **kwargs):
         """Initialize this accessor by setting optional configuration values.
 
-        Parameters
-        ----------
-        **kwargs
-            Arguments passed to :func:`xpublish.SingleDatasetRest.__init__`.
+        NOTE: This method can only be invoked once.
 
-        Notes
-        -----
-        This method can only be invoked once.
+        Args: 
+            **kwargs: Arguments passed to :func:`xpublish.SingleDatasetRest.__init__`.
 
+        Returns:
+            The initialized accessor.
         """
         if self._initialized:
             raise RuntimeError('This accessor has already been initialized')
@@ -60,14 +58,9 @@ class RestAccessor:
     def serve(self, **kwargs):
         """Serve this FastAPI application via :func:`uvicorn.run`.
 
-        Parameters
-        ----------
-        **kwargs :
-            Arguments passed to :func:`xpublish.SingleDatasetRest.serve`.
-
-        Notes
-        -----
-        This method is blocking and does not return.
-
+        NOTE: This method is blocking and does not return.
+        
+        Args:
+            **kwargs: Arguments passed to :func:`xpublish.SingleDatasetRest.serve`.
         """
         self._get_rest_obj().serve(**kwargs)
