@@ -2,8 +2,8 @@
 Helper functions to use a FastAPI dependencies.
 """
 from typing import (
-    TYPE_CHECKING, 
-    Dict, 
+    TYPE_CHECKING,
+    Dict,
     List,
 )
 
@@ -70,7 +70,7 @@ def get_cache() -> cachey.Cache:
 
 
 def get_zvariables(
-    dataset: xr.Dataset = Depends(get_dataset), 
+    dataset: xr.Dataset = Depends(get_dataset),
     cache: cachey.Cache = Depends(get_cache),
 ) -> dict:
     """FastAPI dependency that returns a dictionary of zarr encoded variables.

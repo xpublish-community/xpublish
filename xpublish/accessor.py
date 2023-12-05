@@ -29,7 +29,7 @@ class RestAccessor:
 
         NOTE: This method can only be invoked once.
 
-        Args: 
+        Args:
             **kwargs: Arguments passed to :func:`xpublish.SingleDatasetRest.__init__`.
 
         Returns:
@@ -59,7 +59,7 @@ class RestAccessor:
         """Serve this FastAPI application via :func:`uvicorn.run`.
 
         NOTE: This method is blocking and does not return.
-        
+
         Args:
             **kwargs: Arguments passed to :func:`xpublish.SingleDatasetRest.serve`.
         """
