@@ -9,6 +9,7 @@ numcodecs
 numpy
 pluggy
 pooch
+pre-commit
 pytest
 pytest-mock
 pytest-sugar
