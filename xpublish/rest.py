@@ -432,7 +432,7 @@ class SingleDatasetRest(Rest):
 
         super().__init__({}, routers, cache_kws, app_kws, plugins)
 
-    def setup_datasets(self) -> str:
+    def setup_datasets(self, datasets) -> str:
         """Modifies dataset loading to instead connect to the single dataset"""
         self._dataset_route_prefix = ''
         self._datasets = {}
