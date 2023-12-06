@@ -270,11 +270,11 @@ class Rest:
 
     @property
     def plugins(self) -> Dict[str, Plugin]:
-        """Returns the loaded plugins"""
+        """Returns the loaded plugins."""
         return dict(self.pm.list_name_plugin())
 
     def _init_routers(self, dataset_routers: Optional[APIRouter]) -> None:
-        """Setup plugin and dataset routers. Needs to run after dataset and plugin setup"""
+        """Setup plugin and dataset routers. Needs to run after dataset and plugin setup."""
         app_routers, plugin_dataset_routers = self.plugin_routers()
 
         if self._dataset_route_prefix:
@@ -291,7 +291,7 @@ class Rest:
         self._app_routers = app_routers
 
     def plugin_routers(self) -> Tuple[List[RouterAndKwargs], List[RouterAndKwargs]]:
-        """Load the app and dataset routers for plugins
+        """Load the app and dataset routers for plugins.
 
         Returns:
             A tuple containing a list of top-level routers from plugins
@@ -393,6 +393,7 @@ class Rest:
 
 class SingleDatasetRest(Rest):
     """Used to publish a single Xarray dataset via a REST API (FastAPI application).
+
     Use :class:`xpublish.Rest` to publish multiple datasets.
     """
 
@@ -430,7 +431,7 @@ class SingleDatasetRest(Rest):
         super().__init__({}, routers, cache_kws, app_kws, plugins)
 
     def setup_datasets(self, datasets) -> str:
-        """Modifies dataset loading to instead connect to the single dataset"""
+        """Modifies dataset loading to instead connect to the single dataset."""
         self._dataset_route_prefix = ''
         self._datasets = {}
 

@@ -114,8 +114,7 @@ def check_route_conflicts(routers: List[Tuple[APIRouter, Dict]]) -> None:
 
 
 class SingleDatasetOpenAPIOverrider:
-    """Used to override the FastAPI application openapi specs when a single
-    dataset is published.
+    """Used to override the FastAPI application openapi specs when a single dataset is published.
 
     In this case, the "dataset_id" path parameter is not present in API
     endpoints and has to be removed manually.
@@ -128,9 +127,11 @@ class SingleDatasetOpenAPIOverrider:
     """
 
     def __init__(self, app) -> None:
+        """Initialize the overrider."""
         self._app = app
 
     def openapi(self) -> dict:
+        """Override the FastAPI application openapi specs."""
         if self._app.openapi_schema:
             return self._app.openapi_schema
 
@@ -160,7 +161,10 @@ class SingleDatasetOpenAPIOverrider:
 
 
 class JSONResponse(StarletteJSONResponse):
+    """A JSON response that uses the same render kwargs as the JSONResponse class from Starlette."""
+
     def __init__(self, *args, **kwargs) -> None:
+        """Initialize the JSON response."""
         self._render_kwargs = {
             'ensure_ascii': True,
             'allow_nan': True,
@@ -171,4 +175,5 @@ class JSONResponse(StarletteJSONResponse):
         super().__init__(*args, **kwargs)
 
     def render(self, content: Any) -> bytes:
+        """Render the JSON response."""
         return json.dumps(content, **self._render_kwargs).encode('utf-8')

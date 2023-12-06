@@ -33,6 +33,7 @@ class ZarrPlugin(Plugin):
 
     @hookimpl
     def dataset_router(self, deps: Dependencies) -> APIRouter:
+        """Returns a router with Zarr-like accessing endpoints for datasets."""
         router = APIRouter(
             prefix=self.dataset_router_prefix,
             tags=list(self.dataset_router_tags),
