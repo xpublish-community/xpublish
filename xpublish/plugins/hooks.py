@@ -46,13 +46,12 @@ class Dependencies(BaseModel):
     )
 
     def __hash__(self):
-        """Dependency functions aren't easy to hash"""
+        """Dependency functions aren't easy to hash."""
         return 0  # pragma: no cover
 
 
 class Plugin(BaseModel):
-    """Xpublish plugins provide ways to extend the core of xpublish with
-    new routers and other functionality.
+    """Xpublish plugins provide ways to extend the core of xpublish with new routers and other functionality.
 
     To create a plugin, subclass `Plugin` and add attributes that are
     subclasses of `PluginType` (`Router` for instance).
@@ -64,7 +63,7 @@ class Plugin(BaseModel):
     name: str = Field(..., description='Fallback name of plugin')
 
     def __hash__(self):
-        """Make sure that the plugin is hashable to load with pluggy"""
+        """Make sure that the plugin is hashable to load with pluggy."""
         things_to_hash = []
 
         # try/except is for pydantic backwards compatibility
@@ -82,7 +81,9 @@ class Plugin(BaseModel):
         return hash(tuple(things_to_hash))
 
     def __dir__(self) -> Iterable[str]:
-        """We need to override the dir as pluggy will otherwise try to inspect it,
+        """Overrides the dir.
+
+        We need to override the dir as pluggy will otherwise try to inspect it,
         and Pydantic has marked it class only
 
         https://github.com/pydantic/pydantic/pull/1466
@@ -95,7 +96,7 @@ class Plugin(BaseModel):
 
 
 class PluginSpec(Plugin):
-    """Plugin extension points
+    """Plugin extension points.
 
     Plugins do not need to implement all of the methods defined here,
     instead they implement
@@ -103,7 +104,7 @@ class PluginSpec(Plugin):
 
     @hookspec
     def app_router(self, deps: Dependencies) -> APIRouter:  # type: ignore
-        """Create an app (top-level) router for the plugin
+        """Create an app (top-level) router for the plugin.
 
         Implementations should return an APIRouter, and define
         app_router_prefix, and app_router_tags on the class,
@@ -112,7 +113,7 @@ class PluginSpec(Plugin):
 
     @hookspec
     def dataset_router(self, deps: Dependencies) -> APIRouter:  # type: ignore
-        """Create a dataset router for the plugin
+        """Create a dataset router for the plugin.
 
         Implementations should return an APIRouter, and define
         dataset_router_prefix, and dataset_router_tags on the class,
@@ -121,7 +122,7 @@ class PluginSpec(Plugin):
 
     @hookspec
     def get_datasets(self) -> Iterable[str]:  # type: ignore
-        """Return an iterable of dataset ids that the plugin can provide"""
+        """Return an iterable of dataset ids that the plugin can provide."""
 
     @hookspec(firstresult=True)
     # type: ignore
@@ -133,4 +134,4 @@ class PluginSpec(Plugin):
 
     @hookspec
     def register_hookspec(self):  # type: ignore
-        """Return additional hookspec class to register with the plugin manager"""
+        """Return additional hookspec class to register with the plugin manager."""
