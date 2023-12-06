@@ -46,13 +46,11 @@ class RestAccessor:
     @property
     def cache(self) -> cachey.Cache:
         """Returns the :class:`cachey.Cache` instance used by the FastAPI application."""
-
         return self._get_rest_obj().cache
 
     @property
     def app(self) -> FastAPI:
         """Returns the :class:`fastapi.FastAPI` application instance."""
-
         return self._get_rest_obj().app
 
     def serve(self, **kwargs):

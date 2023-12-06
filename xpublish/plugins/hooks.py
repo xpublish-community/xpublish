@@ -16,8 +16,7 @@ hookimpl = pluggy.HookimplMarker('xpublish')
 
 
 class Dependencies(BaseModel):
-    """
-    A set of dependencies that are passed into plugin routers.
+    """A set of dependencies that are passed into plugin routers.
 
     Some routers may be 'borrowed' by other routers to expose different
     geometries of data, thus the default dependencies may need to be overridden.
@@ -52,8 +51,7 @@ class Dependencies(BaseModel):
 
 
 class Plugin(BaseModel):
-    """
-    Xpublish plugins provide ways to extend the core of xpublish with
+    """Xpublish plugins provide ways to extend the core of xpublish with
     new routers and other functionality.
 
     To create a plugin, subclass `Plugin` and add attributes that are

@@ -31,7 +31,6 @@ class DatasetInfoPlugin(Plugin):
             dataset=Depends(deps.dataset),
         ) -> HTMLResponse:
             """Returns the xarray HTML representation of the dataset."""
-
             with xr.set_options(display_style='html'):
                 return HTMLResponse(dataset._repr_html_())
 
@@ -40,7 +39,6 @@ class DatasetInfoPlugin(Plugin):
             dataset=Depends(deps.dataset),
         ) -> list[str]:
             """Returns a of the keys in a dataset"""
-
             return JSONResponse(list(dataset.variables))
 
         @router.get('/dict')
@@ -56,7 +54,6 @@ class DatasetInfoPlugin(Plugin):
             cache=Depends(deps.cache),
         ) -> dict:
             """Returns the dataset schema (close to the NCO-JSON schema)."""
-
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
 

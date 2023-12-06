@@ -204,8 +204,7 @@ class Rest:
         plugin_name: Optional[str] = None,
         overwrite: bool = False,
     ) -> None:
-        """
-        Register a plugin with the xpublish system.
+        """Register a plugin with the xpublish system.
 
         Args:
             plugin: Instantiated Plugin object.
@@ -265,7 +264,6 @@ class Rest:
     @property
     def cache(self) -> cachey.Cache:
         """Returns the :class:`cachey.Cache` instance used by the FastAPI application."""
-
         if self._cache is None:
             self._cache = cachey.Cache(**self._cache_kws)
         return self._cache
@@ -344,7 +342,6 @@ class Rest:
         Returns:
             FastAPI application instance.
         """
-
         self._app = FastAPI(**self._app_kws)
 
         self._init_routers(self._routers)

@@ -21,7 +21,6 @@ def get_sys_info() -> List[Tuple[str, Any]]:
     Returns:
         A list of (key, value) tuples.
     """
-
     blob = []
 
     # get full commit hash

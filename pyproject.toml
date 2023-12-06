@@ -61,6 +61,7 @@ skip-string-normalization = true
 select = [
     "B", # flake8-bugbear
     "C",
+    'D', # pydocstyle
     "E", # pycodestyle
     "F", # Pyflakes
     "I", # isort

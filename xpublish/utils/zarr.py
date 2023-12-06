@@ -186,7 +186,6 @@ def create_zmetadata(dataset: xr.Dataset) -> dict:
     Returns:
         A consolidated zmetadata dictionary.
     """
-
     zmeta = {
         'zarr_consolidated_format': ZARR_CONSOLIDATED_FORMAT,
         'metadata': {},

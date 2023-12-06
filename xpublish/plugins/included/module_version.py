@@ -1,5 +1,4 @@
-"""
-Version information router
+"""Version information router
 """
 import importlib
 import sys

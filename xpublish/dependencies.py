@@ -1,5 +1,4 @@
-"""
-Helper functions to use a FastAPI dependencies.
+"""Helper functions to use a FastAPI dependencies.
 """
 from typing import (
     TYPE_CHECKING,
@@ -82,7 +81,6 @@ def get_zvariables(
     Returns:
         A dictionary of zarr encoded variables.
     """
-
     cache_key = dataset.attrs.get(DATASET_ID_ATTR_KEY, '') + '/' + 'zvariables'
     zvariables = cache.get(cache_key)
 
