@@ -1,6 +1,5 @@
 """Utility functions for printing version information, adapted from
 xarray/util/print_versions.py
-
 """
 import locale
 import os
@@ -8,25 +7,35 @@ import platform
 import struct
 import subprocess
 import sys
-from typing import Union
+from typing import (
+    Any,
+    List,
+    Tuple,
+    Union,
+)
 
 
-def get_sys_info() -> list:
-    'Returns system information as a dict'
+def get_sys_info() -> List[Tuple[str, Any]]:
+    """Returns system information.
+
+    Returns:
+        A list of (key, value) tuples.
+    """
 
     blob = []
 
     # get full commit hash
     if os.path.isdir('.git') and os.path.isdir('xpublish'):
+        commit = None
         try:
             pipe = subprocess.Popen(
                 'git log --format="%H" -n 1'.split(' '),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
-            so, serr = pipe.communicate()
+            so, _ = pipe.communicate()
         except Exception:  # pragma: no cover
-            commit = None
+            pass
         else:
             if pipe.returncode == 0:
                 commit = so
@@ -59,6 +68,11 @@ def get_sys_info() -> list:
 
 
 def netcdf_and_hdf5_versions() -> list[tuple[str, Union[str, None]]]:
+    """Returns netCDF and HDF5 version information.
+
+    Returns:
+        A list of (library, version) tuples.
+    """
     libhdf5_version = None
     libnetcdf_version = None
     try:
