@@ -21,6 +21,7 @@ class DatasetInfoPlugin(Plugin):
 
     @hookimpl
     def dataset_router(self, deps: Dependencies) -> APIRouter:
+        """Returns a router with dataset metadata and schema routes."""
         router = APIRouter(
             prefix=self.dataset_router_prefix,
             tags=list(self.dataset_router_tags),
@@ -38,14 +39,14 @@ class DatasetInfoPlugin(Plugin):
         def list_keys(
             dataset=Depends(deps.dataset),
         ) -> list[str]:
-            """Returns a of the keys in a dataset"""
+            """Returns a of the keys in a dataset."""
             return JSONResponse(list(dataset.variables))
 
         @router.get('/dict')
         def to_dict(
             dataset=Depends(deps.dataset),
         ) -> dict:
-            """Returns the full dataset as a dictionary"""
+            """Returns the full dataset as a dictionary."""
             return JSONResponse(dataset.to_dict(data=False))
 
         @router.get('/info')
