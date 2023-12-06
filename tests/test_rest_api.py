@@ -208,12 +208,8 @@ def test_uninitialized_plugin(uninitialized_dataset_plugin):
     """Checks for custom AttributeError message when plugin is not initialized."""
     rest = Rest({})
 
-    try:
+    with pytest.raises(AttributeError, match='Plugin'):
         rest.register_plugin(uninitialized_dataset_plugin)
-    except AttributeError as e:
-        assert 'Plugin' in str(e)
-    else:
-        assert False, 'Expected AttributeError'
 
 
 def test_custom_plugin_hooks_register(hook_spec_plugin, hook_implementation_plugin):
