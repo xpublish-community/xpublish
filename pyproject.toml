@@ -70,6 +70,9 @@ select = [
     "B9",
 ]
 ignore = [
+    "D100", # Missing docstring in public module
+    "D107", # Missing docstring in `__init__`
+    "D104", # Missing docstring in public package
     # "E203",
     # "E266",
     "E501",
@@ -79,6 +82,10 @@ ignore = [
     "C901",
 ]
 line-length = 100
+exclude = [
+    "tests/",
+    "docs/",
+]
 
 [tool.ruff.mccabe]
 # Unlike Flake8, default to a complexity level of 10.
