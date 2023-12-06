@@ -1,5 +1,4 @@
-"""Plugin information router
-"""
+"""Plugin information router."""
 import importlib
 from typing import Dict, Optional, Sequence
 
@@ -10,6 +9,8 @@ from .. import Dependencies, Plugin, hookimpl
 
 
 class PluginInfo(BaseModel):
+    """Pydantic schema for plugin info."""
+
     path: str
     version: Optional[str] = None
 
@@ -24,6 +25,7 @@ class PluginInfoPlugin(Plugin):
 
     @hookimpl
     def app_router(self, deps: Dependencies) -> APIRouter:
+        """Returns the router for plugin info metadata."""
         router = APIRouter(
             prefix=self.app_router_prefix,
             tags=list(self.app_router_tags),

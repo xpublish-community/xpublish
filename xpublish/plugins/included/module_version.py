@@ -1,5 +1,4 @@
-"""Version information router
-"""
+"""Version information router."""
 import importlib
 import sys
 from typing import Sequence
@@ -20,6 +19,7 @@ class ModuleVersionPlugin(Plugin):
 
     @hookimpl
     def app_router(self) -> APIRouter:
+        """Return a router with module version information."""
         router = APIRouter(
             prefix=self.app_router_prefix,
             tags=self.app_router_tags,
