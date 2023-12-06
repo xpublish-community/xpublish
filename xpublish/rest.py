@@ -217,18 +217,19 @@ class Rest:
             AttributeError: Plugin can not be registered.
             ValueError: Plugin already registered, try setting overwrite to True.
         """
-        plugin_name = plugin_name or plugin.name
-
-        if overwrite is True and plugin_name in dict(self.pm.list_name_plugin()):
-            # If a plugin exist with the same name, unregister it.
-            # If configured using entry_points, the name of the
-            # entry_point should be the same as the plugin.name.
-            self.pm.unregister(name=plugin_name)
-
-        # Get existing plugins again
-        existing_plugins = self.pm.get_plugins()
         try:
+            plugin_name = plugin_name or plugin.name
+
+            if overwrite is True and plugin_name in dict(self.pm.list_name_plugin()):
+                # If a plugin exist with the same name, unregister it.
+                # If configured using entry_points, the name of the
+                # entry_point should be the same as the plugin.name.
+                self.pm.unregister(name=plugin_name)
+
+            # Get existing plugins again
+            existing_plugins = self.pm.get_plugins()
             self.pm.register(plugin, plugin_name)
+
         except AttributeError as e:
             raise AttributeError(
                 f'Plugin {plugin} is likely not initialized before registration'

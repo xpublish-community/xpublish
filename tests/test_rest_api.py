@@ -62,7 +62,7 @@ def dims_router():
 
 
 @pytest.fixture(scope='function')
-def dataset_plugin(airtemp_ds):
+def uninitialized_dataset_plugin(airtemp_ds):
     class AirtempPlugin(Plugin):
         name: str = 'airtemp'
 
@@ -75,7 +75,12 @@ def dataset_plugin(airtemp_ds):
         def get_datasets(self):
             return ['airtemp']
 
-    return AirtempPlugin()
+    return AirtempPlugin
+
+
+@pytest.fixture(scope='function')
+def dataset_plugin(uninitialized_dataset_plugin):
+    return uninitialized_dataset_plugin()
 
 
 @pytest.fixture(scope='function')
@@ -197,6 +202,18 @@ def test_custom_dataset_plugin(airtemp_ds, dataset_plugin):
     json_response = info_response.json()
     assert json_response['dimensions'] == airtemp_ds.dims
     assert list(json_response['variables'].keys()) == list(airtemp_ds.variables.keys())
+
+
+def test_uninitialized_plugin(uninitialized_dataset_plugin):
+    """Checks for custom AttributeError message when plugin is not initialized."""
+    rest = Rest({})
+
+    try:
+        rest.register_plugin(uninitialized_dataset_plugin)
+    except AttributeError as e:
+        assert 'Plugin' in str(e)
+    else:
+        assert False, 'Expected AttributeError'
 
 
 def test_custom_plugin_hooks_register(hook_spec_plugin, hook_implementation_plugin):
