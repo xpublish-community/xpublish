@@ -105,6 +105,14 @@ known-third-party = [
     "zarr",
 ]
 
+[tool.ruff.lint.pydocstyle]
+# Use Google style docstrings
+convention = "google"
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
+docstring-quotes = "double"
+
 [tool.ruff.flake8-bugbear]
 # Allow fastapi.Depends and other dependency injection style function arguments
 extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path"]
