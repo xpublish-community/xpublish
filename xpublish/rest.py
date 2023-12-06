@@ -63,7 +63,7 @@ class Rest:
     def __init__(
         self,
         datasets: Optional[Dict[str, xr.Dataset]] = None,
-        routers: Optional[Union[APIRouter, List[APIRouter]]] = None,
+        routers: Optional[List[APIRouter]] = None,
         cache_kws: Optional[Dict] = None,
         app_kws: Optional[Dict] = None,
         plugins: Optional[Dict[str, Plugin]] = None,
@@ -99,11 +99,6 @@ class Rest:
 
         self.setup_datasets(datasets or {})
         self.setup_plugins(plugins)
-
-        if not routers:
-            routers = []
-        elif isinstance(routers, APIRouter):
-            routers = [routers]
 
         normalized_routers: List[Tuple[APIRouter, Dict]] = normalize_app_routers(
             routers or [],
@@ -401,7 +396,7 @@ class SingleDatasetRest(Rest):
     def __init__(
         self,
         dataset: xr.Dataset,
-        routers: Optional[APIRouter] = None,
+        routers: Optional[List[APIRouter]] = None,
         cache_kws: Optional[Dict] = None,
         app_kws: Optional[Dict] = None,
         plugins: Optional[Dict[str, Plugin]] = None,
