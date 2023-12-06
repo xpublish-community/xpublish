@@ -12,7 +12,7 @@ from .. import Plugin, hookimpl
 
 
 class ModuleVersionPlugin(Plugin):
-    """Share the currently loaded versions of key libraries"""
+    """Share the currently loaded versions of key libraries."""
 
     name: str = 'module_version'
 
@@ -28,7 +28,7 @@ class ModuleVersionPlugin(Plugin):
 
         @router.get('/versions')
         def get_versions() -> dict:
-            """Currently loaded versions of key libraries"""
+            """Returns a dict with currently loaded versions of key libraries."""
             versions = dict(get_sys_info() + netcdf_and_hdf5_versions())
             modules = [
                 'xarray',

@@ -16,7 +16,7 @@ class PluginInfo(BaseModel):
 
 
 class PluginInfoPlugin(Plugin):
-    """Expose plugin source and version"""
+    """Expose the currently loaded plugins and their versions."""
 
     name: str = 'plugin_info'
 
@@ -34,7 +34,7 @@ class PluginInfoPlugin(Plugin):
         def get_plugins(
             plugins: Dict[str, Plugin] = Depends(deps.plugins)
         ) -> Dict[str, PluginInfo]:
-            """Return the source and version of the currently loaded plugins"""
+            """Return the source and version of the currently loaded plugins."""
             plugin_info = {}
 
             for name, plugin in plugins.items():

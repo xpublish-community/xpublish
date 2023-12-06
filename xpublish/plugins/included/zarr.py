@@ -24,7 +24,7 @@ logger = logging.getLogger('zarr_api')
 
 
 class ZarrPlugin(Plugin):
-    """Adds Zarr-like accessing endpoints for datasets"""
+    """Adds Zarr-like accessing endpoints for datasets."""
 
     name: str = 'zarr'
 
@@ -43,7 +43,7 @@ class ZarrPlugin(Plugin):
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
         ) -> dict:
-            """Consolidated Zarr metadata"""
+            """Returns consolidated Zarr metadata."""
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
 
@@ -56,7 +56,7 @@ class ZarrPlugin(Plugin):
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
         ) -> dict:
-            """Zarr group data"""
+            """Returns Zarr group data."""
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
 
@@ -67,7 +67,7 @@ class ZarrPlugin(Plugin):
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
         ) -> dict:
-            """Zarr attributes"""
+            """Returns Zarr attributes."""
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
 
@@ -79,7 +79,7 @@ class ZarrPlugin(Plugin):
             chunk: str = Path(description='Zarr chunk'),
             dataset: xr.Dataset = Depends(deps.dataset),
             cache: cachey.Cache = Depends(deps.cache),
-        ):
+        ) -> bytes:
             """Get a zarr array chunk.
 
             This will return cached responses when available.

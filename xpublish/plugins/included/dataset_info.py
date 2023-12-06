@@ -12,7 +12,7 @@ from .. import Dependencies, Plugin, hookimpl
 
 
 class DatasetInfoPlugin(Plugin):
-    """Dataset metadata"""
+    """Dataset metadata and schema routes."""
 
     name: str = 'dataset_info'
 
@@ -39,7 +39,7 @@ class DatasetInfoPlugin(Plugin):
         def list_keys(
             dataset=Depends(deps.dataset),
         ) -> list[str]:
-            """List of the keys in a dataset"""
+            """Returns a of the keys in a dataset"""
 
             return JSONResponse(list(dataset.variables))
 
@@ -47,7 +47,7 @@ class DatasetInfoPlugin(Plugin):
         def to_dict(
             dataset=Depends(deps.dataset),
         ) -> dict:
-            """The full dataset as a dictionary"""
+            """Returns the full dataset as a dictionary"""
             return JSONResponse(dataset.to_dict(data=False))
 
         @router.get('/info')
@@ -55,7 +55,7 @@ class DatasetInfoPlugin(Plugin):
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
         ) -> dict:
-            """Dataset schema (close to the NCO-JSON schema)."""
+            """Returns the dataset schema (close to the NCO-JSON schema)."""
 
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)

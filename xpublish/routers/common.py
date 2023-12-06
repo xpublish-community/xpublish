@@ -1,7 +1,4 @@
-"""
-Dataset-independent API routes.
-
-"""
+"""Dataset-independent API routes."""
 from fastapi import APIRouter, Depends
 
 from ..dependencies import get_dataset_ids
