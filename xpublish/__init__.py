@@ -1,3 +1,4 @@
+"""Publish a Xarray Dataset through a rest API."""
 try:
     import importlib.metadata as importlib_metadata
 except ImportError:
