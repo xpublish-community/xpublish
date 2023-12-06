@@ -79,7 +79,7 @@ class ZarrPlugin(Plugin):
             chunk: str = Path(description='Zarr chunk'),
             dataset: xr.Dataset = Depends(deps.dataset),
             cache: cachey.Cache = Depends(deps.cache),
-        ) -> bytes:
+        ):
             """Get a zarr array chunk.
 
             This will return cached responses when available.
