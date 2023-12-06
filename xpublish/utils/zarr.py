@@ -2,11 +2,13 @@ import copy
 import logging
 from typing import (
     Any,
+    Dict,
     Optional,
 )
 
 import dask.array
 import numpy as np
+import numpy.typing as npt
 import xarray as xr
 from numcodecs.abc import Codec
 from numcodecs.compat import ensure_ndarray
@@ -36,7 +38,14 @@ logger = logging.getLogger('api')
 
 
 def _extract_dataset_zattrs(dataset: xr.Dataset) -> dict:
-    """helper function to create zattrs dictionary from Dataset global attrs"""
+    """Helper function to create zattrs dictionary from Dataset global attrs.
+
+    Args:
+        dataset: The Dataset to extract zattrs from.
+
+    Returns:
+        A dictionary of zattrs.
+    """
     zattrs = {}
     for k, v in dataset.attrs.items():
         zattrs[k] = encode_zarr_attr_value(v)
@@ -48,7 +57,14 @@ def _extract_dataset_zattrs(dataset: xr.Dataset) -> dict:
 
 
 def _extract_dataarray_zattrs(da: xr.DataArray) -> dict:
-    """helper function to extract zattrs dictionary from DataArray"""
+    """Helper function to extract zattrs dictionary from DataArray.
+
+    Args:
+        da: The DataArray to extract zattrs from.
+
+    Returns:
+        A dictionary of zattrs.
+    """
     zattrs = {}
     for k, v in da.attrs.items():
         zattrs[k] = encode_zarr_attr_value(v)
@@ -65,7 +81,15 @@ def _extract_dataarray_coords(
     da: xr.DataArray,
     zattrs: dict,
 ) -> dict:
-    '''helper function to extract coords from DataArray into a directionary'''
+    """Helper function to extract coords from DataArray into a directionary.
+
+    Args:
+        da: The DataArray to extract coords from.
+        zattrs: The zattrs dictionary to add coords to.
+
+    Returns:
+        A dictionary of zattrs with coords added.
+    """
     if da.coords:
         # Coordinates are only encoded if there are non-dimension coordinates
         nondim_coords = set(da.coords) - set(da.dims)
@@ -80,7 +104,15 @@ def _extract_fill_value(
     da: xr.DataArray,
     dtype: np.dtype,
 ) -> Any:
-    """helper function to extract fill value from DataArray."""
+    """Helper function to extract fill value from DataArray.
+
+    Args:
+        da: The DataArray to extract fill value from.
+        dtype: The numpy dtype of the DataArray.
+
+    Returns:
+        The fill value of the DataArray.
+    """
     fill_value = da.attrs.pop('_FillValue', None)
     return encode_fill_value(fill_value, dtype)
 
@@ -90,7 +122,16 @@ def _extract_zarray(
     encoding: dict,
     dtype: np.dtype,
 ) -> dict:
-    """helper function to extract zarr array metadata."""
+    """Helper function to extract zarr array metadata.
+
+    Args:
+        da: The DataArray to extract zarr array metadata from.
+        encoding: The encoding dictionary of the DataArray.
+        dtype: The numpy dtype of the DataArray.
+
+    Returns:
+        A dictionary of zarr array metadata.
+    """
     meta = {
         'compressor': encoding.get('compressor', da.encoding.get('compressor', default_compressor)),
         'filters': encoding.get('filters', da.encoding.get('filters', None)),
@@ -118,19 +159,33 @@ def _extract_zarray(
     return meta
 
 
-def create_zvariables(dataset: xr.Dataset) -> dict:
-    """Helper function to create a dictionary of zarr encoded variables."""
+def create_zvariables(dataset: xr.Dataset) -> Dict[str, xr.Variable]:
+    """Helper function to create a dictionary of zarr encoded variables.
+
+    Args:
+        dataset: The Dataset to encode variables from.
+
+    Returns:
+        A dictionary of zarr encoded xarray variables.
+    """
     zvariables = {}
 
     for key, da in dataset.variables.items():
-        encoded_da = encode_zarr_variable(da, name=key)
+        encoded_da: xr.Variable = encode_zarr_variable(da, name=key)
         zvariables[key] = encoded_da
 
     return zvariables
 
 
 def create_zmetadata(dataset: xr.Dataset) -> dict:
-    """Helper function to create a consolidated zmetadata dictionary."""
+    """Helper function to create a consolidated zmetadata dictionary.
+
+    Args:
+        dataset: The Dataset to create zmetadata from.
+
+    Returns:
+        A consolidated zmetadata dictionary.
+    """
 
     zmeta = {
         'zarr_consolidated_format': ZARR_CONSOLIDATED_FORMAT,
@@ -159,9 +214,14 @@ def jsonify_zmetadata(
     dataset: xr.Dataset,
     zmetadata: dict,
 ) -> dict:
-    """Helper function to convert zmetadata dictionary to a json
-    compatible dictionary.
+    """Helper function to convert zmetadata dict to a json compatible dict.
 
+    Args:
+        dataset: The Dataset to convert zmetadata from.
+        zmetadata: The zmetadata dict to convert.
+
+    Returns:
+        A json compatible zmetadata dict.
     """
     zjson = copy.deepcopy(zmetadata)
 
@@ -178,11 +238,23 @@ def jsonify_zmetadata(
 
 
 def encode_chunk(
-    chunk: np.typing.ArrayLike,
+    chunk: npt.ArrayLike,
     filters: Optional[list[Codec]] = None,
     compressor: Optional[Codec] = None,
-) -> np.typing.ArrayLike:
-    """helper function largely copied from zarr.Array"""
+) -> npt.ArrayLike:
+    """Helper function largely copied from zarr.Array.
+
+    Args:
+        chunk: The chunk to encode.
+        filters: The filters to apply to the chunk.
+        compressor: The compressor to apply to the chunk.
+
+    Returns:
+        The encoded chunk.
+
+    Raises:
+        RuntimeError: If the chunk's dtype is not an object.
+    """
     # apply filters
     if filters:
         for f in filters:
@@ -205,10 +277,18 @@ def get_data_chunk(
     da: xr.DataArray,
     chunk_id: str,
     out_shape: tuple,
-) -> np.typing.ArrayLike:
+) -> npt.ArrayLike:
     """Get one chunk of data from this DataArray (da).
 
     If this is an incomplete edge chunk, pad the returned array to match out_shape.
+
+    Args:
+        da: DataArray to get chunk from.
+        chunk_id: Chunk id to get.
+        out_shape: Shape of the output chunk.
+
+    Returns:
+        Chunk of data from this DataArray (da).
     """
     ikeys = tuple(map(int, chunk_id.split('.')))
     if isinstance(da, DaskArrayType):
