@@ -24,7 +24,7 @@ logger = logging.getLogger('zarr_api')
 
 
 class ZarrPlugin(Plugin):
-    """Adds Zarr-like accessing endpoints for datasets"""
+    """Adds Zarr-like accessing endpoints for datasets."""
 
     name: str = 'zarr'
 
@@ -33,6 +33,7 @@ class ZarrPlugin(Plugin):
 
     @hookimpl
     def dataset_router(self, deps: Dependencies) -> APIRouter:
+        """Returns a router with Zarr-like accessing endpoints for datasets."""
         router = APIRouter(
             prefix=self.dataset_router_prefix,
             tags=list(self.dataset_router_tags),
@@ -43,7 +44,7 @@ class ZarrPlugin(Plugin):
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
         ) -> dict:
-            """Consolidated Zarr metadata"""
+            """Returns consolidated Zarr metadata."""
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
 
@@ -56,7 +57,7 @@ class ZarrPlugin(Plugin):
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
         ) -> dict:
-            """Zarr group data"""
+            """Returns Zarr group data."""
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
 
@@ -67,7 +68,7 @@ class ZarrPlugin(Plugin):
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
         ) -> dict:
-            """Zarr attributes"""
+            """Returns Zarr attributes."""
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
 

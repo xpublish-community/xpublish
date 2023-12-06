@@ -12,7 +12,7 @@ from .. import Dependencies, Plugin, hookimpl
 
 
 class DatasetInfoPlugin(Plugin):
-    """Dataset metadata"""
+    """Dataset metadata and schema routes."""
 
     name: str = 'dataset_info'
 
@@ -21,6 +21,7 @@ class DatasetInfoPlugin(Plugin):
 
     @hookimpl
     def dataset_router(self, deps: Dependencies) -> APIRouter:
+        """Returns a router with dataset metadata and schema routes."""
         router = APIRouter(
             prefix=self.dataset_router_prefix,
             tags=list(self.dataset_router_tags),
@@ -31,7 +32,6 @@ class DatasetInfoPlugin(Plugin):
             dataset=Depends(deps.dataset),
         ) -> HTMLResponse:
             """Returns the xarray HTML representation of the dataset."""
-
             with xr.set_options(display_style='html'):
                 return HTMLResponse(dataset._repr_html_())
 
@@ -39,15 +39,14 @@ class DatasetInfoPlugin(Plugin):
         def list_keys(
             dataset=Depends(deps.dataset),
         ) -> list[str]:
-            """List of the keys in a dataset"""
-
+            """Returns a of the keys in a dataset."""
             return JSONResponse(list(dataset.variables))
 
         @router.get('/dict')
         def to_dict(
             dataset=Depends(deps.dataset),
         ) -> dict:
-            """The full dataset as a dictionary"""
+            """Returns the full dataset as a dictionary."""
             return JSONResponse(dataset.to_dict(data=False))
 
         @router.get('/info')
@@ -55,8 +54,7 @@ class DatasetInfoPlugin(Plugin):
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
         ) -> dict:
-            """Dataset schema (close to the NCO-JSON schema)."""
-
+            """Returns the dataset schema (close to the NCO-JSON schema)."""
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
 

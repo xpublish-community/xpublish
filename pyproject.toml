@@ -61,6 +61,7 @@ skip-string-normalization = true
 select = [
     "B", # flake8-bugbear
     "C",
+    'D', # pydocstyle
     "E", # pycodestyle
     "F", # Pyflakes
     "I", # isort
@@ -69,6 +70,9 @@ select = [
     "B9",
 ]
 ignore = [
+    "D100", # Missing docstring in public module
+    "D107", # Missing docstring in `__init__`
+    "D104", # Missing docstring in public package
     # "E203",
     # "E266",
     "E501",
@@ -78,6 +82,10 @@ ignore = [
     "C901",
 ]
 line-length = 100
+exclude = [
+    "tests/",
+    "docs/",
+]
 
 [tool.ruff.mccabe]
 # Unlike Flake8, default to a complexity level of 10.
@@ -104,6 +112,14 @@ known-third-party = [
     "xarray",
     "zarr",
 ]
+
+[tool.ruff.lint.pydocstyle]
+# Use Google style docstrings
+convention = "google"
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
+docstring-quotes = "double"
 
 [tool.ruff.flake8-bugbear]
 # Allow fastapi.Depends and other dependency injection style function arguments

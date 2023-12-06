@@ -1,6 +1,4 @@
-"""
-Version information router
-"""
+"""Version information router."""
 import importlib
 import sys
 from typing import Sequence
@@ -12,7 +10,7 @@ from .. import Plugin, hookimpl
 
 
 class ModuleVersionPlugin(Plugin):
-    """Share the currently loaded versions of key libraries"""
+    """Share the currently loaded versions of key libraries."""
 
     name: str = 'module_version'
 
@@ -21,6 +19,7 @@ class ModuleVersionPlugin(Plugin):
 
     @hookimpl
     def app_router(self) -> APIRouter:
+        """Return a router with module version information."""
         router = APIRouter(
             prefix=self.app_router_prefix,
             tags=self.app_router_tags,
@@ -28,7 +27,7 @@ class ModuleVersionPlugin(Plugin):
 
         @router.get('/versions')
         def get_versions() -> dict:
-            """Currently loaded versions of key libraries"""
+            """Returns a dict with currently loaded versions of key libraries."""
             versions = dict(get_sys_info() + netcdf_and_hdf5_versions())
             modules = [
                 'xarray',

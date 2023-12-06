@@ -1,6 +1,12 @@
 import json
 from collections.abc import Mapping
-from typing import Any, Dict, List, Tuple
+from typing import (
+    Any,
+    Dict,
+    List,
+    Tuple,
+    Union,
+)
 
 import xarray as xr
 from fastapi import APIRouter
@@ -10,15 +16,25 @@ from starlette.responses import JSONResponse as StarletteJSONResponse  # type: i
 DATASET_ID_ATTR_KEY = '_xpublish_id'
 
 
-def normalize_datasets(datasets) -> Dict[str, xr.Dataset]:
+def normalize_datasets(
+    datasets: Union[xr.Dataset, Mapping[Any, xr.Dataset]]
+) -> Dict[str, xr.Dataset]:
     """Normalize the given collection of datasets.
 
-    - raise TypeError if objects other than xarray.Dataset are found
-    - return an empty dictionary in the special case where a single dataset is given
-    - convert all keys (dataset ids) to strings
-    - add dataset ids to their corresponding dataset object as global attribute
-      (so that it can be easily retrieved within path operation functions).
+    This function converts all keys (dataset ids) to strings and adds the
+    dataset ids to their corresponding dataset object as global attribute.
+    This is so it can be easily retrieved within path operation functions.
 
+    Args:
+        datasets: A single xarray.Dataset object or a mapping with Dataset
+            objects as values.
+
+    Returns:
+        A dictionary with dataset ids as keys and Dataset objects as values.
+        If a single Dataset object is given, an empty dictionary is returned.
+
+    Raises:
+        TypeError: If objects other than xarray.Dataset are found.
     """
     error_msg = 'Can only publish a xarray.Dataset object or a mapping of Dataset objects'
 
@@ -33,13 +49,23 @@ def normalize_datasets(datasets) -> Dict[str, xr.Dataset]:
 
 
 def normalize_app_routers(
-    routers: list,
+    routers: List[Union[APIRouter, Tuple[APIRouter, Dict]]],
     prefix: str,
 ) -> List[Tuple[APIRouter, Dict]]:
     """Normalise the given list of (dataset-specific) API routers.
 
-    Add or prepend ``prefix`` to all routers.
+    This adds or prepends ``prefix`` to all router dictionaries.
 
+    Args:
+        routers: A list of APIRouter instances or (APIRouter, {...}) tuples.
+        prefix: The prefix to add to all routers.
+
+    Returns:
+        A list of (APIRouter, {...}) tuples with the given prefix added.
+
+    Raises:
+        TypeError: If the routers argument is not a valid list of APIRouter
+        instances, or (APIRouter, {...}) tuples.
     """
     new_routers = []
 
@@ -59,7 +85,15 @@ def normalize_app_routers(
     return new_routers
 
 
-def check_route_conflicts(routers) -> None:
+def check_route_conflicts(routers: List[Tuple[APIRouter, Dict]]) -> None:
+    """Check for route conflicts in the given list of routers.
+
+    Args:
+        routers: A list of (APIRouter, {...}) tuples.
+
+    Raises:
+        ValueError: If multiple routes are defined for the same path.
+    """
     paths = []
 
     for router, kws in routers:
@@ -80,8 +114,7 @@ def check_route_conflicts(routers) -> None:
 
 
 class SingleDatasetOpenAPIOverrider:
-    """Used to override the FastAPI application openapi specs when a single
-    dataset is published.
+    """Used to override the FastAPI application openapi specs when a single dataset is published.
 
     In this case, the "dataset_id" path parameter is not present in API
     endpoints and has to be removed manually.
@@ -94,9 +127,11 @@ class SingleDatasetOpenAPIOverrider:
     """
 
     def __init__(self, app) -> None:
+        """Initialize the overrider."""
         self._app = app
 
     def openapi(self) -> dict:
+        """Override the FastAPI application openapi specs."""
         if self._app.openapi_schema:
             return self._app.openapi_schema
 
@@ -126,7 +161,10 @@ class SingleDatasetOpenAPIOverrider:
 
 
 class JSONResponse(StarletteJSONResponse):
+    """A JSON response that uses the same render kwargs as the JSONResponse class from Starlette."""
+
     def __init__(self, *args, **kwargs) -> None:
+        """Initialize the JSON response."""
         self._render_kwargs = {
             'ensure_ascii': True,
             'allow_nan': True,
@@ -137,4 +175,5 @@ class JSONResponse(StarletteJSONResponse):
         super().__init__(*args, **kwargs)
 
     def render(self, content: Any) -> bytes:
+        """Render the JSON response."""
         return json.dumps(content, **self._render_kwargs).encode('utf-8')

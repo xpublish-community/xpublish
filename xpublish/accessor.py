@@ -7,10 +7,7 @@ from .rest import SingleDatasetRest
 
 @xr.register_dataset_accessor('rest')
 class RestAccessor:
-    """REST API Accessor for serving one dataset in its
-    dedicated FastAPI application.
-
-    """
+    """REST API Accessor for serving one dataset via a dedicated FastAPI app."""
 
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
@@ -27,15 +24,13 @@ class RestAccessor:
     def __call__(self, **kwargs):
         """Initialize this accessor by setting optional configuration values.
 
-        Parameters
-        ----------
-        **kwargs
-            Arguments passed to :func:`xpublish.SingleDatasetRest.__init__`.
+        NOTE: This method can only be invoked once.
 
-        Notes
-        -----
-        This method can only be invoked once.
+        Args:
+            **kwargs: Arguments passed to :func:`xpublish.SingleDatasetRest.__init__`.
 
+        Returns:
+            The initialized accessor.
         """
         if self._initialized:
             raise RuntimeError('This accessor has already been initialized')
@@ -48,26 +43,19 @@ class RestAccessor:
     @property
     def cache(self) -> cachey.Cache:
         """Returns the :class:`cachey.Cache` instance used by the FastAPI application."""
-
         return self._get_rest_obj().cache
 
     @property
     def app(self) -> FastAPI:
         """Returns the :class:`fastapi.FastAPI` application instance."""
-
         return self._get_rest_obj().app
 
     def serve(self, **kwargs):
         """Serve this FastAPI application via :func:`uvicorn.run`.
 
-        Parameters
-        ----------
-        **kwargs :
-            Arguments passed to :func:`xpublish.SingleDatasetRest.serve`.
+        NOTE: This method is blocking and does not return.
 
-        Notes
-        -----
-        This method is blocking and does not return.
-
+        Args:
+            **kwargs: Arguments passed to :func:`xpublish.SingleDatasetRest.serve`.
         """
         self._get_rest_obj().serve(**kwargs)

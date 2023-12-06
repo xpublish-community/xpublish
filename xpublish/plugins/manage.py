@@ -1,6 +1,4 @@
-"""
-Load and configure Xpublish plugins from entry point group `xpublish.plugin`
-"""
+"""Load and configure Xpublish plugins from entry point group `xpublish.plugin`."""
 from importlib.metadata import entry_points
 from typing import Dict, Iterable, Optional, Type
 
@@ -10,9 +8,13 @@ from .hooks import Plugin
 def find_default_plugins(
     exclude_plugins: Optional[Iterable[str]] = None,
 ) -> Dict[str, Type[Plugin]]:
-    """Find Xpublish plugins from entry point group `xpublish.plugin`
+    """Find Xpublish plugins from entry point group `xpublish.plugin`.
 
-    Individual plugins may be ignored by adding them to `exclude_plugins`.
+    Args:
+        exclude_plugins: A list of plugin names to ignore.
+
+    Returns:
+        A dictionary of plugin names and classes.
     """
     exclude_plugins = set(exclude_plugins or [])
 
@@ -33,7 +35,14 @@ def find_default_plugins(
 def load_default_plugins(
     exclude_plugins: Optional[Iterable[str]] = None,
 ) -> Dict[str, Plugin]:
-    """Find and initialize plugins from entry point group `xpublish.plugin`"""
+    """Find and initialize plugins from entry point group `xpublish.plugin`.
+
+    Args:
+        exclude_plugins: A list of plugin names to ignore.
+
+    Returns:
+        A dictionary of plugin names and instances.
+    """
     initialized_plugins: Dict[str, Plugin] = {}
 
     for name, plugin in find_default_plugins(exclude_plugins=exclude_plugins).items():
@@ -44,9 +53,17 @@ def load_default_plugins(
 
 def configure_plugins(
     plugins: Dict[str, Type[Plugin]],
-    plugin_configs: Optional[Dict] = None,
+    plugin_configs: Optional[Dict[str, Dict]] = None,
 ) -> Dict[str, Plugin]:
-    """Initialize and configure plugins with given dictionary of configurations"""
+    """Initialize and configure plugins with given dictionary of configurations.
+
+    Args:
+        plugins: A dictionary of plugin names and classes.
+        plugin_configs: A dictionary of plugin names and configurations.
+
+    Returns:
+        A dictionary of plugin names and instances.
+    """
     initialized_plugins: Dict[str, Plugin] = {}
     plugin_configs = plugin_configs or {}
 
