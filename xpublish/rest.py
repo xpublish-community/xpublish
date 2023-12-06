@@ -131,7 +131,7 @@ class Rest:
         return self._dataset_route_prefix
 
     def get_datasets_from_plugins(self) -> List[str]:
-        """Return dataset ids from directly loaded datasets and plugins
+        """Return dataset ids from directly loaded datasets and plugins.
 
         Used as a FastAPI dependency in dataset router plugins
         via :meth:`Rest.dependencies`.
@@ -179,7 +179,7 @@ class Rest:
         self,
         plugins: Optional[Dict[str, Plugin]] = None,
     ) -> None:
-        """Initialize and load plugins from entry_points unless explicitly provided
+        """Initialize and load plugins from entry_points unless explicitly provided.
 
         Args:
             plugins: A dictionary of initialized plugins. If provided,

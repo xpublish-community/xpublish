@@ -7,10 +7,7 @@ from .rest import SingleDatasetRest
 
 @xr.register_dataset_accessor('rest')
 class RestAccessor:
-    """REST API Accessor for serving one dataset in its
-    dedicated FastAPI application.
-
-    """
+    """REST API Accessor for serving one dataset via a dedicated FastAPI app."""
 
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
