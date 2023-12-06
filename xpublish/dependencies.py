@@ -98,6 +98,7 @@ def get_zvariables(
 def get_zmetadata(
     dataset: xr.Dataset = Depends(get_dataset),
     cache: cachey.Cache = Depends(get_cache),
+    zvariables: dict = Depends(get_zvariables),
 ) -> dict:
     """FastAPI dependency that returns a consolidated zmetadata dictionary.
 
