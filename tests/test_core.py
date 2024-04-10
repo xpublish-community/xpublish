@@ -54,13 +54,12 @@ def test_invalid_encoding_chunks_with_dask_raise():
     excinfo.match(r'Specified zarr chunks .*')
 
 
-def test_invalid_encoding_chunks_with_numpy_raise():
+def test_ignore_encoding_chunks_with_numpy():
     data = np.zeros((10, 20, 30))
     ds = xr.Dataset({'foo': (['x', 'y', 'z'], data)})
     ds['foo'].encoding['chunks'] = [8, 5, 1]
-    with pytest.raises(ValueError) as excinfo:
-        _ = create_zmetadata(ds)
-    excinfo.match(r'Encoding chunks do not match inferred.*')
+    zmetadata = create_zmetadata(ds)
+    assert zmetadata['metadata']['foo/.zarray']['chunks'] == [10, 20, 30]
 
 
 def test_get_data_chunk_numpy():

@@ -142,11 +142,12 @@ def _extract_zarray(
     if meta['chunks'] is None:
         meta['chunks'] = da.shape
 
-    # validate chunks
+    # validate chunks for dask arrays, numpy arrays match the encoding to the shape
     if isinstance(da.data, DaskArrayType):
         var_chunks = tuple([c[0] for c in da.data.chunks])
     else:
         var_chunks = da.shape
+        meta['chunks'] = da.shape
     if not var_chunks == tuple(meta['chunks']):
         raise ValueError('Encoding chunks do not match inferred chunks')
 
