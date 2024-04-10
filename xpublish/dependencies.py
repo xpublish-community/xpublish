@@ -1,5 +1,5 @@
-"""Helper functions to use a FastAPI dependencies.
-"""
+"""Helper functions to use a FastAPI dependencies."""
+
 from typing import TYPE_CHECKING, Dict, List
 
 import cachey
@@ -11,8 +11,7 @@ if TYPE_CHECKING:
 
 
 def get_dataset_ids() -> List[str]:
-    """FastAPI dependency for getting the list of ids (string keys)
-    of the collection of datasets being served.
+    """FastAPI dependency for getting the list of ids (string keys) of the collection of datasets being served.
 
     Use this callable as dependency in any FastAPI path operation
     function where you need access to those ids.
@@ -61,8 +60,8 @@ def get_cache() -> cachey.Cache:
     return cachey.Cache(available_bytes=1e6)  # pragma: no cover
 
 
-def get_plugins() -> Dict[str, 'Plugin']:
-    """FastAPI dependency that returns the a dictionary of loaded plugins
+def get_plugins() -> Dict[str, "Plugin"]:
+    """FastAPI dependency that returns the a dictionary of loaded plugins.
 
     Returns:
         Dictionary of names to initialized plugins.
@@ -71,4 +70,4 @@ def get_plugins() -> Dict[str, 'Plugin']:
 
 
 def get_plugin_manager() -> pluggy.PluginManager:
-    """Return the active plugin manager"""
+    """Return the active plugin manager."""

@@ -12,7 +12,7 @@ from .. import Dependencies, Plugin, hookimpl
 
 
 class DatasetInfoPlugin(Plugin):
-    """Dataset metadata"""
+    """Dataset metadata."""
 
     name: str = 'dataset_info'
 
@@ -20,7 +20,7 @@ class DatasetInfoPlugin(Plugin):
     dataset_router_tags: Sequence[str] = ['dataset_info']
 
     @hookimpl
-    def dataset_router(self, deps: Dependencies) -> APIRouter:
+    def dataset_router(self, deps: Dependencies) -> APIRouter:  # noqa: D102
         router = APIRouter(
             prefix=self.dataset_router_prefix,
             tags=list(self.dataset_router_tags),
@@ -38,14 +38,14 @@ class DatasetInfoPlugin(Plugin):
         def list_keys(
             dataset=Depends(deps.dataset),
         ) -> list[str]:
-            """List of the keys in a dataset"""
+            """List of the keys in a dataset."""
             return JSONResponse(list(dataset.variables))
 
         @router.get('/dict')
         def to_dict(
             dataset=Depends(deps.dataset),
         ) -> dict:
-            """The full dataset as a dictionary"""
+            """The full dataset as a dictionary."""
             return JSONResponse(dataset.to_dict(data=False))
 
         @router.get('/info')

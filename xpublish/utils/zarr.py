@@ -69,7 +69,7 @@ def get_zmetadata(
 
 
 def _extract_dataset_zattrs(dataset: xr.Dataset) -> dict:
-    """Helper function to create zattrs dictionary from Dataset global attrs"""
+    """Helper function to create zattrs dictionary from Dataset global attrs."""
     zattrs = {}
     for k, v in dataset.attrs.items():
         zattrs[k] = encode_zarr_attr_value(v)
@@ -81,7 +81,7 @@ def _extract_dataset_zattrs(dataset: xr.Dataset) -> dict:
 
 
 def _extract_dataarray_zattrs(da: xr.DataArray) -> dict:
-    """Helper function to extract zattrs dictionary from DataArray"""
+    """Helper function to extract zattrs dictionary from DataArray."""
     zattrs = {}
     for k, v in da.attrs.items():
         zattrs[k] = encode_zarr_attr_value(v)
@@ -98,7 +98,7 @@ def _extract_dataarray_coords(
     da: xr.DataArray,
     zattrs: dict,
 ) -> dict:
-    '''Helper function to extract coords from DataArray into a directionary'''
+    """Helper function to extract coords from DataArray into a directionary."""
     if da.coords:
         # Coordinates are only encoded if there are non-dimension coordinates
         nondim_coords = set(da.coords) - set(da.dims)
@@ -192,10 +192,7 @@ def jsonify_zmetadata(
     dataset: xr.Dataset,
     zmetadata: dict,
 ) -> dict:
-    """Helper function to convert zmetadata dictionary to a json
-    compatible dictionary.
-
-    """
+    """Helper function to convert zmetadata dictionary to a json compatible dictionary."""
     zjson = copy.deepcopy(zmetadata)
 
     for key in list(dataset.variables):
@@ -215,7 +212,7 @@ def encode_chunk(
     filters: Optional[list[Codec]] = None,
     compressor: Optional[Codec] = None,
 ) -> np.typing.ArrayLike:
-    """Helper function largely copied from zarr.Array"""
+    """Helper function largely copied from zarr.Array."""
     # apply filters
     if filters:
         for f in filters:
