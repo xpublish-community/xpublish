@@ -49,7 +49,7 @@ def test_invalid_encoding_chunks_with_dask_raise():
     data = dask.array.zeros((10, 20, 30), chunks=expected)
     ds = xr.Dataset({'foo': (['x', 'y', 'z'], data)})
     ds['foo'].encoding['chunks'] = [8, 5, 1]
-    with pytest.raises(NotImplementedError) as excinfo:
+    with pytest.raises(ValueError) as excinfo:
         _ = create_zmetadata(ds)
     excinfo.match(r'Specified zarr chunks .*')
 
