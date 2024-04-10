@@ -1,15 +1,10 @@
-"""
-Helper functions to use a FastAPI dependencies.
+"""Helper functions to use a FastAPI dependencies.
 """
 from typing import TYPE_CHECKING, Dict, List
 
 import cachey
 import pluggy
 import xarray as xr
-from fastapi import Depends
-
-from .utils.api import DATASET_ID_ATTR_KEY
-from .utils.zarr import ZARR_METADATA_KEY
 
 if TYPE_CHECKING:
     from .plugins import Plugin  # pragma: no cover
@@ -72,7 +67,6 @@ def get_plugins() -> Dict[str, 'Plugin']:
     Returns:
         Dictionary of names to initialized plugins.
     """
-
     return {}  # pragma: no cover
 
 

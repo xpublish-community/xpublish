@@ -36,11 +36,8 @@ ZARR_METADATA_KEY = '.zmetadata'
 logger = logging.getLogger('api')
 
 
-def get_zvariables(
-    dataset: xr.Dataset, cache: cachey.Cache
-):
+def get_zvariables(dataset: xr.Dataset, cache: cachey.Cache):
     """Returns a dictionary of zarr encoded variables, using the cache when possible."""
-
     cache_key = dataset.attrs.get(DATASET_ID_ATTR_KEY, '') + '/' + 'zvariables'
     zvariables = cache.get(cache_key)
 
@@ -59,7 +56,6 @@ def get_zmetadata(
     zvariables: dict,
 ):
     """Returns a consolidated zmetadata dictionary, using the cache when possible."""
-
     cache_key = dataset.attrs.get(DATASET_ID_ATTR_KEY, '') + '/' + ZARR_METADATA_KEY
     zmeta = cache.get(cache_key)
 
@@ -73,7 +69,7 @@ def get_zmetadata(
 
 
 def _extract_dataset_zattrs(dataset: xr.Dataset) -> dict:
-    """helper function to create zattrs dictionary from Dataset global attrs"""
+    """Helper function to create zattrs dictionary from Dataset global attrs"""
     zattrs = {}
     for k, v in dataset.attrs.items():
         zattrs[k] = encode_zarr_attr_value(v)
@@ -85,7 +81,7 @@ def _extract_dataset_zattrs(dataset: xr.Dataset) -> dict:
 
 
 def _extract_dataarray_zattrs(da: xr.DataArray) -> dict:
-    """helper function to extract zattrs dictionary from DataArray"""
+    """Helper function to extract zattrs dictionary from DataArray"""
     zattrs = {}
     for k, v in da.attrs.items():
         zattrs[k] = encode_zarr_attr_value(v)
@@ -102,7 +98,7 @@ def _extract_dataarray_coords(
     da: xr.DataArray,
     zattrs: dict,
 ) -> dict:
-    '''helper function to extract coords from DataArray into a directionary'''
+    '''Helper function to extract coords from DataArray into a directionary'''
     if da.coords:
         # Coordinates are only encoded if there are non-dimension coordinates
         nondim_coords = set(da.coords) - set(da.dims)
@@ -117,7 +113,7 @@ def _extract_fill_value(
     da: xr.DataArray,
     dtype: np.dtype,
 ) -> Any:
-    """helper function to extract fill value from DataArray."""
+    """Helper function to extract fill value from DataArray."""
     fill_value = da.attrs.pop('_FillValue', None)
     return encode_fill_value(fill_value, dtype)
 
@@ -127,7 +123,7 @@ def _extract_zarray(
     encoding: dict,
     dtype: np.dtype,
 ) -> dict:
-    """helper function to extract zarr array metadata."""
+    """Helper function to extract zarr array metadata."""
     meta = {
         'compressor': encoding.get('compressor', da.encoding.get('compressor', default_compressor)),
         'filters': encoding.get('filters', da.encoding.get('filters', None)),
@@ -169,7 +165,6 @@ def create_zvariables(dataset: xr.Dataset) -> dict:
 
 def create_zmetadata(dataset: xr.Dataset) -> dict:
     """Helper function to create a consolidated zmetadata dictionary."""
-
     zmeta = {
         'zarr_consolidated_format': ZARR_CONSOLIDATED_FORMAT,
         'metadata': {},
@@ -220,7 +215,7 @@ def encode_chunk(
     filters: Optional[list[Codec]] = None,
     compressor: Optional[Codec] = None,
 ) -> np.typing.ArrayLike:
-    """helper function largely copied from zarr.Array"""
+    """Helper function largely copied from zarr.Array"""
     # apply filters
     if filters:
         for f in filters:
