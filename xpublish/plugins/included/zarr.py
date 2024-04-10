@@ -9,13 +9,14 @@ from zarr.storage import array_meta_key, attrs_key, group_meta_key  # type: igno
 
 from xpublish.utils.api import JSONResponse
 
-from ...dependencies import get_zmetadata, get_zvariables
 from ...utils.api import DATASET_ID_ATTR_KEY
 from ...utils.cache import CostTimer
 from ...utils.zarr import (
     ZARR_METADATA_KEY,
     encode_chunk,
     get_data_chunk,
+    get_zmetadata,
+    get_zvariables,
     jsonify_zmetadata,
 )
 from .. import Dependencies, Plugin, hookimpl
@@ -24,7 +25,7 @@ logger = logging.getLogger('zarr_api')
 
 
 class ZarrPlugin(Plugin):
-    """Adds Zarr-like accessing endpoints for datasets."""
+    """Adds Zarr-like accessing endpoints for datasets"""
 
     name: str = 'zarr'
 
@@ -33,7 +34,6 @@ class ZarrPlugin(Plugin):
 
     @hookimpl
     def dataset_router(self, deps: Dependencies) -> APIRouter:
-        """Returns a router with Zarr-like accessing endpoints for datasets."""
         router = APIRouter(
             prefix=self.dataset_router_prefix,
             tags=list(self.dataset_router_tags),
@@ -44,7 +44,7 @@ class ZarrPlugin(Plugin):
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
         ) -> dict:
-            """Returns consolidated Zarr metadata."""
+            """Consolidated Zarr metadata"""
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
 
@@ -57,7 +57,7 @@ class ZarrPlugin(Plugin):
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
         ) -> dict:
-            """Returns Zarr group data."""
+            """Zarr group data"""
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
 
@@ -68,7 +68,7 @@ class ZarrPlugin(Plugin):
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
         ) -> dict:
-            """Returns Zarr attributes."""
+            """Zarr attributes"""
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
 

@@ -7,12 +7,12 @@ from zarr.storage import attrs_key  # type: ignore
 
 from xpublish.utils.api import JSONResponse
 
-from ...dependencies import get_zmetadata, get_zvariables
+from ...utils.zarr import get_zmetadata, get_zvariables
 from .. import Dependencies, Plugin, hookimpl
 
 
 class DatasetInfoPlugin(Plugin):
-    """Dataset metadata and schema routes."""
+    """Dataset metadata"""
 
     name: str = 'dataset_info'
 
@@ -21,7 +21,6 @@ class DatasetInfoPlugin(Plugin):
 
     @hookimpl
     def dataset_router(self, deps: Dependencies) -> APIRouter:
-        """Returns a router with dataset metadata and schema routes."""
         router = APIRouter(
             prefix=self.dataset_router_prefix,
             tags=list(self.dataset_router_tags),
@@ -32,6 +31,7 @@ class DatasetInfoPlugin(Plugin):
             dataset=Depends(deps.dataset),
         ) -> HTMLResponse:
             """Returns the xarray HTML representation of the dataset."""
+
             with xr.set_options(display_style='html'):
                 return HTMLResponse(dataset._repr_html_())
 
@@ -39,14 +39,15 @@ class DatasetInfoPlugin(Plugin):
         def list_keys(
             dataset=Depends(deps.dataset),
         ) -> list[str]:
-            """Returns a of the keys in a dataset."""
+            """List of the keys in a dataset"""
+
             return JSONResponse(list(dataset.variables))
 
         @router.get('/dict')
         def to_dict(
             dataset=Depends(deps.dataset),
         ) -> dict:
-            """Returns the full dataset as a dictionary."""
+            """The full dataset as a dictionary"""
             return JSONResponse(dataset.to_dict(data=False))
 
         @router.get('/info')
@@ -54,7 +55,8 @@ class DatasetInfoPlugin(Plugin):
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
         ) -> dict:
-            """Returns the dataset schema (close to the NCO-JSON schema)."""
+            """Dataset schema (close to the NCO-JSON schema)."""
+
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
 
