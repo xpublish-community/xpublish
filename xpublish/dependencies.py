@@ -60,7 +60,7 @@ def get_cache() -> cachey.Cache:
     return cachey.Cache(available_bytes=1e6)  # pragma: no cover
 
 
-def get_plugins() -> Dict[str, "Plugin"]:
+def get_plugins() -> Dict[str, 'Plugin']:
     """FastAPI dependency that returns the a dictionary of loaded plugins.
 
     Returns:
