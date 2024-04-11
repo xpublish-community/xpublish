@@ -42,7 +42,7 @@ from .utils.api import (
 
 RouterKwargs = Dict
 RouterAndKwargs = Tuple[APIRouter, RouterKwargs]
-LogLevels = Literal["critical", "error", "warning", "info", "debug", "trace"]
+LogLevels = Literal['critical', 'error', 'warning', 'info', 'debug', 'trace']
 
 
 class Rest:
@@ -94,8 +94,8 @@ class Rest:
         """
         if isinstance(datasets, xr.Dataset):
             raise TypeError(
-                "xpublish.Rest no longer directly handles single datasets. "
-                "Please use xpublish.SingleDatasetRest instead"
+                'xpublish.Rest no longer directly handles single datasets. '
+                'Please use xpublish.SingleDatasetRest instead'
             )
 
         self.setup_datasets(datasets or {})
@@ -123,7 +123,7 @@ class Rest:
         self._datasets = normalize_datasets(datasets)
 
         self._get_dataset_func = self.get_dataset_from_plugins
-        self._dataset_route_prefix = "/datasets/{dataset_id}"
+        self._dataset_route_prefix = '/datasets/{dataset_id}'
         return self._dataset_route_prefix
 
     def get_datasets_from_plugins(self) -> List[str]:
@@ -145,7 +145,7 @@ class Rest:
 
     def get_dataset_from_plugins(
         self,
-        dataset_id: str = Path(description="Unique ID of dataset"),
+        dataset_id: str = Path(description='Unique ID of dataset'),
     ) -> xr.Dataset:
         """Attempts to load dataset from plugins.
 
@@ -187,7 +187,7 @@ class Rest:
         if plugins is None:
             plugins = load_default_plugins()
 
-        self.pm = pluggy.PluginManager("xpublish")
+        self.pm = pluggy.PluginManager('xpublish')
         self.pm.add_hookspecs(PluginSpec)
 
         for name, plugin in plugins.items():
@@ -230,11 +230,11 @@ class Rest:
 
         except AttributeError as e:
             raise AttributeError(
-                f"Plugin {plugin} is likely not initialized before registration"
+                f'Plugin {plugin} is likely not initialized before registration'
             ) from e
 
         for hookspec in self.pm.subset_hook_caller(
-            "register_hookspec", remove_plugins=existing_plugins
+            'register_hookspec', remove_plugins=existing_plugins
         )():
             self.pm.add_hookspecs(hookspec)
 
@@ -245,7 +245,7 @@ class Rest:
             cache_kws: Dictionary of cache keyword arguments.
         """
         self._cache = None
-        self._cache_kws = {"available_bytes": 1e6}
+        self._cache_kws = {'available_bytes': 1e6}
         if cache_kws is not None:
             self._cache_kws.update(cache_kws)
 
@@ -277,7 +277,7 @@ class Rest:
         app_routers, plugin_dataset_routers = self.plugin_routers()
 
         if self._dataset_route_prefix:
-            app_routers.append((dataset_collection_router, {"tags": ["info"]}))
+            app_routers.append((dataset_collection_router, {'tags': ['info']}))
 
         app_routers.extend(
             normalize_app_routers(
@@ -365,9 +365,9 @@ class Rest:
 
     def serve(
         self,
-        host: Optional[str] = "0.0.0.0",
+        host: Optional[str] = '0.0.0.0',
         port: Optional[int] = 9000,
-        log_level: Optional[LogLevels] = "debug",
+        log_level: Optional[LogLevels] = 'debug',
         **kwargs,
     ) -> None:
         """Serve this FastAPI application via :func:`uvicorn.run`.
@@ -431,7 +431,7 @@ class SingleDatasetRest(Rest):
 
     def setup_datasets(self, datasets) -> str:
         """Modifies dataset loading to instead connect to the single dataset."""
-        self._dataset_route_prefix = ""
+        self._dataset_route_prefix = ''
         self._datasets = {}
 
         self._get_dataset_func = lambda: self._dataset
