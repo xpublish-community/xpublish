@@ -292,7 +292,9 @@ otherwise it should return None, so that Xpublish knows to continue looking to t
 plugin or the passed in dictionary of datasets.
 
 ```{warning}
-When using a dataset provider, you need to set a unique `_xpublish_id` attribute (use `DATASET_ID_ATTR_KEY` from `xpublish.utils.api`) on each dataset for routers to manage caching appropriately. See the `assign_attrs` call below for an example.
+When creating a dataset provider, you need to set a unique `_xpublish_id` attribute (use `DATASET_ID_ATTR_KEY` from `xpublish.utils.api`) on each dataset for routers to manage caching appropriately. See the `assign_attrs` call below for an example.
+
+We suggest including the plugin name as part of the attribute to help uniqueness.
 ```
 
 A plugin that provides the Xarray tutorial `air_temperature` dataset.
