@@ -312,7 +312,9 @@ class TutorialDataset(Plugin):
     @hookimpl
     def get_dataset(self, dataset_id: str):
         if dataset_id == "air":
-            return xr.tutorial.open_dataset("air_temperature").assign_attrs({DATASET_ID_ATTR_KEY: 'air'})
+            return xr.tutorial.open_dataset("air_temperature").assign_attrs(
+                {DATASET_ID_ATTR_KEY: "air"}
+            )
 
         return None
 ```
