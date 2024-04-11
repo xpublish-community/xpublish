@@ -314,7 +314,7 @@ class TutorialDataset(Plugin):
 
 ```{note}
 Some routers may want to cache data computed from datasets that they serve to avoid unnecessary recomputation. In this case, routers may rely on the
-`_xpublish_id` attribute (`DATASET_ID_ATTR_KEY` from `xpublish.api`) on each dataset. If this attribute is set, it should be a unique identifier for the dataset, otherwise the `dataset_id` used to load the dataset will be set as the `_xpublish_id` automatically.
+`_xpublish_id` attribute (`DATASET_ID_ATTR_KEY` from `xpublish.utils.api`) on each dataset. If this attribute is set, it should be a unique identifier for the dataset, otherwise the `dataset_id` used to load the dataset will be set as the `_xpublish_id` automatically.
 ```
 
 ## Hook Spec Plugins
