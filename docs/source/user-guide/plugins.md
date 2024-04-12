@@ -291,10 +291,17 @@ The plugin should return a dataset if it knows about the dataset corresponding t
 otherwise it should return None, so that Xpublish knows to continue looking to the next
 plugin or the passed in dictionary of datasets.
 
+```{warning}
+When creating a dataset provider, you need to set a unique `_xpublish_id` attribute (use `DATASET_ID_ATTR_KEY` from `xpublish.utils.api`) on each dataset for routers to manage caching appropriately. See the `assign_attrs` call below for an example.
+
+We suggest including the plugin name as part of the attribute to help uniqueness.
+```
+
 A plugin that provides the Xarray tutorial `air_temperature` dataset.
 
 ```python
 from xpublish import Plugin, hookimpl
+from xpublish.utils.api import DATASET_ID_ATTR_KEY
 
 
 class TutorialDataset(Plugin):
@@ -307,7 +314,9 @@ class TutorialDataset(Plugin):
     @hookimpl
     def get_dataset(self, dataset_id: str):
         if dataset_id == "air":
-            return xr.tutorial.open_dataset("air_temperature")
+            return xr.tutorial.open_dataset("air_temperature").assign_attrs(
+                {DATASET_ID_ATTR_KEY: f"{self.name}_air"}
+            )
 
         return None
 ```
@@ -318,3 +327,7 @@ Plugins can also provide new hook specifications that other plugins can then imp
 This allows Xpublish to support things that we haven't even thought of yet.
 
 These return a class of hookspecs from {py:meth}`xpublish.plugins.hooks.PluginSpec.register_hookspec`.
+
+```
+
+```
