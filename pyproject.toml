@@ -46,6 +46,9 @@ module_version = "xpublish.plugins.included.module_version:ModuleVersionPlugin"
 plugin_info = "xpublish.plugins.included.plugin_info:PluginInfoPlugin"
 zarr = "xpublish.plugins.included.zarr:ZarrPlugin"
 
+[tool.setuptools]
+packages = ["xpublish"]
+
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }
 
@@ -58,6 +61,9 @@ line-length = 100
 skip-string-normalization = true
 
 [tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
 select = [
     "B", # flake8-bugbear
     "C",
@@ -73,6 +79,7 @@ ignore = [
     "D100", # Missing docstring in public module
     "D107", # Missing docstring in `__init__`
     "D104", # Missing docstring in public package
+    "D105", # Missing docstring in magic method
     # "E203",
     # "E266",
     "E501",
@@ -81,17 +88,28 @@ ignore = [
     "E402",
     "C901",
 ]
-line-length = 100
 exclude = [
     "tests/",
     "docs/",
 ]
 
-[tool.ruff.mccabe]
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+  "D103", # Missing docstring in public function
+  "D205", # blank line between summary and description
+  "D415", # first line should end with punctuation
+]
+"docs/*" = [
+  "D101", # missing docstring in public class
+  "D102", # missing docstring in public method
+  "D103", # missing docstring in public function
+]
+
+[tool.ruff.lint.mccabe]
 # Unlike Flake8, default to a complexity level of 10.
 max-complexity = 18
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 combine-as-imports = true
 known-first-party = ["xpublish"]
 known-third-party = [
@@ -121,7 +139,7 @@ convention = "google"
 inline-quotes = "single"
 docstring-quotes = "double"
 
-[tool.ruff.flake8-bugbear]
+[tool.ruff.lint.flake8-bugbear]
 # Allow fastapi.Depends and other dependency injection style function arguments
 extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path"]
 
