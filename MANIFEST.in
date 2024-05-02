@@ -20,3 +20,4 @@ exclude .coveragerc
 exclude .readthedocs.yml
 exclude **/*.ipynb
 exclude **/*.pyc
+exclude noxfile.py
