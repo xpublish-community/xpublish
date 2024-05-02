@@ -1,4 +1,5 @@
 """Version information router."""
+
 import importlib
 import sys
 from typing import Sequence

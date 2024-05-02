@@ -1,4 +1,5 @@
 """Utility functions for printing version information, adapted from xarray/util/print_versions.py."""
+
 import locale
 import os
 import platform

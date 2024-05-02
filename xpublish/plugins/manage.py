@@ -1,4 +1,5 @@
 """Load and configure Xpublish plugins from entry point group `xpublish.plugin`."""
+
 from importlib.metadata import entry_points
 from typing import Dict, Iterable, Optional, Type
 
