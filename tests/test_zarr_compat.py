@@ -101,7 +101,7 @@ def test_zmetadata_identical_coords(
 def test_zmetadata_identical_coords_sorted(
     start, end, freq, nlats, nlons, var_const, calendar, use_cftime
 ):
-    """Test that zmetadata passes when coords are explicitly sorted"""
+    """Test that zmetadata passes when coords are explicitly sorted."""
     ds = create_dataset(
         start=start,
         end=end,
