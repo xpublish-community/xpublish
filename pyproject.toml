@@ -43,6 +43,7 @@ entry-points."xpublish.plugin".dataset_info = "xpublish.plugins.included.dataset
 entry-points."xpublish.plugin".module_version = "xpublish.plugins.included.module_version:ModuleVersionPlugin"
 entry-points."xpublish.plugin".plugin_info = "xpublish.plugins.included.plugin_info:PluginInfoPlugin"
 entry-points."xpublish.plugin".zarr = "xpublish.plugins.included.zarr:ZarrPlugin"
+
 [tool.setuptools]
 packages = [
   "xpublish",
