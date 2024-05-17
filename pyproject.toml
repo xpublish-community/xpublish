@@ -2,7 +2,7 @@
 build-backend = "setuptools.build_meta"
 requires = [
   "setuptools>=42",
-  "setuptools_scm[toml]>=6.2",
+  "setuptools-scm[toml]>=6.2",
 ]
 
 [project]
@@ -10,47 +10,49 @@ name = "xpublish"
 description = "Publish Xarray Datasets via a REST API."
 readme = "README.md"
 keywords = [
-  'api',
-  'xarray',
-  'zarr',
+  "api",
+  "xarray",
+  "zarr",
 ]
 license = { file = "LICENSE" }
 maintainers = [
-    { name = "Joe Hamman", email = "jhamman@ucar.edu" },
-    { name = "Alex Kerney", email = "akerney@gmri.org" },
+  { name = "Joe Hamman", email = "jhamman@ucar.edu" },
+  { name = "Alex Kerney", email = "akerney@gmri.org" },
 ]
 requires-python = ">=3.9"
 classifiers = [
-  'Development Status :: 4 - Beta',
-  'Intended Audience :: Science/Research',
-  'License :: OSI Approved :: MIT License',
-  'Operating System :: OS Independent',
-  'Programming Language :: Python',
-  'Programming Language :: Python :: 3 :: Only',
-  'Programming Language :: Python :: 3.9',
-  'Programming Language :: Python :: 3.10',
-  'Programming Language :: Python :: 3.11',
-  'Programming Language :: Python :: 3.12',
-  'Topic :: Scientific/Engineering',
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering",
 ]
 dynamic = [
   "dependencies",
   "version",
 ]
-[project.urls]
-"documentation" = "https://xpublish.readthedocs.io/"
-"repository" = "https://github.com/xpublish-community/xpublish"
-[project.entry-points."xpublish.plugin"]
-dataset_info = "xpublish.plugins.included.dataset_info:DatasetInfoPlugin"
-module_version = "xpublish.plugins.included.module_version:ModuleVersionPlugin"
-plugin_info = "xpublish.plugins.included.plugin_info:PluginInfoPlugin"
-zarr = "xpublish.plugins.included.zarr:ZarrPlugin"
+urls."documentation" = "https://xpublish.readthedocs.io/"
+urls."repository" = "https://github.com/xpublish-community/xpublish"
+entry-points."xpublish.plugin".dataset_info = "xpublish.plugins.included.dataset_info:DatasetInfoPlugin"
+entry-points."xpublish.plugin".module_version = "xpublish.plugins.included.module_version:ModuleVersionPlugin"
+entry-points."xpublish.plugin".plugin_info = "xpublish.plugins.included.plugin_info:PluginInfoPlugin"
+entry-points."xpublish.plugin".zarr = "xpublish.plugins.included.zarr:ZarrPlugin"
 
 [tool.setuptools]
-packages = ["xpublish"]
+packages = [
+  "xpublish",
+]
 
 [tool.setuptools.dynamic]
-dependencies = { file = ["requirements.txt"] }
+dependencies = { file = [
+  "requirements.txt",
+] }
 
 [tool.setuptools_scm]
 version_scheme = "post-release"
@@ -65,32 +67,32 @@ line-length = 100
 
 [tool.ruff.lint]
 select = [
-    "B", # flake8-bugbear
-    "C",
-    'D', # pydocstyle
-    "E", # pycodestyle
-    "F", # Pyflakes
-    "I", # isort
-    "W", # pycodestyle
-    # "T4",
-    "B9",
+  "B", # flake8-bugbear
+  "C",
+  'D', # pydocstyle
+  "E", # pycodestyle
+  "F", # Pyflakes
+  "I", # isort
+  "W", # pycodestyle
+  # "T4",
+  "B9",
 ]
 ignore = [
-    "D100", # Missing docstring in public module
-    "D107", # Missing docstring in `__init__`
-    "D104", # Missing docstring in public package
-    "D105", # Missing docstring in magic method
-    # "E203",
-    # "E266",
-    "E501",
-    # "W503",
-    "E722",
-    "E402",
-    "C901",
+  "D100", # Missing docstring in public module
+  "D107", # Missing docstring in `__init__`
+  "D104", # Missing docstring in public package
+  "D105", # Missing docstring in magic method
+  # "E203",
+  # "E266",
+  "E501",
+  # "W503",
+  "E722",
+  "E402",
+  "C901",
 ]
 exclude = [
-    "tests/",
-    "docs/",
+  "tests/",
+  "docs/",
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -111,24 +113,26 @@ max-complexity = 18
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
-known-first-party = ["xpublish"]
+known-first-party = [
+  "xpublish",
+]
 known-third-party = [
-    "cachey",
-    "dask",
-    "fastapi",
-    "numcodecs",
-    "numpy",
-    "pandas",
-    "pkg_resources",
-    "pluggy",
-    "pydantic",
-    "pytest",
-    "setuptools",
-    "sphinx_autosummary_accessors",
-    "starlette",
-    "uvicorn",
-    "xarray",
-    "zarr",
+  "cachey",
+  "dask",
+  "fastapi",
+  "numcodecs",
+  "numpy",
+  "pandas",
+  "pkg_resources",
+  "pluggy",
+  "pydantic",
+  "pytest",
+  "setuptools",
+  "sphinx_autosummary_accessors",
+  "starlette",
+  "uvicorn",
+  "xarray",
+  "zarr",
 ]
 
 [tool.ruff.lint.pydocstyle]
@@ -141,7 +145,11 @@ docstring-quotes = "double"
 
 [tool.ruff.lint.flake8-bugbear]
 # Allow fastapi.Depends and other dependency injection style function arguments
-extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path"]
+extend-immutable-calls = [
+  "fastapi.Depends",
+  "fastapi.Query",
+  "fastapi.Path",
+]
 
 [tool.pytest.ini_options]
 log_cli = true
