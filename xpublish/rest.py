@@ -33,6 +33,7 @@ from .plugins import (
 )
 from .routers import dataset_collection_router
 from .utils.api import (
+    DATASET_ID_ATTR_KEY,
     SingleDatasetOpenAPIOverrider,
     check_route_conflicts,
     normalize_app_routers,
@@ -163,6 +164,8 @@ class Rest:
         dataset = self.pm.hook.get_dataset(dataset_id=dataset_id)
 
         if dataset:
+            if dataset.attrs.get(DATASET_ID_ATTR_KEY, None) is None:
+                dataset.attrs[DATASET_ID_ATTR_KEY] = dataset_id
             return dataset
 
         if dataset_id not in self._datasets:

@@ -24,7 +24,7 @@ jobs:
           architecture: x64
 
       - name: Setup pip cache
-        uses: actions/cache@v4.0.1
+        uses: actions/cache@v4.0.2
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ matrix.python-version }}-pydantic${{ matrix.pydantic-version }}-${{ hashFiles('**/dev-requirements.txt') }}
@@ -46,7 +46,7 @@ jobs:
           python -m pytest --cov=./ --cov-report=xml --verbose
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3.1.4
+        uses: codecov/codecov-action@v4.3.1
         with:
           file: ./coverage.xml
           fail_ci_if_error: false
@@ -67,7 +67,7 @@ jobs:
           architecture: x64
 
       - name: Setup pip cache
-        uses: actions/cache@v4.0.1
+        uses: actions/cache@v4.0.2
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-dev-${{ matrix.python-version }}-${{ hashFiles('**/dev-requirements.txt') }}
