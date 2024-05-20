@@ -92,8 +92,7 @@ ignore = [
 ]
 exclude = [
     "tests/",
-    "docs/",
-    "examples/"
+    "docs/"
 ]
 
 [tool.ruff.lint.per-file-ignores]
