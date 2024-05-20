@@ -11,7 +11,7 @@ rs = np.random.RandomState(np.random.MT19937(np.random.SeedSequence(123456789)))
 
 
 class TestMapper(TestClient, BaseStore):
-    """A simple subclass to support getitem syntax on Starlette TestClient Objects"""
+    """A simple subclass to support getitem syntax on Starlette TestClient Objects."""
 
     def __getitem__(self, key):
         zarr_key = f'/zarr/{key}'
@@ -46,7 +46,7 @@ def create_dataset(
     var_const=None,
     use_xy_dim=False,
 ):
-    """Utility function for creating test data"""
+    """Utility function for creating test data."""
     if use_cftime:
         end = xr.coding.cftime_offsets.to_cftime_datetime(end, calendar=calendar)
         dates = xr.cftime_range(start=start, end=end, freq=freq, calendar=calendar)

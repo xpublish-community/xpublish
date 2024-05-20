@@ -1,4 +1,5 @@
 """Plugin information router."""
+
 import importlib
 from typing import Dict, Optional, Sequence
 
