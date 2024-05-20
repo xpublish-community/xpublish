@@ -85,6 +85,7 @@ line-length = 100
 exclude = [
     "tests/",
     "docs/",
+    "examples/"
 ]
 
 [tool.ruff.mccabe]
