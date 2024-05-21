@@ -13,7 +13,7 @@ micromamba activate xpublish-exploring
 
 > Note: This method may time out
 
-Create the environment and activate: 
+Create the environment and activate:
 
 ```bash
 conda env create -f environment.yaml
@@ -60,4 +60,4 @@ This plugin will provide a subset of data based on the bounding box defined for 
 
 ## Combining the Plugins
 
-Plugins can be combined by adding their URLs together. For example, to find the mean of a specific region, you could access http://localhost:9000/datasets/air_temperature/lme/EC/air/mean adding the variable and mean calculation to the end. 
+Plugins can be combined by adding their URLs together. For example, to find the mean of a specific region, you could access http://localhost:9000/datasets/air_temperature/lme/EC/air/mean adding the variable and mean calculation to the end.

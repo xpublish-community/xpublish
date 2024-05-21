@@ -1,30 +1,30 @@
 from typing import Sequence
 
 from fastapi import APIRouter
-from xpublish import Plugin, Dependencies, hookimpl
+
+from xpublish import Dependencies, Plugin, hookimpl
 
 regions = {
-    "GB": {"bbox": [-69.873, -65.918, 40.280, 42.204], "name": "Georges Bank"},
-    "GOM": {"bbox": [-70.975, -65.375, 40.375, 45.125], "name": "Gulf Of Maine"},
-    "MAB": {
-        "bbox": [-77.036, -70.005, 35.389, 41.640],
-        "name": "MidAtlantic Bight",
+    'GB': {'bbox': [-69.873, -65.918, 40.280, 42.204], 'name': 'Georges Bank'},
+    'GOM': {'bbox': [-70.975, -65.375, 40.375, 45.125], 'name': 'Gulf Of Maine'},
+    'MAB': {
+        'bbox': [-77.036, -70.005, 35.389, 41.640],
+        'name': 'MidAtlantic Bight',
     },
-    "NESHELF": {
-        "bbox": [-77.45, -66.35, 34.50, 44.50],
-        "name": "North East Shelf",
+    'NESHELF': {
+        'bbox': [-77.45, -66.35, 34.50, 44.50],
+        'name': 'North East Shelf',
     },
-    "SS": {"bbox": [-66.775, -65.566, 41.689, 45.011], "name": "Scotian Shelf"},
-    "EC": {"bbox": [-81.75, -65.375, 25.000, 45.125], "name": "East Coast"},
-    "NEC": {"bbox": [-81.45, -63.30, 28.70, 44.80], "name": "Northeast Coast"},
+    'SS': {'bbox': [-66.775, -65.566, 41.689, 45.011], 'name': 'Scotian Shelf'},
+    'EC': {'bbox': [-81.75, -65.375, 25.000, 45.125], 'name': 'East Coast'},
+    'NEC': {'bbox': [-81.45, -63.30, 28.70, 44.80], 'name': 'Northeast Coast'},
 }
 
-DEFAULT_TAGS = ["lme", "large marine ecosystem", "subset"]
+DEFAULT_TAGS = ['lme', 'large marine ecosystem', 'subset']
 
 
 class LmeSubsetPlugin(Plugin):
-    """
-    The LmeSubsetPlugin class is a FastAPI plugin that provides an API for retrieving information about Large Marine Ecosystems (LMEs) and generating datasets for specific LME regions.
+    """The LmeSubsetPlugin class is a FastAPI plugin that provides an API for retrieving information about Large Marine Ecosystems (LMEs) and generating datasets for specific LME regions.
 
     The plugin defines two routers:
     - The `app_router` provides a GET endpoint at `/lme` that returns a dictionary of LME names and their IDs.
@@ -33,18 +33,17 @@ class LmeSubsetPlugin(Plugin):
     The `get_region_dataset` function is used to generate the dataset subset by slicing the dataset along the latitude dimension based on the bounding box of the specified region.
     """
 
-    name: str = "lme-subset-plugin"
+    name: str = 'lme-subset-plugin'
 
-    app_router_prefix: str = "/lme"
+    app_router_prefix: str = '/lme'
     app_router_tags: Sequence[str] = DEFAULT_TAGS
 
-    dataset_router_prefix: str = "/lme"
+    dataset_router_prefix: str = '/lme'
     dataset_router_tags: Sequence[str] = DEFAULT_TAGS
 
     @hookimpl
     def app_router(self):
-        """
-        Provides an API router for retrieving a list of LME regions.
+        """Provides an API router for retrieving a list of LME regions.
 
         The `app_router` function returns an instance of `APIRouter` with the following configuration:
         - Prefix: The value of `self.app_router_prefix`
@@ -54,16 +53,15 @@ class LmeSubsetPlugin(Plugin):
         """
         router = APIRouter(prefix=self.app_router_prefix, tags=list(self.app_router_tags))
 
-        @router.get("/")
+        @router.get('/')
         def get_lme_regions():
-            return {key: value["name"] for key, value in regions.items()}
+            return {key: value['name'] for key, value in regions.items()}
 
         return router
 
     @hookimpl
     def dataset_router(self, deps: Dependencies):
-        """
-        Defines a dataset router that allows accessing datasets for specific regions.
+        """Defines a dataset router that allows accessing datasets for specific regions.
 
         The `dataset_router` function creates a FastAPI router that provides an endpoint for retrieving a dataset for a specific region. The region is identified by its `region_id`, and the dataset is identified by its `dataset_id`.
 
@@ -75,7 +73,7 @@ class LmeSubsetPlugin(Plugin):
 
         def get_region_dataset(dataset_id: str, region_id: str):
             region = regions[region_id]
-            bbox = region["bbox"]
+            bbox = region['bbox']
 
             # lat_slice = slice(bbox[2], bbox[3])
             # air_temperature lats are descending
@@ -102,8 +100,8 @@ class LmeSubsetPlugin(Plugin):
         this_plugin = [p for p in all_plugins if p.name == self.name]
 
         for new_router in deps.plugin_manager().subset_hook_caller(
-            "dataset_router", remove_plugins=this_plugin
+            'dataset_router', remove_plugins=this_plugin
         )(deps=region_deps):
-            router.include_router(new_router, prefix="/{region_id}")
+            router.include_router(new_router, prefix='/{region_id}')
 
         return router

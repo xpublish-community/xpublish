@@ -91,8 +91,8 @@ ignore = [
   "C901",
 ]
 exclude = [
-    "tests/",
-    "docs/"
+  "tests/",
+  "docs/",
 ]
 
 [tool.ruff.lint.per-file-ignores]
