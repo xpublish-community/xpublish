@@ -1,6 +1,6 @@
 from typing import Sequence
 from fastapi import APIRouter, Depends, HTTPException
-from xpublish import Plugin,  hookimpl, Dependencies
+from xpublish import Plugin, hookimpl, Dependencies
 
 
 class MeanPlugin(Plugin):
@@ -14,17 +14,17 @@ class MeanPlugin(Plugin):
 
     The `dataset_router` method creates an APIRouter with the defined prefix and tags, and adds a GET endpoint for computing the mean of a variable in the dataset. If the variable is not found in the dataset, an HTTPException is raised with a 404 status code.
     """
-    name: str = 'mean'
 
-    dataset_router_prefix: str = ''
-    dataset_router_tags: Sequence[str] = ['mean']
+    name: str = "mean"
+
+    dataset_router_prefix: str = ""
+    dataset_router_tags: Sequence[str] = ["mean"]
 
     @hookimpl
     def dataset_router(self, deps: Dependencies):
-        router = APIRouter(prefix=self.dataset_router_prefix,
-                           tags=list(self.dataset_router_tags))
+        router = APIRouter(prefix=self.dataset_router_prefix, tags=list(self.dataset_router_tags))
 
-        @router.get('/{var_name}/mean')
+        @router.get("/{var_name}/mean")
         def get_mean(var_name: str, dataset=Depends(deps.dataset)):
             if var_name not in dataset.variables:
                 raise HTTPException(

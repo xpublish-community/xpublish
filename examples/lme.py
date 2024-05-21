@@ -19,7 +19,7 @@ regions = {
     "NEC": {"bbox": [-81.45, -63.30, 28.70, 44.80], "name": "Northeast Coast"},
 }
 
-DEFAULT_TAGS = ['lme', 'large marine ecosystem', 'subset']
+DEFAULT_TAGS = ["lme", "large marine ecosystem", "subset"]
 
 
 class LmeSubsetPlugin(Plugin):
@@ -38,7 +38,7 @@ class LmeSubsetPlugin(Plugin):
     app_router_prefix: str = "/lme"
     app_router_tags: Sequence[str] = DEFAULT_TAGS
 
-    dataset_router_prefix: str = '/lme'
+    dataset_router_prefix: str = "/lme"
     dataset_router_tags: Sequence[str] = DEFAULT_TAGS
 
     @hookimpl
@@ -52,8 +52,7 @@ class LmeSubsetPlugin(Plugin):
 
         The router includes a single GET endpoint at the root path ("/") that returns a dictionary mapping region keys to their names.
         """
-        router = APIRouter(prefix=self.app_router_prefix,
-                           tags=list(self.app_router_tags))
+        router = APIRouter(prefix=self.app_router_prefix, tags=list(self.app_router_tags))
 
         @router.get("/")
         def get_lme_regions():
@@ -72,12 +71,11 @@ class LmeSubsetPlugin(Plugin):
 
         The router is then populated with the necessary routes and returned for inclusion in the main application.
         """
-        router = APIRouter(prefix=self.dataset_router_prefix,
-                           tags=list(self.dataset_router_tags))
+        router = APIRouter(prefix=self.dataset_router_prefix, tags=list(self.dataset_router_tags))
 
         def get_region_dataset(dataset_id: str, region_id: str):
             region = regions[region_id]
-            bbox = region['bbox']
+            bbox = region["bbox"]
 
             # lat_slice = slice(bbox[2], bbox[3])
             # air_temperature lats are descending
@@ -103,8 +101,9 @@ class LmeSubsetPlugin(Plugin):
         all_plugins = list(deps.plugin_manager().get_plugins())
         this_plugin = [p for p in all_plugins if p.name == self.name]
 
-        for new_router in deps.plugin_manager().subset_hook_caller('dataset_router',
-                                                                   remove_plugins=this_plugin)(deps=region_deps):
+        for new_router in deps.plugin_manager().subset_hook_caller(
+            "dataset_router", remove_plugins=this_plugin
+        )(deps=region_deps):
             router.include_router(new_router, prefix="/{region_id}")
 
         return router
