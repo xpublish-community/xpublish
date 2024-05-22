@@ -30,7 +30,7 @@ class MeanPlugin(Plugin):
         """
         router = APIRouter(prefix=self.dataset_router_prefix, tags=list(self.dataset_router_tags))
 
-        @router.get("/{var_name}/mean")
+        @router.get('/{var_name}/mean')
         def get_mean(var_name: str, dataset=Depends(deps.dataset)):
             if var_name not in dataset.variables:
                 raise HTTPException(
@@ -40,7 +40,7 @@ class MeanPlugin(Plugin):
 
             mean = dataset[var_name].mean()
             if mean.isnull():
-                return "NaN"
+                return 'NaN'
             return float(mean)
 
         return router
