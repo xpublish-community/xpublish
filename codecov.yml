@@ -21,3 +21,7 @@ coverage:
       default:
         threshold: 0%
         if_not_found: success
+
+ignore:
+  - "examples"
+  - "docs"
