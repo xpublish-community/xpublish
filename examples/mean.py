@@ -26,11 +26,7 @@ class MeanPlugin(Plugin):
         """Provides a route to retrieve the mean value of a variable in a dataset.
 
         Args:
-            var_name (str): The name of the variable to retrieve the mean for.
-            dataset (Dataset): The dataset containing the variable.
-
-        Returns:
-            float: The mean value of the variable, or 'NaN' if the mean is null.
+            deps (Dependencies): The dependencies for plugin routers
         """
         router = APIRouter(prefix=self.dataset_router_prefix, tags=list(self.dataset_router_tags))
 
