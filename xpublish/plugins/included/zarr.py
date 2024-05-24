@@ -93,10 +93,10 @@ class ZarrPlugin(Plugin):
 
             # First check that this request wasn't for variable metadata
             if array_meta_key in chunk:
-                compressor=zmetadata['metadata'][f'{key}/{array_meta_key}'].get("compressor")
+                compressor=zmetadata['metadata'][f'{var}/{array_meta_key}'].get("compressor")
                 if compressor and isinstance(compressor,Codec):
                     correct_comprdict=compressor.get_config()
-                    newzmeta=copy.deepcopy(zmetadata['metadata'][f'{key}/{array_meta_key}'])
+                    newzmeta=copy.deepcopy(zmetadata['metadata'][f'{var}/{array_meta_key}'])
                     del newzmeta['compressor']
                     newzmeta['compressor']=correct_comprdict
                     return newzmeta
