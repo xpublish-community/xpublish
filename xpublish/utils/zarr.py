@@ -184,11 +184,6 @@ def create_zmetadata(dataset: xr.Dataset) -> dict:
             encoding,
             encoded_da.dtype,
         )
-        compressor=zmeta['metadata'][f'{key}/{array_meta_key}'].get('compressor')
-        if compressor and isinstance(compressor,Codec):
-            correct_comprdict=compressor.get_config()                
-            del zmeta['metadata'][f'{key}/{array_meta_key}']['compressor']
-            zmeta['metadata'][f'{key}/{array_meta_key}']['compressor']=correct_comprdict
 
     return zmeta
 
