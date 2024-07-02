@@ -65,58 +65,57 @@ skip-string-normalization = true
 [tool.ruff]
 line-length = 100
 
-[tool.ruff.lint]
-select = [
+lint.select = [
   "B", # flake8-bugbear
-  "C",
-  'D', # pydocstyle
-  "E", # pycodestyle
-  "F", # Pyflakes
-  "I", # isort
-  "W", # pycodestyle
   # "T4",
   "B9",
+  "C",
+  "D",  # pydocstyle
+  "E",  # pycodestyle
+  "F",  # Pyflakes
+  "I",  # isort
+  "W",  # pycodestyle
 ]
-ignore = [
+lint.ignore = [
+  "C901",
   "D100", # Missing docstring in public module
-  "D107", # Missing docstring in `__init__`
   "D104", # Missing docstring in public package
   "D105", # Missing docstring in magic method
+  "D107", # Missing docstring in `__init__`
+  "E402",
   # "E203",
   # "E266",
   "E501",
   # "W503",
   "E722",
-  "E402",
-  "C901",
 ]
-exclude = [
-  "tests/",
+lint.exclude = [
   "docs/",
+  "tests/",
 ]
-
-[tool.ruff.lint.per-file-ignores]
-"tests/*" = [
-  "D103", # Missing docstring in public function
-  "D205", # blank line between summary and description
-  "D415", # first line should end with punctuation
-]
-"docs/*" = [
+lint.per-file-ignores."docs/*" = [
   "D101", # missing docstring in public class
   "D102", # missing docstring in public method
   "D103", # missing docstring in public function
 ]
-
-[tool.ruff.lint.mccabe]
-# Unlike Flake8, default to a complexity level of 10.
-max-complexity = 18
-
-[tool.ruff.lint.isort]
-combine-as-imports = true
-known-first-party = [
+lint.per-file-ignores."tests/*" = [
+  "D103", # Missing docstring in public function
+  "D205", # blank line between summary and description
+  "D415", # first line should end with punctuation
+]
+# Allow fastapi.Depends and other dependency injection style function arguments
+lint.flake8-bugbear.extend-immutable-calls = [
+  "fastapi.Depends",
+  "fastapi.Path",
+  "fastapi.Query",
+]
+lint.flake8-quotes.docstring-quotes = "double"
+lint.flake8-quotes.inline-quotes = "single"
+lint.isort.combine-as-imports = true
+lint.isort.known-first-party = [
   "xpublish",
 ]
-known-third-party = [
+lint.isort.known-third-party = [
   "cachey",
   "dask",
   "fastapi",
@@ -134,22 +133,10 @@ known-third-party = [
   "xarray",
   "zarr",
 ]
-
-[tool.ruff.lint.pydocstyle]
+# Unlike Flake8, default to a complexity level of 10.
+lint.mccabe.max-complexity = 18
 # Use Google style docstrings
-convention = "google"
-
-[tool.ruff.lint.flake8-quotes]
-inline-quotes = "single"
-docstring-quotes = "double"
-
-[tool.ruff.lint.flake8-bugbear]
-# Allow fastapi.Depends and other dependency injection style function arguments
-extend-immutable-calls = [
-  "fastapi.Depends",
-  "fastapi.Query",
-  "fastapi.Path",
-]
+lint.pydocstyle.convention = "google"
 
 [tool.pytest.ini_options]
 log_cli = true
