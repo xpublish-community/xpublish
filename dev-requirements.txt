@@ -1,4 +1,5 @@
 cachey
+crc32c
 dask
 donfig
 fastapi>=0.78.0
