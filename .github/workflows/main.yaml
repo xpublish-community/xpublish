@@ -82,7 +82,7 @@ jobs:
           python -m pip install --no-deps --upgrade \
                 git+https://github.com/dask/dask \
                 git+https://github.com/dask/cachey \
-                git+https://github.com/zarr-developers/zarr \
+                # git+https://github.com/zarr-developers/zarr \
                 git+https://github.com/pydata/xarray \
                 git+https://github.com/tiangolo/fastapi \
                 git+https://github.com/encode/uvicorn

@@ -1,7 +1,5 @@
 cachey
-crc32c
 dask
-donfig
 fastapi>=0.78.0
 fsspec
 httpx
@@ -21,4 +19,3 @@ toolz
 uvicorn
 xarray!=v2023.09.0  # see https://github.com/xpublish-community/xpublish/issues/237
 zarr
-zstandard
