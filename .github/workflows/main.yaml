@@ -76,8 +76,7 @@ jobs:
             ${{ runner.os }}-pip-dev
             ${{ runner.os }}-pip
 
-
-      # removed due to zarr v3 changes git+https://github.com/zarr-developers/zarr \
+      # Disable Zarr upstream tests due to v3 changes git+https://github.com/zarr-developers/zarr \
       - name: Install dev dependencies
         run: |
           python -m pip install -r dev-requirements.txt
