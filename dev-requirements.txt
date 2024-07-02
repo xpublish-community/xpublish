@@ -1,5 +1,6 @@
 cachey
 dask
+donfig
 fastapi>=0.78.0
 fsspec
 httpx
