@@ -39,7 +39,7 @@ class ZarrPlugin(Plugin):
             tags=list(self.dataset_router_tags),
         )
 
-        @router.get(f'/{ZARR_METADATA_KEY}')
+        @router.api_route(f'/{ZARR_METADATA_KEY}',methods=['GET', 'HEAD'])
         def get_zarr_metadata(
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
@@ -52,7 +52,7 @@ class ZarrPlugin(Plugin):
 
             return JSONResponse(zjson)
 
-        @router.get(f'/{group_meta_key}')
+        @router.api_route(f'/{group_meta_key}',methods=['GET', 'HEAD'])
         def get_zarr_group(
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
@@ -63,7 +63,7 @@ class ZarrPlugin(Plugin):
 
             return JSONResponse(zmetadata['metadata'][group_meta_key])
 
-        @router.get(f'/{attrs_key}')
+        @router.api_route(f'/{attrs_key}',methods=['GET', 'HEAD'])
         def get_zarr_attrs(
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
@@ -74,7 +74,7 @@ class ZarrPlugin(Plugin):
 
             return JSONResponse(zmetadata['metadata'][attrs_key])
 
-        @router.get('/{var}/{chunk}')
+        @router.api_route('/{var}/{chunk}',methods=['GET', 'HEAD'])
         def get_variable_chunk(
             var: str = Path(description='Variable in dataset'),
             chunk: str = Path(description='Zarr chunk'),
