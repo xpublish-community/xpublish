@@ -52,8 +52,7 @@ class DatasetInfoPlugin(Plugin):
             cache=Depends(deps.cache),
         ) -> dict:
             """Dataset schema (close to the NCO-JSON schema)."""
-            from zarr.storage import attrs_key  # type: ignore
-            from ...utils.zarr import get_zmetadata, get_zvariables
+            from ...utils.zarr import attrs_key, get_zmetadata, get_zvariables  # type: ignore
 
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
