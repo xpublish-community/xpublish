@@ -5,7 +5,6 @@ import cachey  # type: ignore
 import xarray as xr
 from fastapi import APIRouter, Depends, HTTPException, Path
 from starlette.responses import Response  # type: ignore
-from zarr.storage import array_meta_key, attrs_key, group_meta_key  # type: ignore
 
 from xpublish.utils.api import JSONResponse
 
@@ -13,12 +12,17 @@ from ...utils.api import DATASET_ID_ATTR_KEY
 from ...utils.cache import CostTimer
 from ...utils.zarr import (
     ZARR_METADATA_KEY,
+    array_meta_key,
+    attrs_key,
     encode_chunk,
     get_data_chunk,
     get_zmetadata,
     get_zvariables,
+    group_meta_key,
     jsonify_zmetadata,
 )
+
+# type: ignore
 from .. import Dependencies, Plugin, hookimpl
 
 logger = logging.getLogger('zarr_api')

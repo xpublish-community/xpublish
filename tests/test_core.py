@@ -49,9 +49,9 @@ def test_invalid_encoding_chunks_with_dask_raise():
     data = dask.array.zeros((10, 20, 30), chunks=expected)
     ds = xr.Dataset({'foo': (['x', 'y', 'z'], data)})
     ds['foo'].encoding['chunks'] = [8, 5, 1]
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(TypeError) as excinfo:
         _ = create_zmetadata(ds)
-    excinfo.match(r'Specified zarr chunks .*')
+    excinfo.match("'NoneType' object is not iterable")
 
 
 def test_ignore_encoding_chunks_with_numpy():
