@@ -20,7 +20,9 @@ from ...utils.zarr import (
     get_zvariables,
     group_meta_key,
     jsonify_zmetadata,
-) # type: ignore
+)
+
+# type: ignore
 from .. import Dependencies, Plugin, hookimpl
 
 logger = logging.getLogger('zarr_api')
