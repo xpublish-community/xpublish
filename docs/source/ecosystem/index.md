@@ -4,7 +4,7 @@ Xpublish's ecosystem is made up of plugins and servers, and the folks who build 
 
 ## Connect
 
-We have two main venues for discussing Xpublish and it's ecosystem, Github Discussions and Slack.
+We have two main venues for discussing Xpublish and its ecosystem, Github Discussions and Slack.
 
 ### Github Discussions
 

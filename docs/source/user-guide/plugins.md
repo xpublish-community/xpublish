@@ -149,7 +149,7 @@ When you install a plugin library, the library takes advantage of the
 [entry point system](https://setuptools.pypa.io/en/latest/userguide/entry_point.html).
 
 This allows {py:class}`xpublish.Rest` to automatically find and use plugins.
-It only does this if plugins **are not** provided as an keyword argument.
+It only does this if plugins **are not** provided as a keyword argument.
 
 {py:class}`xpublish.Rest` uses {py:func}`plugins.manage.load_default_plugins` to
 load plugins from entry points.

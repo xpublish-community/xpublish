@@ -67,7 +67,7 @@ with useful background information and explanation.
 
 The reference guide contains a detailed description of the Xpublish API/
 The reference describes how the methods work and which parameters can be used.
-It assumes that you have an an understanding of the key concepts.
+It assumes that you have an understanding of the key concepts.
 ```
 
 ```{grid-item-card} Developer guide

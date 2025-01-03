@@ -1,4 +1,4 @@
-sphinx>=3.1
+sphinx>=7.3.7
 pydantic<2.0
 sphinx-autosummary-accessors
 pydata-sphinx-theme
