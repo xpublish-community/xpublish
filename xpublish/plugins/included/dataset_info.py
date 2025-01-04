@@ -3,11 +3,9 @@ from typing import Sequence
 import xarray as xr
 from fastapi import APIRouter, Depends
 from starlette.responses import HTMLResponse  # type: ignore
-from zarr.storage import attrs_key  # type: ignore
 
 from xpublish.utils.api import JSONResponse
 
-from ...utils.zarr import get_zmetadata, get_zvariables
 from .. import Dependencies, Plugin, hookimpl
 
 
@@ -54,6 +52,8 @@ class DatasetInfoPlugin(Plugin):
             cache=Depends(deps.cache),
         ) -> dict:
             """Dataset schema (close to the NCO-JSON schema)."""
+            from ...utils.zarr import attrs_key, get_zmetadata, get_zvariables  # type: ignore
+
             zvariables = get_zvariables(dataset, cache)
             zmetadata = get_zmetadata(dataset, cache, zvariables)
 

@@ -1,8 +1,13 @@
+import base64
 import copy
 import logging
+import numbers
 from typing import (
     Any,
     Optional,
+    Tuple,
+    Union,
+    cast,
 )
 
 import cachey
@@ -17,14 +22,6 @@ from xarray.backends.zarr import (
     encode_zarr_variable,
     extract_zarr_variable_encoding,
 )
-from zarr.meta import encode_fill_value
-from zarr.storage import (
-    array_meta_key,
-    attrs_key,
-    default_compressor,
-    group_meta_key,
-)
-from zarr.util import normalize_shape
 
 from .api import DATASET_ID_ATTR_KEY
 
@@ -34,6 +31,40 @@ ZARR_CONSOLIDATED_FORMAT = 1
 ZARR_METADATA_KEY = '.zmetadata'
 
 logger = logging.getLogger('api')
+
+
+# v2 store keys
+array_meta_key = '.zarray'
+group_meta_key = '.zgroup'
+attrs_key = '.zattrs'
+
+try:
+    # noinspection PyUnresolvedReferences
+    from zarr.codecs import Blosc
+
+    default_compressor = Blosc()
+except ImportError:  # pragma: no cover
+    try:
+        from zarr.codecs import Zlib
+
+        default_compressor = Zlib()
+    except ImportError:
+        default_compressor = None
+
+
+def normalize_shape(shape: Union[int, Tuple[int, ...], None]) -> Tuple[int, ...]:
+    """Convenience function to normalize the `shape` argument."""
+    if shape is None:
+        raise TypeError('shape is None')
+
+    # handle 1D convenience form
+    if isinstance(shape, numbers.Integral):
+        shape = (int(shape),)
+
+    # normalize
+    shape = cast(Tuple[int, ...], shape)
+    shape = tuple(int(s) for s in shape)
+    return shape
 
 
 def get_zvariables(dataset: xr.Dataset, cache: cachey.Cache):
@@ -264,3 +295,45 @@ def get_data_chunk(
         return new_chunk
     else:
         return chunk_data
+
+
+def encode_fill_value(v: Any, dtype: np.dtype, object_codec: Any = None) -> Any:
+    """Encode fill value for zarr array."""
+    # early out
+    if v is None:
+        return v
+    if dtype.kind == 'V' and dtype.hasobject:
+        if object_codec is None:
+            raise ValueError('missing object_codec for object array')
+        v = object_codec.encode(v)
+        v = str(base64.standard_b64encode(v), 'ascii')
+        return v
+    if dtype.kind == 'f':
+        if np.isnan(v):
+            return 'NaN'
+        elif np.isposinf(v):
+            return 'Infinity'
+        elif np.isneginf(v):
+            return '-Infinity'
+        else:
+            return float(v)
+    elif dtype.kind in 'ui':
+        return int(v)
+    elif dtype.kind == 'b':
+        return bool(v)
+    elif dtype.kind in 'c':
+        c = cast(np.complex128, np.dtype(complex).type())
+        v = (
+            encode_fill_value(v.real, c.real.dtype, object_codec),
+            encode_fill_value(v.imag, c.imag.dtype, object_codec),
+        )
+        return v
+    elif dtype.kind in 'SV':
+        v = str(base64.standard_b64encode(v), 'ascii')
+        return v
+    elif dtype.kind == 'U':
+        return v
+    elif dtype.kind in 'mM':
+        return int(v.view('i8'))
+    else:
+        return v
