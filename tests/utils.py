@@ -5,12 +5,12 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from starlette.testclient import TestClient
-from zarr.storage import BaseStore
+from zarr.storage import MemoryStore
 
 rs = np.random.RandomState(np.random.MT19937(np.random.SeedSequence(123456789)))
 
 
-class TestMapper(TestClient, BaseStore):
+class TestMapper(TestClient, MemoryStore):
     """A simple subclass to support getitem syntax on Starlette TestClient Objects."""
 
     def __getitem__(self, key):
