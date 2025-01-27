@@ -3,6 +3,7 @@ import json
 import numpy as np
 import pytest
 import xarray as xr
+from numcodecs import Shuffle, Zlib
 
 from xpublish import SingleDatasetRest
 
@@ -32,6 +33,37 @@ def test_zmetadata_identical(start, end, freq, nlats, nlons, var_const, calendar
 
     ds = ds.chunk(ds.dims)
     zarr_dict = {}
+    ds.to_zarr(zarr_dict, consolidated=True)
+    mapper = TestMapper(SingleDatasetRest(ds).app)
+    actual = json.loads(mapper['.zmetadata'].decode())
+    expected = json.loads(zarr_dict['.zmetadata'].decode())
+    assert actual == expected
+
+
+@pytest.mark.parametrize(
+    'start, end, freq, nlats, nlons, var_const, calendar, use_cftime',
+    [
+        ('2018-01-01', '2021-01-01', 'MS', 180, 360, True, 'standard', False),
+        ('2018-01-01', '2021-01-01', 'D', 180, 360, False, 'noleap', True),
+        ('2018-01-01', '2021-01-01', '6H', 180, 360, True, 'gregorian', False),
+        ('2018-01-01', '2050-01-01', 'A', 180, 360, None, '360_day', True),
+    ],
+)
+def test_compressor_filters(start, end, freq, nlats, nlons, var_const, calendar, use_cftime):
+    ds = create_dataset(
+        start=start,
+        end=end,
+        freq=freq,
+        nlats=nlats,
+        nlons=nlons,
+        var_const=var_const,
+        use_cftime=use_cftime,
+        calendar=calendar,
+    )
+
+    ds = ds.chunk(ds.dims)
+    zarr_dict = {}
+    ds['time'].encoding['filters'] = [Shuffle(elementsize=8), Zlib(level=8)]
     ds.to_zarr(zarr_dict, consolidated=True)
     mapper = TestMapper(SingleDatasetRest(ds).app)
     actual = json.loads(mapper['.zmetadata'].decode())
