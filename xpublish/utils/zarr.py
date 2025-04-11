@@ -164,6 +164,7 @@ def _extract_zarray(
         'order': 'C',
         'shape': list(normalize_shape(da.shape)),
         'zarr_format': ZARR_FORMAT,
+        'dimension_separator': '.',
     }
 
     if meta['chunks'] is None:

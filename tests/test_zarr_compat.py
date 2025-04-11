@@ -39,6 +39,7 @@ async def test_zmetadata_identical(start, end, freq, nlats, nlons, var_const, ca
     ds.to_zarr(zarr_store, consolidated=True, zarr_format=2)
     client = TestClient(SingleDatasetRest(ds).app)
     mapper = TestStore(client)
+
     payload = await mapper.get('.zmetadata', default_buffer_prototype())
     actual = json.loads(payload.to_bytes().decode())
     expected = json.loads(zarr_dict['.zmetadata'].to_bytes().decode())
@@ -129,8 +130,9 @@ async def test_zmetadata_identical_coords_sorted(
     zarr_store = MemoryStore(zarr_dict)
     ds.to_zarr(zarr_store, consolidated=True, zarr_format=2)
     client = TestClient(SingleDatasetRest(ds).app)
-    mapper = TestStore(client)
-    payload = await mapper.get('.zmetadata', default_buffer_prototype())
+    store = TestStore(client)
+
+    payload = await store.get('.zmetadata', default_buffer_prototype())
     actual = json.loads(payload.to_bytes().decode())
     expected = json.loads(zarr_dict['.zmetadata'].to_bytes().decode())
 
@@ -163,8 +165,8 @@ def test_roundtrip(start, end, freq, nlats, nlons, var_const, calendar, use_cfti
     )
     ds = ds.chunk(ds.dims)
     client = TestClient(SingleDatasetRest(ds).app)
-    mapper = TestStore(client)
-    actual = xr.open_zarr(mapper, consolidated=True, zarr_format=2)
+    store = TestStore(client)
+    actual = xr.open_zarr(store, consolidated=True, zarr_format=2)
 
     xr.testing.assert_identical(actual, ds)
 
@@ -260,8 +262,8 @@ def test_roundtrip_custom_chunks(
     )
     ds = ds.chunk(chunks)
     client = TestClient(SingleDatasetRest(ds).app)
-    mapper = TestStore(client)
-    actual = xr.open_zarr(mapper, consolidated=True, zarr_format=2, decode_times=decode_times)
+    store = TestStore(client)
+    actual = xr.open_zarr(store, consolidated=True, zarr_format=2, decode_times=decode_times)
 
     xr.testing.assert_identical(actual, ds)
 
@@ -277,7 +279,7 @@ def test_scalar_variable():
         }
     )
     client = TestClient(SingleDatasetRest(ds).app)
-    mapper = TestStore(client)
-    actual = xr.open_zarr(mapper, consolidated=True, zarr_format=2)
+    store = TestStore(client)
+    actual = xr.open_zarr(store, consolidated=True, zarr_format=2)
 
     xr.testing.assert_identical(actual, ds)
