@@ -3,10 +3,13 @@ import json
 import numpy as np
 import pytest
 import xarray as xr
+from fastapi.testclient import TestClient
+from zarr.core.buffer import default_buffer_prototype
+from zarr.storage import MemoryStore
 
 from xpublish import SingleDatasetRest
 
-from .utils import TestMapper, create_dataset
+from .utils import TestStore, create_dataset
 
 
 @pytest.mark.parametrize(
@@ -18,7 +21,7 @@ from .utils import TestMapper, create_dataset
         ('2018-01-01', '2050-01-01', 'A', 180, 360, None, '360_day', True),
     ],
 )
-def test_zmetadata_identical(start, end, freq, nlats, nlons, var_const, calendar, use_cftime):
+async def test_zmetadata_identical(start, end, freq, nlats, nlons, var_const, calendar, use_cftime):
     ds = create_dataset(
         start=start,
         end=end,
@@ -32,10 +35,13 @@ def test_zmetadata_identical(start, end, freq, nlats, nlons, var_const, calendar
 
     ds = ds.chunk(ds.dims)
     zarr_dict = {}
-    ds.to_zarr(zarr_dict, consolidated=True)
-    mapper = TestMapper(SingleDatasetRest(ds).app)
-    actual = json.loads(mapper['.zmetadata'].decode())
-    expected = json.loads(zarr_dict['.zmetadata'].decode())
+    zarr_store = MemoryStore(zarr_dict)
+    ds.to_zarr(zarr_store, consolidated=True, zarr_format=2)
+    client = TestClient(SingleDatasetRest(ds).app)
+    mapper = TestStore(client)
+    payload = await mapper.get('.zmetadata', default_buffer_prototype())
+    actual = json.loads(payload.to_bytes().decode())
+    expected = json.loads(zarr_dict['.zmetadata'].to_bytes().decode())
     assert actual == expected
 
 
@@ -57,7 +63,7 @@ def test_zmetadata_identical(start, end, freq, nlats, nlons, var_const, calendar
         ),
     ],
 )
-def test_zmetadata_identical_coords(
+async def test_zmetadata_identical_coords(
     start, end, freq, nlats, nlons, var_const, calendar, use_cftime
 ):
     ds = create_dataset(
@@ -74,10 +80,14 @@ def test_zmetadata_identical_coords(
 
     ds = ds.chunk(ds.dims)
     zarr_dict = {}
-    ds.to_zarr(zarr_dict, consolidated=True)
-    mapper = TestMapper(SingleDatasetRest(ds).app)
-    actual = json.loads(mapper['.zmetadata'].decode())
-    expected = json.loads(zarr_dict['.zmetadata'].decode())
+    zarr_store = MemoryStore(zarr_dict)
+    ds.to_zarr(zarr_store, consolidated=True, zarr_format=2)
+    client = TestClient(SingleDatasetRest(ds).app)
+    mapper = TestStore(client)
+
+    payload = await mapper.get('.zmetadata', default_buffer_prototype())
+    actual = json.loads(payload.to_bytes().decode())
+    expected = json.loads(zarr_dict['.zmetadata'].to_bytes().decode())
     assert (
         actual == expected
     ), "Zarr metadata did not match, likely because array coordinates aren't sorted by Xarray"
@@ -98,7 +108,7 @@ def test_zmetadata_identical_coords(
         ),
     ],
 )
-def test_zmetadata_identical_coords_sorted(
+async def test_zmetadata_identical_coords_sorted(
     start, end, freq, nlats, nlons, var_const, calendar, use_cftime
 ):
     """Test that zmetadata passes when coords are explicitly sorted."""
@@ -116,10 +126,13 @@ def test_zmetadata_identical_coords_sorted(
 
     ds = ds.chunk(ds.dims)
     zarr_dict = {}
-    ds.to_zarr(zarr_dict, consolidated=True)
-    mapper = TestMapper(SingleDatasetRest(ds).app)
-    actual = json.loads(mapper['.zmetadata'].decode())
-    expected = json.loads(zarr_dict['.zmetadata'].decode())
+    zarr_store = MemoryStore(zarr_dict)
+    ds.to_zarr(zarr_store, consolidated=True, zarr_format=2)
+    client = TestClient(SingleDatasetRest(ds).app)
+    mapper = TestStore(client)
+    payload = await mapper.get('.zmetadata', default_buffer_prototype())
+    actual = json.loads(payload.to_bytes().decode())
+    expected = json.loads(zarr_dict['.zmetadata'].to_bytes().decode())
 
     for key in ['tmin/.zattrs', 'tmax/.zattrs']:
         coords = expected['metadata'][key]['coordinates']
@@ -149,9 +162,9 @@ def test_roundtrip(start, end, freq, nlats, nlons, var_const, calendar, use_cfti
         calendar=calendar,
     )
     ds = ds.chunk(ds.dims)
-
-    mapper = TestMapper(SingleDatasetRest(ds).app)
-    actual = xr.open_zarr(mapper, consolidated=True)
+    client = TestClient(SingleDatasetRest(ds).app)
+    mapper = TestStore(client)
+    actual = xr.open_zarr(mapper, consolidated=True, zarr_format=2)
 
     xr.testing.assert_identical(actual, ds)
 
@@ -246,8 +259,9 @@ def test_roundtrip_custom_chunks(
         decode_times=decode_times,
     )
     ds = ds.chunk(chunks)
-    mapper = TestMapper(SingleDatasetRest(ds).app)
-    actual = xr.open_zarr(mapper, consolidated=True, decode_times=decode_times)
+    client = TestClient(SingleDatasetRest(ds).app)
+    mapper = TestStore(client)
+    actual = xr.open_zarr(mapper, consolidated=True, zarr_format=2, decode_times=decode_times)
 
     xr.testing.assert_identical(actual, ds)
 
@@ -262,7 +276,8 @@ def test_scalar_variable():
             )
         }
     )
-    mapper = TestMapper(SingleDatasetRest(ds).app)
-    actual = xr.open_zarr(mapper, consolidated=True)
+    client = TestClient(SingleDatasetRest(ds).app)
+    mapper = TestStore(client)
+    actual = xr.open_zarr(mapper, consolidated=True, zarr_format=2)
 
     xr.testing.assert_identical(actual, ds)

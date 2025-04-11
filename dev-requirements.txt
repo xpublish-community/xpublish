@@ -11,6 +11,7 @@ pluggy
 pooch
 pre-commit
 pytest
+pytest-asyncio
 pytest-mock
 pytest-sugar
 pytest-cov
