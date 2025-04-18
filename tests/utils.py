@@ -36,7 +36,6 @@ class TestStore(Store):
         """Retrieve the value associated with a given key."""
         zarr_key = f'/zarr/{key}'
         response = self._client.get(zarr_key)
-        print(response)
         if response.status_code != 200:
             raise KeyError('{} not found. status_code = {}'.format(zarr_key, response.status_code))
         return prototype.buffer.from_bytes(response.content)
@@ -119,7 +118,9 @@ def create_dataset(
     """Utility function for creating test data."""
     if use_cftime:
         end = xr.coding.cftime_offsets.to_cftime_datetime(end, calendar=calendar)
-        dates = xr.cftime_range(start=start, end=end, freq=freq, calendar=calendar)
+        dates = xr.date_range(
+            start=start, end=end, freq=freq, calendar=calendar, use_cftime=use_cftime
+        )
 
     else:
         dates = pd.date_range(start=pd.to_datetime(start), end=pd.to_datetime(end), freq=freq)

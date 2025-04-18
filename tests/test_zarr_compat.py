@@ -17,8 +17,8 @@ from .utils import TestStore, create_dataset
     [
         ('2018-01-01', '2021-01-01', 'MS', 180, 360, True, 'standard', False),
         ('2018-01-01', '2021-01-01', 'D', 180, 360, False, 'noleap', True),
-        ('2018-01-01', '2021-01-01', '6H', 180, 360, True, 'gregorian', False),
-        ('2018-01-01', '2050-01-01', 'A', 180, 360, None, '360_day', True),
+        ('2018-01-01', '2021-01-01', '6h', 180, 360, True, 'gregorian', False),
+        ('2018-01-01', '2050-01-01', 'YE', 180, 360, None, '360_day', True),
     ],
 )
 async def test_zmetadata_identical(start, end, freq, nlats, nlons, var_const, calendar, use_cftime):
@@ -41,14 +41,13 @@ async def test_zmetadata_identical(start, end, freq, nlats, nlons, var_const, ca
     mapper = TestStore(client)
 
     payload = await mapper.get('.zmetadata', default_buffer_prototype())
-    actual = json.loads(payload.to_bytes().decode())
+    actual_payload = payload.to_bytes().decode()
+    actual = json.loads(actual_payload)
 
-    expected_payload = await zarr_store.get('.zmetadata', default_buffer_prototype())
-    expected = json.loads(expected_payload.to_bytes().decode())
+    expected_buffer = await zarr_store.get('.zmetadata', default_buffer_prototype())
+    expected_payload = expected_buffer.to_bytes().decode()
+    expected = json.loads(expected_payload)
 
-    # For some reason, this is being decoded as nan instead of 'NaN' even though the raw bytes from the dict are 'NaN'
-    # This is a hack to make the test pass for now
-    expected['metadata']['time/.zarray']['fill_value'] = 'NaN'
     assert actual == expected
 
 
