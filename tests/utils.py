@@ -1,35 +1,104 @@
 from functools import reduce
 from operator import mul
+from typing import AsyncIterator, Iterable
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 from starlette.testclient import TestClient
-from zarr.storage import BaseStore
+from zarr.abc.store import ByteRequest, Store
+from zarr.core.buffer import Buffer, BufferPrototype
+from zarr.core.common import BytesLike
 
 rs = np.random.RandomState(np.random.MT19937(np.random.SeedSequence(123456789)))
 
 
-class TestMapper(TestClient, BaseStore):
+class TestStore(Store):
     """A simple subclass to support getitem syntax on Starlette TestClient Objects."""
 
-    def __getitem__(self, key):
+    _client: TestClient
+
+    def __init__(self, client: TestClient):
+        self._client = client
+        self._is_open = True
+        self._read_only = True
+
+    def __eq__(self, value: object) -> bool:
+        """Equality comparison."""
+        return isinstance(value, type(self)) and self._client == value._client
+
+    async def get(
+        self,
+        key: str,
+        prototype: BufferPrototype,
+        byte_range: ByteRequest | None = None,
+    ) -> Buffer | None:
+        """Retrieve the value associated with a given key."""
         zarr_key = f'/zarr/{key}'
-        response = self.get(zarr_key)
+        response = self._client.get(zarr_key)
         if response.status_code != 200:
             raise KeyError('{} not found. status_code = {}'.format(zarr_key, response.status_code))
-        return response.content
+        return prototype.buffer.from_bytes(response.content)
 
-    def __delitem__(self, key):
+    async def get_partial_values(
+        self,
+        prototype: BufferPrototype,
+        key_ranges: Iterable[tuple[str, ByteRequest | None]],
+    ) -> list[Buffer | None]:
+        """Retrieve possibly partial values from given key_ranges."""
         return NotImplemented
 
-    def __iter__(self):
+    async def exists(self, key: str) -> bool:
+        """Check if a key exists in the store."""
         return NotImplemented
 
-    def __len__(self):
+    @property
+    def supports_writes(self) -> bool:
+        """Does the store support writes?"""
+        return False
+
+    async def set(self, key: str, value: Buffer) -> None:
+        """Store a (key, value) pair."""
         return NotImplemented
 
-    def __setitem__(self, key, value):
+    @property
+    def supports_deletes(self) -> bool:
+        """Does the store support deletes?"""
+        return False
+
+    async def delete(self, key: str) -> None:
+        """Remove a key from the store"""
+        return NotImplemented
+
+    @property
+    def supports_partial_writes(self) -> bool:
+        """Does the store support partial writes?"""
+        return False
+
+    async def set_partial_values(
+        self, key_start_values: Iterable[tuple[str, int, BytesLike]]
+    ) -> None:
+        """Store values at a given key, starting at byte range_start."""
+        return NotImplemented
+
+    def supports_listing(self) -> bool:
+        """Does the store support listing?"""
+        return True
+
+    async def list(self) -> AsyncIterator[str]:
+        """Retrieve all keys in the store."""
+        return NotImplemented
+
+    async def list_prefix(self, prefix: str) -> AsyncIterator[str]:
+        """Retrieve all keys in the store that begin with a given prefix. Keys are returned relative
+        to the root of the store.
+        """
+        return NotImplemented
+
+    async def list_dir(self, prefix: str) -> AsyncIterator[str]:
+        """Retrieve all keys and prefixes with a given prefix and which do not contain the character
+        “/” after the given prefix.
+        """
         return NotImplemented
 
 
@@ -49,7 +118,9 @@ def create_dataset(
     """Utility function for creating test data."""
     if use_cftime:
         end = xr.coding.cftime_offsets.to_cftime_datetime(end, calendar=calendar)
-        dates = xr.cftime_range(start=start, end=end, freq=freq, calendar=calendar)
+        dates = xr.date_range(
+            start=start, end=end, freq=freq, calendar=calendar, use_cftime=use_cftime
+        )
 
     else:
         dates = pd.date_range(start=pd.to_datetime(start), end=pd.to_datetime(end), freq=freq)

@@ -18,7 +18,7 @@ def tests(session: nox.Session, pydantic: str):
     """Run py.test."""
     session.install('-r', 'dev-requirements.txt')
     session.install('.')
-    session.install(f"pydantic{pydantic}")
+    session.install(f'pydantic{pydantic}')
     session.run('pytest', '--verbose', '--pdb')
 
 
@@ -51,7 +51,7 @@ def docs(session: nox.Session):
     BUILDDIR = '_build'
 
     if args.clean:
-        session.run('rm', '-rf', f"{BUILDDIR}/*")
+        session.run('rm', '-rf', f'{BUILDDIR}/*')
 
     if args.live:
         session.run('sphinx-autobuild', '-b', 'dirhtml', 'source/', '_build/dirhtml/')
@@ -61,7 +61,7 @@ def docs(session: nox.Session):
             '-b',
             'dirhtml',
             '-d',
-            f"{BUILDDIR}/doctrees",
+            f'{BUILDDIR}/doctrees',
             'source/dirhtml',
         )
 

@@ -38,18 +38,11 @@ array_meta_key = '.zarray'
 group_meta_key = '.zgroup'
 attrs_key = '.zattrs'
 
-try:
-    # noinspection PyUnresolvedReferences
-    from zarr.codecs import Blosc
+# noinspection PyUnresolvedReferences
+from numcodecs.blosc import Blosc
 
-    default_compressor = Blosc()
-except ImportError:  # pragma: no cover
-    try:
-        from zarr.codecs import Zlib
-
-        default_compressor = Zlib()
-    except ImportError:
-        default_compressor = None
+# This is the default compressor used by xarray for zarr 2 encoding
+default_compressor = Blosc()
 
 
 def normalize_shape(shape: Union[int, Tuple[int, ...], None]) -> Tuple[int, ...]:
@@ -164,6 +157,7 @@ def _extract_zarray(
         'order': 'C',
         'shape': list(normalize_shape(da.shape)),
         'zarr_format': ZARR_FORMAT,
+        'dimension_separator': '.',
     }
 
     if meta['chunks'] is None:
@@ -206,7 +200,7 @@ def create_zmetadata(dataset: xr.Dataset) -> dict:
     for key, dvar in dataset.variables.items():
         da = dataset[key]
         encoded_da = encode_zarr_variable(dvar, name=key)
-        encoding = extract_zarr_variable_encoding(dvar)
+        encoding = extract_zarr_variable_encoding(dvar, zarr_format=2)
         zattrs = _extract_dataarray_zattrs(encoded_da)
         zattrs = _extract_dataarray_coords(da, zattrs)
         zmeta['metadata'][f'{key}/{attrs_key}'] = zattrs
@@ -301,39 +295,30 @@ def encode_fill_value(v: Any, dtype: np.dtype, object_codec: Any = None) -> Any:
     """Encode fill value for zarr array."""
     # early out
     if v is None:
-        return v
-    if dtype.kind == 'V' and dtype.hasobject:
-        if object_codec is None:
-            raise ValueError('missing object_codec for object array')
-        v = object_codec.encode(v)
-        v = str(base64.standard_b64encode(v), 'ascii')
-        return v
-    if dtype.kind == 'f':
-        if np.isnan(v):
-            return 'NaN'
-        elif np.isposinf(v):
-            return 'Infinity'
-        elif np.isneginf(v):
-            return '-Infinity'
-        else:
-            return float(v)
-    elif dtype.kind in 'ui':
-        return int(v)
-    elif dtype.kind == 'b':
-        return bool(v)
-    elif dtype.kind in 'c':
-        c = cast(np.complex128, np.dtype(complex).type())
-        v = (
-            encode_fill_value(v.real, c.real.dtype, object_codec),
-            encode_fill_value(v.imag, c.imag.dtype, object_codec),
-        )
-        return v
+        serialized = None
     elif dtype.kind in 'SV':
-        v = str(base64.standard_b64encode(v), 'ascii')
-        return v
-    elif dtype.kind == 'U':
-        return v
-    elif dtype.kind in 'mM':
-        return int(v.view('i8'))
+        # There's a relationship between dtype and fill_value
+        # that mypy isn't aware of. The fact that we have S or V dtype here
+        # means we should have a bytes-type fill_value.
+        serialized = base64.standard_b64encode(cast(bytes, v)).decode('ascii')
+    elif isinstance(v, np.datetime64):
+        serialized = np.datetime_as_string(v)
+    elif isinstance(v, numbers.Integral):
+        serialized = int(v)
+    elif isinstance(v, numbers.Real):
+        float_fv = float(v)
+        if np.isnan(float_fv):
+            serialized = 'NaN'
+        elif np.isinf(float_fv):
+            serialized = 'Infinity' if float_fv > 0 else '-Infinity'
+        else:
+            serialized = float_fv
+    elif isinstance(v, numbers.Complex):
+        serialized = [
+            encode_fill_value(v.real, dtype),
+            encode_fill_value(v.imag, dtype),
+        ]
     else:
-        return v
+        serialized = v
+
+    return serialized
