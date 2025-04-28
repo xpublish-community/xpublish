@@ -11,11 +11,12 @@ pluggy
 pooch
 pre-commit
 pytest
+pytest-asyncio
 pytest-mock
 pytest-sugar
 pytest-cov
 requests
 toolz
 uvicorn
-xarray!=v2023.09.0  # see https://github.com/xpublish-community/xpublish/issues/237
-zarr
+xarray>=2025.1.0
+zarr>=3.0.7
