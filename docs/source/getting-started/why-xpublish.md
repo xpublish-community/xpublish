@@ -12,13 +12,13 @@ Xpublish does this by using Xarray datasets as the core data interchange format 
 
 ## An extendable core
 
-`xpublish` (the library) on it's own is designed to be relatively small and lightweight. It mainly defines plugin extension points, based around the internal exchange of Xarray datasets. It also defines a standard way to configure plugins, and how to load them.
+`xpublish` (the library) on its own is designed to be relatively small and lightweight. It mainly defines plugin extension points, based around the internal exchange of Xarray datasets. It also defines a standard way to configure plugins, and how to load them.
 
 It additionally provides an Xarray dataset accessor that allows for quickly serving a dataset, and a nice introduction path for creating new dataset based routers.
 
 ## A collection of plugins
 
-Xpublish really starts coming into it's own with the plugin ecosystem.
+Xpublish really starts coming into its own with the plugin ecosystem.
 
 Because `xpublish` the library has a relatively small API surface, but depends on familiar Xarray datasets, it becomes much easier to quickly develop large classes of plugins. Additionally by keeping most of the internet and storage facing elements of Xpublish out of the `xpublish` library, plugins can develop independently and at their own rate.
 

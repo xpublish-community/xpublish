@@ -2,6 +2,7 @@ import base64
 import copy
 import logging
 import numbers
+from types import SimpleNamespace
 from typing import (
     Any,
     Optional,
@@ -151,7 +152,7 @@ def _extract_zarray(
     meta = {
         'compressor': encoding.get('compressor', da.encoding.get('compressor', default_compressor)),
         'filters': encoding.get('filters', da.encoding.get('filters', None)),
-        'chunks': encoding.get('chunks', None),
+        'chunks': list(da.data.chunksize if isinstance(da.data, DaskArrayType) else da.shape),
         'dtype': dtype.str,
         'fill_value': _extract_fill_value(da, dtype),
         'order': 'C',
@@ -160,19 +161,8 @@ def _extract_zarray(
         'dimension_separator': '.',
     }
 
-    if meta['chunks'] is None:
-        meta['chunks'] = da.shape
-
-    # validate chunks for dask arrays, numpy arrays match the encoding to the shape
-    if isinstance(da.data, DaskArrayType):
-        var_chunks = tuple([c[0] for c in da.data.chunks])
-    else:
-        var_chunks = da.shape
-        meta['chunks'] = da.shape
-    if not var_chunks == tuple(meta['chunks']):
-        raise ValueError('Encoding chunks do not match inferred chunks')
-
-    meta['chunks'] = list(meta['chunks'])  # return chunks as a list
+    if isinstance(meta['filters'], (list, tuple)) and len(meta['filters']) == 0:
+        meta['filters'] = None
 
     return meta
 
@@ -199,8 +189,21 @@ def create_zmetadata(dataset: xr.Dataset) -> dict:
 
     for key, dvar in dataset.variables.items():
         da = dataset[key]
+
+        # check taken from xarray.backends.zarr:_determine_zarr_chunks
+        # if the variable is a dask_array and the chunks are not uniform, try to fix the chunks
+        if isinstance(dvar.data, DaskArrayType) and any(
+            (len(set(chunks[:-1])) > 1 or chunks[0] < chunks[-1]) for chunks in dvar.data.chunks
+        ):
+            da.variable.data = da.variable.data.rechunk(dvar.data.chunksize)
+            dvar = da.variable
+
         encoded_da = encode_zarr_variable(dvar, name=key)
-        encoding = extract_zarr_variable_encoding(dvar, zarr_format=2)
+        encoding = extract_zarr_variable_encoding(
+            dvar,
+            zarr_format=ZARR_FORMAT,
+            region=tuple([SimpleNamespace(start=None, stop=None) for _ in da.shape]),
+        )
         zattrs = _extract_dataarray_zattrs(encoded_da)
         zattrs = _extract_dataarray_coords(da, zattrs)
         zmeta['metadata'][f'{key}/{attrs_key}'] = zattrs
@@ -228,6 +231,12 @@ def jsonify_zmetadata(
                 'compressor'
             ].get_config()
             zjson['metadata'][f'{key}/{array_meta_key}']['compressor'] = compressor_config
+
+        filters = zjson['metadata'][f'{key}/{array_meta_key}']['filters']
+        if filters is not None:
+            zjson['metadata'][f'{key}/{array_meta_key}']['filters'] = [
+                x.get_config() for x in filters
+            ]
 
     return zjson
 
