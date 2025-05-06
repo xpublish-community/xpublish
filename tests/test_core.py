@@ -33,15 +33,14 @@ def test_single_dataset_raise(airtemp_ds):
     )
 
 
-def test_invalid_dask_chunks_raise():
+def test_mismatched_dask_chunks():
     data1 = dask.array.zeros((10, 20, 30), chunks=(4, 10, 1))
     data2 = dask.array.zeros((10, 20, 30), chunks=(4, 5, 1))
     data = dask.array.concatenate([data1, data2])
     ds = xr.Dataset({'foo': (['x', 'y', 'z'], data)})
+    zmeta = create_zmetadata(ds)
 
-    with pytest.raises(ValueError) as excinfo:
-        _ = create_zmetadata(ds)
-    excinfo.match(r'Zarr requires uniform chunk sizes .*')
+    assert zmeta['metadata']['foo/.zarray']['chunks'] == [4, 5, 1]
 
 
 def test_invalid_encoding_chunks_with_dask_raise():
@@ -49,9 +48,11 @@ def test_invalid_encoding_chunks_with_dask_raise():
     data = dask.array.zeros((10, 20, 30), chunks=expected)
     ds = xr.Dataset({'foo': (['x', 'y', 'z'], data)})
     ds['foo'].encoding['chunks'] = [8, 5, 1]
-    with pytest.raises(TypeError) as excinfo:
+    with pytest.raises(ValueError) as excinfo:
         _ = create_zmetadata(ds)
-    excinfo.match("'NoneType' object is not iterable")
+    excinfo.match(
+        r"Specified zarr chunks encoding\['chunks'\]=\(8, 5, 1\) for variable named None would overlap multiple dask chunks*"
+    )
 
 
 def test_ignore_encoding_chunks_with_numpy():
