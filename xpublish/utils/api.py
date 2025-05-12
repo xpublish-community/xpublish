@@ -17,7 +17,7 @@ DATASET_ID_ATTR_KEY = '_xpublish_id'
 
 
 def normalize_datasets(
-    datasets: Union[xr.Dataset, Mapping[Any, xr.Dataset]]
+    datasets: Union[xr.Dataset, Mapping[Any, xr.Dataset]],
 ) -> Dict[str, xr.Dataset]:
     """Normalize the given collection of datasets.
 
