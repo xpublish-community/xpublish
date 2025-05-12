@@ -34,7 +34,7 @@ class PluginInfoPlugin(Plugin):
 
         @router.get('/plugins')
         def get_plugins(
-            plugins: Dict[str, Plugin] = Depends(deps.plugins)
+            plugins: Dict[str, Plugin] = Depends(deps.plugins),
         ) -> Dict[str, PluginInfo]:
             """Return the source and version of the currently loaded plugins."""
             plugin_info = {}
