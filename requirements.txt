@@ -4,6 +4,7 @@ fastapi>=0.115.0
 numcodecs
 numpy
 pluggy
+pydantic>=2.5.0
 toolz
 uvicorn
 xarray>=2025.1.0
