@@ -7,5 +7,5 @@ pluggy
 pydantic>=2.5.0
 toolz
 uvicorn
-xarray>=2025.1.0
+xarray>=2025.7.0
 zarr>=3.0.7

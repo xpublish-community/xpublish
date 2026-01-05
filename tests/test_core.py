@@ -51,7 +51,7 @@ def test_invalid_encoding_chunks_with_dask_raise():
     with pytest.raises(ValueError) as excinfo:
         _ = create_zmetadata(ds)
     excinfo.match(
-        r"Specified zarr chunks encoding\['chunks'\]=\(8, 5, 1\) for variable named None would overlap multiple dask chunks*"
+        r"Specified Zarr chunks encoding\['chunks'\]=\[8, 5, 1\] for variable named 'foo' would overlap multiple Dask chunks.*"
     )
 
 
