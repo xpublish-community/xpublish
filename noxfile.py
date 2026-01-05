@@ -53,6 +53,8 @@ def docs(session: nox.Session):
     if args.clean:
         session.run('rm', '-rf', f'{BUILDDIR}/*')
 
+    session.run('python', 'source/api/generate_openapi.py')
+
     if args.live:
         session.run('sphinx-autobuild', '-b', 'dirhtml', 'source/', '_build/dirhtml/')
     else:
