@@ -12,6 +12,7 @@ import xarray as xr
 from fastapi import APIRouter
 from fastapi.openapi.utils import get_openapi
 from starlette.responses import JSONResponse as StarletteJSONResponse  # type: ignore
+from xarray.core.datatree import DataTree
 
 DATASET_ID_ATTR_KEY = '_xpublish_id'
 
@@ -44,6 +45,30 @@ def normalize_datasets(
         if not all(isinstance(obj, xr.Dataset) for obj in datasets.values()):
             raise TypeError(error_msg)
         return {str(k): ds.assign_attrs({DATASET_ID_ATTR_KEY: k}) for k, ds in datasets.items()}
+    else:
+        raise TypeError(error_msg)
+
+
+def normalize_datatrees(datatrees: Mapping[Any, DataTree]) -> Dict[str, DataTree]:
+    """Normalize the given collection of datatrees.
+
+    This converts all keys to strings and validates the values are DataTree instances.
+
+    Args:
+        datatrees: Mapping with DataTree objects as values.
+
+    Returns:
+        Dictionary with string keys and DataTree values.
+
+    Raises:
+        TypeError: If objects other than DataTree are found.
+    """
+    error_msg = 'Can only publish a xarray.DataTree object or a mapping of DataTree objects'
+
+    if isinstance(datatrees, Mapping):
+        if not all(isinstance(obj, DataTree) for obj in datatrees.values()):
+            raise TypeError(error_msg)
+        return {str(k): dt for k, dt in datatrees.items()}
     else:
         raise TypeError(error_msg)
 

@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Dict, List
 import cachey
 import pluggy
 import xarray as xr
+from xarray.core.datatree import DataTree
 
 if TYPE_CHECKING:
     from .plugins import Plugin  # pragma: no cover
@@ -44,6 +45,27 @@ def get_dataset(dataset_id: str) -> xr.Dataset:
 
     """
     return xr.Dataset()  # pragma: no cover
+
+
+def get_datatree_ids() -> List[str]:
+    """FastAPI dependency for getting ids of the collection of datatrees being served.
+
+    Returns:
+        A list of unique keys for datatrees.
+    """
+    return []  # pragma: no cover
+
+
+def get_datatree(datatree_id: str = '') -> DataTree:
+    """FastAPI dependency for accessing a published xarray DataTree object.
+
+    Parameters:
+        datatree_id: Unique path-safe key identifying the datatree.
+
+    Returns:
+        Requested DataTree.
+    """
+    return DataTree(name='')  # pragma: no cover
 
 
 def get_cache() -> cachey.Cache:
