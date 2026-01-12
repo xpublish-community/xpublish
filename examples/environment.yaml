@@ -1,0 +1,25 @@
+name: xpublish-exploring
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - xarray-datatree
+  - xpublish>=0.3.1
+  - xpublish-edr
+  - xpublish-opendap
+  - dask
+  - distributed
+  - netcdf4
+  - zarr
+  - s3fs
+  - fsspec
+  - cf_xarray
+  - kerchunk
+  - h5py
+  - intake-xarray
+  - h5netcdf
+  - pydap
+  - h5pyd
+  - regionmask
+  - ipykernel
+  - pooch
