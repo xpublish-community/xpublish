@@ -17,6 +17,7 @@ import numpy as np
 import xarray as xr
 from numcodecs.abc import Codec
 from numcodecs.compat import ensure_ndarray
+from xarray.backends.chunks import validate_grid_chunks_alignment
 from xarray.backends.zarr import (
     DIMENSION_KEY,
     encode_zarr_attr_value,
@@ -199,10 +200,18 @@ def create_zmetadata(dataset: xr.Dataset) -> dict:
             dvar = da.variable
 
         encoded_da = encode_zarr_variable(dvar, name=key)
+        if 'chunks' in encoded_da.encoding:
+            validate_grid_chunks_alignment(
+                nd_v_chunks=dvar.chunks,
+                enc_chunks=encoded_da.encoding['chunks'],
+                region=tuple([SimpleNamespace(start=None, stop=None) for _ in da.shape]),
+                allow_partial_chunks=False,
+                name=key,
+                backend_shape=encoded_da.shape,
+            )
         encoding = extract_zarr_variable_encoding(
             dvar,
             zarr_format=ZARR_FORMAT,
-            region=tuple([SimpleNamespace(start=None, stop=None) for _ in da.shape]),
         )
         zattrs = _extract_dataarray_zattrs(encoded_da)
         zattrs = _extract_dataarray_coords(da, zattrs)
