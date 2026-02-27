@@ -146,7 +146,7 @@ pygments_style = 'sphinx'
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3.11/', None),
     'xarray': ('https://xarray.pydata.org/en/stable/', None),
-    # sadly, there is no intersphinx for fastapi docs
+    'fastapi': ('https://fastapi.tiangolo.com/', None),
 }
 
 # -- Options for HTML output ---------------------------------------------------
