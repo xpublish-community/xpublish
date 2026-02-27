@@ -31,6 +31,14 @@ sys.path.insert(0, parent)
 # -- General configuration -----------------------------------------------------
 
 nitpicky = True
+nitpick_ignore_regex = [
+    # Ignore all Python domain references (py:obj, py:class, py:meth, etc.)
+    # This is far from ideal, but we have a huge number of Python refrence warnings that
+    # need to be fixed, and autosummary makes it hard to deal with them.
+    # By ignoring these, we enable our build to fail on other warnings that we can
+    # more realistically handle now.
+    ('py:.*', r'.*'),
+]
 
 # If your documentation needs a minimal Sphinx version, state it here.
 # needs_sphinx = '1.0'
