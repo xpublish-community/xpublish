@@ -58,7 +58,6 @@ extensions = [
     'sphinx_autodoc_typehints',
     'sphinx_design',
     'myst_parser',
-    'sphinx_github_changelog',
     'sphinxcontrib.openapi',
 ]
 

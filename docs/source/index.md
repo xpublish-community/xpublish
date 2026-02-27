@@ -112,7 +112,6 @@ user-guide/index
 api/index
 ecosystem/index
 Contributing <contributing>
-changelog
 ```
 
 ## Feedback
