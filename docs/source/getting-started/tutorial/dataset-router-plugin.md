@@ -49,7 +49,7 @@ Then the plugin needs to tell Xpublish what it can do.
 It does it with the `@hookimpl` decorator and specifically named methods,
 in this case `dataset_router`.
 
-These methods can take a set of arguments that Xpublish has defined (further explored in the [plugin user guide](../../user-guide/plugins.md) and [API docs](../../api.md)).
+These methods can take a set of arguments that Xpublish has defined (further explored in the [plugin user guide](../../user-guide/plugins.md) and [API docs](/api/index.md)).
 
 ```{literalinclude} dataset-router-plugin.py
 ---
