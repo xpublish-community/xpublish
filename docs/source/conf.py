@@ -30,6 +30,8 @@ sys.path.insert(0, parent)
 
 # -- General configuration -----------------------------------------------------
 
+nitpicky = True
+
 # If your documentation needs a minimal Sphinx version, state it here.
 # needs_sphinx = '1.0'
 
