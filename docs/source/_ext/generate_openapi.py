@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 from sphinx.util import logging
+
 import xpublish
 
 logger = logging.getLogger(__name__)
