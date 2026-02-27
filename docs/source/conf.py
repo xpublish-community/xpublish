@@ -62,6 +62,11 @@ extensions = [
     'sphinxcontrib.openapi',
 ]
 
+# When a field is not serializable (e.g. callable), we just show the field title and
+# don't raise a warning
+# https://autodoc-pydantic.readthedocs.io/en/stable/users/configuration.html#show-schema-json-error-strategy
+autodoc_pydantic_model_show_json_error_strategy = 'coerce'
+
 myst_enable_extensions = []
 myst_heading_anchors = 6
 
