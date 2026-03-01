@@ -69,7 +69,7 @@ You can then build the documentation with the following commands::
 
     $ conda activate xpublish-dev
     $ cd docs
-    $ pip install -r requirements.txt
+    $ pip install --group docs
     $ make html
 
 The built documentation should be available in the ``docs/_build/`` folder.
@@ -108,7 +108,7 @@ Preparing Pull Requests
 
     $ conda create -n xpublish-dev
     $ conda activate xpublish-dev
-    $ pip install -r dev-requirements.txt
+    $ pip install --group dev
     $ pip install --no-deps -e .
 
 #. Run all the tests

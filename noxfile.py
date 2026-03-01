@@ -16,7 +16,7 @@ nox.options.default_venv_backend = 'uv'
 @nox.parametrize('pydantic', ['<2', '>=2'])
 def tests(session: nox.Session, pydantic: str):
     """Run py.test."""
-    session.install('-r', 'dev-requirements.txt')
+    session.install('--group', 'dev')
     session.install('.')
     session.install(f'pydantic{pydantic}')
     session.run('pytest', '--verbose', '--pdb')
@@ -41,11 +41,10 @@ def docs(session: nox.Session):
     parser.add_argument('--live', action='store_true', help='Run a live updating server for docs')
     args, posargs = parser.parse_known_args(session.posargs)
 
-    session.install('-r', 'dev-requirements.txt')
+    session.install('--group', 'dev')
     session.install('.')
 
-    session.chdir('docs')
-    session.install('-r', 'requirements.txt')
+    session.install('--group', 'docs')
     session.install('sphinx-autobuild')
 
     BUILDDIR = '_build'
