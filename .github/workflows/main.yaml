@@ -34,8 +34,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --group dev
-          python -m pip install --no-deps -e .
+          python -m pip install --group dev .
           python -m pip list
 
       - name: Running Tests
@@ -76,7 +75,7 @@ jobs:
       # Disable Zarr upstream tests due to v3 changes git+https://github.com/zarr-developers/zarr \
       - name: Install dev dependencies
         run: |
-          python -m pip install --group dev
+          python -m pip install --group dev .
           python -m pip install --no-deps --upgrade \
                 git+https://github.com/dask/dask \
                 git+https://github.com/dask/cachey \
