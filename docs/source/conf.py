@@ -26,6 +26,7 @@ import xpublish
 cwd = os.getcwd()
 parent = os.path.dirname(cwd)
 sys.path.insert(0, parent)
+sys.path.insert(0, f'{cwd}/_ext')
 
 
 # -- General configuration -----------------------------------------------------
@@ -46,6 +47,7 @@ nitpick_ignore_regex = [
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
+    'generate_openapi',
     'sphinx.ext.autodoc',
     'sphinx.ext.viewcode',
     'sphinx.ext.autosummary',
