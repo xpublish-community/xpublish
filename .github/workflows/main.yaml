@@ -26,7 +26,7 @@ jobs:
         uses: actions/cache@v5.0.1
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/dev-requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-pip-${{ matrix.python-version }}
             ${{ runner.os }}-pip
@@ -34,8 +34,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install -r dev-requirements.txt
-          python -m pip install --no-deps -e .
+          python -m pip install --group dev .
           python -m pip list
 
       - name: Running Tests
@@ -67,7 +66,7 @@ jobs:
         uses: actions/cache@v5.0.1
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-dev-${{ matrix.python-version }}-${{ hashFiles('**/dev-requirements.txt') }}
+          key: ${{ runner.os }}-pip-dev-${{ matrix.python-version }}-${{ hashFiles('**/pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-pip-dev-${{ matrix.python-version }}
             ${{ runner.os }}-pip-dev
@@ -76,7 +75,7 @@ jobs:
       # Disable Zarr upstream tests due to v3 changes git+https://github.com/zarr-developers/zarr \
       - name: Install dev dependencies
         run: |
-          python -m pip install -r dev-requirements.txt
+          python -m pip install --group dev .
           python -m pip install --no-deps --upgrade \
                 git+https://github.com/dask/dask \
                 git+https://github.com/dask/cachey \

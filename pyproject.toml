@@ -33,9 +33,19 @@ classifiers = [
   "Programming Language :: Python :: 3.14",
   "Topic :: Scientific/Engineering",
 ]
-dynamic = [
-  "dependencies",
-  "version",
+dynamic = [ "version" ]
+dependencies = [
+  "cachey",
+  "dask",
+  "fastapi>=0.115",
+  "numcodecs",
+  "numpy",
+  "pluggy",
+  "pydantic>=2.5",
+  "toolz",
+  "uvicorn",
+  "xarray>=2025.7",
+  "zarr>=3.0.7",
 ]
 urls."documentation" = "https://xpublish.readthedocs.io/"
 urls."repository" = "https://github.com/xpublish-community/xpublish"
@@ -44,15 +54,37 @@ entry-points."xpublish.plugin".module_version = "xpublish.plugins.included.modul
 entry-points."xpublish.plugin".plugin_info = "xpublish.plugins.included.plugin_info:PluginInfoPlugin"
 entry-points."xpublish.plugin".zarr = "xpublish.plugins.included.zarr:ZarrPlugin"
 
+[dependency-groups]
+dev = [
+  "fsspec",
+  "httpx",
+  "importlib-metadata",
+  "netcdf4",
+  "pooch",
+  "pre-commit",
+  "pytest",
+  "pytest-asyncio",
+  "pytest-cov",
+  "pytest-mock",
+  "pytest-sugar",
+  "requests",
+]
+docs = [
+  "autodoc-pydantic==2.2",
+  "myst-nb",
+  "pydata-sphinx-theme",
+  "sphinx<8",
+  "sphinx-autodoc-typehints",
+  "sphinx-autosummary-accessors",
+  "sphinx-design",
+  "sphinx-github-changelog",
+  "sphinxcontrib-openapi",
+]
+
 [tool.setuptools]
 packages = [
   "xpublish",
 ]
-
-[tool.setuptools.dynamic]
-dependencies = { file = [
-  "requirements.txt",
-] }
 
 [tool.setuptools_scm]
 version_scheme = "post-release"
