@@ -153,7 +153,7 @@ async def test_zmetadata_identical_coords_sorted(
     [
         ('2018-01-01', '2021-01-01', 'MS', 180, 360, True, 'standard', False),
         ('2018-01-01', '2021-01-01', 'D', 180, 360, False, 'noleap', True),
-        ('2018-01-01', '2021-01-01', '6H', 180, 360, True, 'gregorian', False),
+        ('2018-01-01', '2021-01-01', '6h', 180, 360, True, 'gregorian', False),
         ('2018-01-01', '2050-01-01', 'A', 180, 360, None, '360_day', True),
     ],
 )
@@ -215,7 +215,7 @@ See: https://github.com/xpublish-community/xpublish/pull/10#discussion_r38802841
         (
             '2018-01-01',
             '2021-01-01',
-            '12H',
+            '12h',
             180,
             360,
             True,
