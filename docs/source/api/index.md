@@ -140,8 +140,6 @@ passed in to the `Plugin.app_router` or `Plugin.dataset_router` method.
    get_dataset_ids
    get_dataset
    get_cache
-   get_zvariables
-   get_zmetadata
    get_plugins
    get_plugin_manager
 ```
