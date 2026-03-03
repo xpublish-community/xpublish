@@ -31,6 +31,16 @@ sys.path.insert(0, f'{cwd}/_ext')
 
 # -- General configuration -----------------------------------------------------
 
+nitpicky = True
+nitpick_ignore_regex = [
+    # Ignore all Python domain references (py:obj, py:class, py:meth, etc.)
+    # This is far from ideal, but we have a huge number of Python refrence warnings that
+    # need to be fixed, and autosummary makes it hard to deal with them.
+    # By ignoring these, we enable our build to fail on other warnings that we can
+    # more realistically handle now.
+    ('py:.*', r'.*'),
+]
+
 # If your documentation needs a minimal Sphinx version, state it here.
 # needs_sphinx = '1.0'
 
@@ -50,9 +60,13 @@ extensions = [
     'sphinx_autodoc_typehints',
     'sphinx_design',
     'myst_parser',
-    'sphinx_github_changelog',
     'sphinxcontrib.openapi',
 ]
+
+# When a field is not serializable (e.g. callable), we just show the field title and
+# don't raise a warning
+# https://autodoc-pydantic.readthedocs.io/en/stable/users/configuration.html#show-schema-json-error-strategy
+autodoc_pydantic_model_show_json_error_strategy = 'coerce'
 
 myst_enable_extensions = []
 myst_heading_anchors = 6
@@ -133,7 +147,7 @@ pygments_style = 'sphinx'
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3.11/', None),
     'xarray': ('https://xarray.pydata.org/en/stable/', None),
-    # sadly, there is no intersphinx for fastapi docs
+    'fastapi': ('https://fastapi.tiangolo.com/', None),
 }
 
 # -- Options for HTML output ---------------------------------------------------
