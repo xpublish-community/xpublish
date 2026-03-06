@@ -17,11 +17,14 @@ from fastapi import (
     HTTPException,
     Path,
 )
+from xarray.core.datatree import DataTree
 
 from .dependencies import (
     get_cache,
     get_dataset,
     get_dataset_ids,
+    get_datatree,
+    get_datatree_ids,
     get_plugin_manager,
 )
 from .plugins import (
@@ -38,6 +41,7 @@ from .utils.api import (
     check_route_conflicts,
     normalize_app_routers,
     normalize_datasets,
+    normalize_datatrees,
 )
 
 RouterKwargs = Dict
@@ -68,6 +72,8 @@ class Rest:
         cache_kws: Optional[Dict] = None,
         app_kws: Optional[Dict] = None,
         plugins: Optional[Dict[str, Plugin]] = None,
+        *,
+        datatrees: Optional[Dict[str, DataTree]] = None,
     ):
         """Initialize a REST object for publishing Xarray Datasets.
 
@@ -91,6 +97,8 @@ class Rest:
             plugins: Optional dictionary of loaded, configured plugins. Overrides
                 automatic loading of plugins. If no plugins are desired, set to an
                 empty dict.
+            datatrees: A mapping of :class:`xarray.core.datatree.DataTree` objects
+                to be served. Keys become datatree ids, similar to ``datasets``.
         """
         if isinstance(datasets, xr.Dataset):
             raise TypeError(
@@ -99,6 +107,7 @@ class Rest:
             )
 
         self.setup_datasets(datasets or {})
+        self.setup_datatrees(datatrees or {})
         self.setup_plugins(plugins)
 
         normalized_routers: List[Tuple[APIRouter, Dict]] = normalize_app_routers(
@@ -125,6 +134,24 @@ class Rest:
         self._get_dataset_func = self.get_dataset_from_plugins
         self._dataset_route_prefix = '/datasets/{dataset_id}'
         return self._dataset_route_prefix
+
+    def setup_datatrees(self, datatrees: Dict[str, DataTree]) -> None:
+        """Initialize datatrees and datatree accessor function.
+
+        Args:
+            datatrees: Dictionary of datatrees to serve with their names as keys.
+
+        Raises:
+            ValueError: If datatree ids collide with dataset ids.
+        """
+        self._datatrees = normalize_datatrees(datatrees)
+        self._datatree_route_prefix = '/datatrees/{datatree_id}'
+
+        conflicts = set(self._datasets).intersection(self._datatrees)
+        if conflicts:
+            raise ValueError(f"Duplicate ids found between datasets and datatrees: {sorted(conflicts)}")
+
+        self._get_datatree_func = self.get_datatree_from_plugins
 
     def get_datasets_from_plugins(self) -> List[str]:
         """Return dataset ids from directly loaded datasets and plugins.
@@ -172,6 +199,30 @@ class Rest:
             raise HTTPException(status_code=404, detail=f"Dataset '{dataset_id}' not found")
 
         return self._datasets[dataset_id]
+
+    def get_datatrees_from_plugins(self) -> List[str]:
+        """Return datatree ids from directly loaded datatrees and plugins."""
+        datatree_ids = list(self._datatrees)
+
+        for plugin_datatree_ids in self.pm.hook.get_datatrees():
+            datatree_ids.extend(plugin_datatree_ids)
+
+        return datatree_ids
+
+    def get_datatree_from_plugins(
+        self,
+        datatree_id: str = Path(description='Unique ID of datatree'),
+    ) -> DataTree:
+        """Attempts to load datatree from plugins or locally registered datatrees."""
+        datatree = self.pm.hook.get_datatree(datatree_id=datatree_id)
+
+        if datatree:
+            return datatree
+
+        if datatree_id not in self._datatrees:
+            raise HTTPException(status_code=404, detail=f"DataTree '{datatree_id}' not found")
+
+        return self._datatrees[datatree_id]
 
     def setup_plugins(
         self,
@@ -274,7 +325,7 @@ class Rest:
 
     def _init_routers(self, dataset_routers: Optional[APIRouter]) -> None:
         """Setup plugin and dataset routers. Needs to run after dataset and plugin setup."""
-        app_routers, plugin_dataset_routers = self.plugin_routers()
+        app_routers, plugin_dataset_routers, plugin_datatree_routers = self.plugin_routers()
 
         if self._dataset_route_prefix:
             app_routers.append((dataset_collection_router, {'tags': ['info']}))
@@ -285,19 +336,24 @@ class Rest:
             )
         )
 
+        app_routers.extend(
+            normalize_app_routers(plugin_datatree_routers, self._datatree_route_prefix)
+        )
+
         check_route_conflicts(app_routers)
 
         self._app_routers = app_routers
 
-    def plugin_routers(self) -> Tuple[List[RouterAndKwargs], List[RouterAndKwargs]]:
-        """Load the app and dataset routers for plugins.
+    def plugin_routers(self) -> Tuple[List[RouterAndKwargs], List[RouterAndKwargs], List[RouterAndKwargs]]:
+        """Load the app, dataset, and datatree routers for plugins.
 
         Returns:
             A tuple containing a list of top-level routers from plugins
-            and a list of per-dataset routers from plugins
+            and lists of per-dataset and per-datatree routers from plugins
         """
         app_routers = []
         dataset_routers = []
+        datatree_routers = []
 
         deps = self.dependencies()
 
@@ -307,7 +363,10 @@ class Rest:
         for router in self.pm.hook.dataset_router(deps=deps):
             dataset_routers.append((router, {}))
 
-        return app_routers, dataset_routers
+        for router in self.pm.hook.datatree_router(deps=deps):
+            datatree_routers.append((router, {}))
+
+        return app_routers, dataset_routers, datatree_routers
 
     def dependencies(self) -> Dependencies:
         """FastAPI dependencies to pass to plugin router methods.
@@ -318,6 +377,8 @@ class Rest:
         deps = Dependencies(
             dataset_ids=self.get_datasets_from_plugins,
             dataset=self._get_dataset_func,
+            datatree_ids=self.get_datatrees_from_plugins,
+            datatree=self._get_datatree_func,
             cache=lambda: self.cache,
             plugins=lambda: self.plugins,
             plugin_manager=lambda: self.pm,
@@ -331,6 +392,8 @@ class Rest:
 
         self._app.dependency_overrides[get_dataset_ids] = deps.dataset_ids
         self._app.dependency_overrides[get_dataset] = deps.dataset
+        self._app.dependency_overrides[get_datatree_ids] = deps.datatree_ids
+        self._app.dependency_overrides[get_datatree] = deps.datatree
         self._app.dependency_overrides[get_cache] = deps.cache
         self._app.dependency_overrides[get_plugins] = deps.plugins
         self._app.dependency_overrides[get_plugin_manager] = deps.plugin_manager
@@ -427,7 +490,14 @@ class SingleDatasetRest(Rest):
         """
         self._dataset = dataset
 
-        super().__init__({}, routers, cache_kws, app_kws, plugins)
+        super().__init__(
+            datasets={},
+            datatrees=None,
+            routers=routers,
+            cache_kws=cache_kws,
+            app_kws=app_kws,
+            plugins=plugins,
+        )
 
     def setup_datasets(self, datasets) -> str:
         """Modifies dataset loading to instead connect to the single dataset."""

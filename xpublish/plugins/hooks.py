@@ -5,8 +5,17 @@ import pluggy  # type: ignore
 import xarray as xr
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
+from xarray.core.datatree import DataTree
 
-from ..dependencies import get_cache, get_dataset, get_dataset_ids, get_plugin_manager, get_plugins
+from ..dependencies import (
+    get_cache,
+    get_dataset,
+    get_dataset_ids,
+    get_datatree,
+    get_datatree_ids,
+    get_plugin_manager,
+    get_plugins,
+)
 
 # Decorator helper to mark functions as Xpublish hook specifications
 hookspec = pluggy.HookspecMarker('xpublish')
@@ -31,6 +40,14 @@ class Dependencies(BaseModel):
     dataset: Callable[[str], xr.Dataset] = Field(
         get_dataset,
         description='Returns a dataset using ``/<dataset_id>/`` in the path.',
+    )
+    datatree_ids: Callable[..., List[str]] = Field(
+        get_datatree_ids,
+        description='Returns a list of all valid datatree ids',
+    )
+    datatree: Callable[[str], DataTree] = Field(
+        get_datatree,
+        description='Returns a datatree using ``/<datatree_id>/`` in the path.',
     )
     cache: Callable[..., cachey.Cache] = Field(
         get_cache,
@@ -121,6 +138,15 @@ class PluginSpec(Plugin):
         """
 
     @hookspec
+    def datatree_router(self, deps: Dependencies) -> APIRouter:  # type: ignore
+        """Create a datatree router for the plugin.
+
+        Implementations should return an APIRouter, and define
+        datatree_router_prefix, and datatree_router_tags on the class,
+        and use those to initialize the router.
+        """
+
+    @hookspec
     def get_datasets(self) -> Iterable[str]:  # type: ignore
         """Return an iterable of dataset ids that the plugin can provide."""
 
@@ -131,6 +157,15 @@ class PluginSpec(Plugin):
 
         If the plugin does not have the dataset, return None
         """
+
+    @hookspec
+    def get_datatrees(self) -> Iterable[str]:  # type: ignore
+        """Return an iterable of datatree ids that the plugin can provide."""
+
+    @hookspec(firstresult=True)
+    # type: ignore
+    def get_datatree(self, datatree_id: str) -> Optional[DataTree]:
+        """Return a datatree by requested id or None if not handled."""
 
     @hookspec
     def register_hookspec(self):  # type: ignore
