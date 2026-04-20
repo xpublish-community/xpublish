@@ -1,5 +1,7 @@
 import logging
 from typing import Sequence
+import copy
+from numcodecs.abc import Codec
 
 import cachey  # type: ignore
 import xarray as xr
@@ -95,6 +97,13 @@ class ZarrPlugin(Plugin):
 
             # First check that this request wasn't for variable metadata
             if array_meta_key in chunk:
+                compressor=zmetadata['metadata'][f'{var}/{array_meta_key}'].get("compressor")
+                if compressor and isinstance(compressor,Codec):
+                    correct_comprdict=compressor.get_config()
+                    newzmeta=copy.deepcopy(zmetadata['metadata'][f'{var}/{array_meta_key}'])
+                    del newzmeta['compressor']
+                    newzmeta['compressor']=correct_comprdict
+                    return newzmeta
                 return zmetadata['metadata'][f'{var}/{array_meta_key}']
             elif attrs_key in chunk:
                 return JSONResponse(zmetadata['metadata'][f'{var}/{attrs_key}'])
