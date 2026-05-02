@@ -7,6 +7,7 @@ graft xpublish
 prune docs
 prune tests
 prune notebooks
+prune examples
 prune *.egg-info
 
 global-exclude *.nc
