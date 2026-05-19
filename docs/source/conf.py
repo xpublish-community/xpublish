@@ -68,6 +68,14 @@ extensions = [
 # https://autodoc-pydantic.readthedocs.io/en/stable/users/configuration.html#show-schema-json-error-strategy
 autodoc_pydantic_model_show_json_error_strategy = 'coerce'
 
+# Skip rendering the JSON schema collapsible block for pydantic models.
+# Several xpublish models (e.g. Dependencies) hold Callable fields that aren't
+# JSON-serializable; on autodoc_pydantic 2.2.0 + pydantic 2.13 the second
+# invocation of the "coerce" sanitized-model fallback for the same model
+# returns a sibling whose core schema is still a MockCoreSchema and raises
+# `PydanticUserError: <Model> is not fully defined`.
+autodoc_pydantic_model_show_json = False
+
 myst_enable_extensions = []
 myst_heading_anchors = 6
 
