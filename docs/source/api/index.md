@@ -16,7 +16,9 @@ plugins
 ## Top-level Rest class
 
 The {class}`~xpublish.Rest` class can be used for publishing a
-{class}`xarray.Dataset` object or a collection of Dataset objects.
+{class}`xarray.Dataset` or {class}`xarray.DataTree` object, or a collection of either.
+A bare Dataset is wrapped in a single-node DataTree internally so the rest of the
+library operates uniformly on hierarchical data.
 
 The main interfaces to Xpublish that many users may use.
 
@@ -44,6 +46,7 @@ by plugin dependencies.
    Rest.setup_datasets
    Rest.get_datasets_from_plugins
    Rest.get_dataset_from_plugins
+   Rest.get_datatree_from_plugins
    Rest.setup_plugins
    Rest.init_cache_kwargs
    Rest.init_app_kwargs
@@ -120,6 +123,50 @@ dataset. Proper use of this accessor should be like:
    Dataset.rest.serve
 ```
 
+## DataTree.rest (xarray accessor)
+
+The same accessor is registered on {py:class}`xarray.DataTree`, exposing the
+same interface for publishing a single hierarchical tree:
+
+```
+>>> import xarray as xr
+>>> import xpublish
+>>> dt = xr.DataTree()          # or load one with xr.open_datatree(...)
+>>> dt.rest(...)                # configure (optional)
+>>> dt.rest.serve()             # serve the tree
+```
+
+**Calling the accessor**
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated/
+   :template: autosummary/accessor_callable.rst
+
+   DataTree.rest
+```
+
+**Properties**
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated/
+   :template: autosummary/accessor_attribute.rst
+
+   DataTree.rest.app
+   DataTree.rest.cache
+```
+
+**Methods**
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated/
+   :template: autosummary/accessor_method.rst
+
+   DataTree.rest.serve
+```
+
 ## FastAPI dependencies
 
 The functions below are defined in module `xpublish.dependencies` and can
@@ -139,7 +186,13 @@ passed in to the `Plugin.app_router` or `Plugin.dataset_router` method.
 
    get_dataset_ids
    get_dataset
+   get_datatree
    get_cache
    get_plugins
    get_plugin_manager
 ```
+
+When a route declares a `{group_path:path}` segment, `get_dataset` returns
+the Dataset at that node of the underlying DataTree (or the root dataset if no
+`group_path` is present). `get_datatree` returns the subtree rooted at the
+requested group.

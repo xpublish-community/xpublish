@@ -9,6 +9,12 @@ This also allows organizations to quickly be able to adapt Xpublish to work in t
 
 With this plugin, Xpublish can serve the same datasets as we explictly defined and loaded in [serving multiple datasets](./serving-multiple-datasets.md), as well as any others supported by [`xr.tutorial`](https://github.com/pydata/xarray/blob/main/xarray/tutorial.py)
 
+The plugin implements {py:meth}`xpublish.plugins.hooks.PluginSpec.get_datatree` —
+the modern provider hook. The older `get_dataset` hook is still honored for
+backwards compatibility (with a {py:class}`DeprecationWarning`) but new plugins
+should always implement `get_datatree`. See the [DataTrees tutorial](./datatrees.md)
+for the lazy-by-group pattern used by Zarr/Icechunk-backed providers.
+
 ```{note}
 For more details on building dataset provider plugins, please see the [plugin user guide](../../user-guide/plugins.md#dataset-provider-plugins)
 ```

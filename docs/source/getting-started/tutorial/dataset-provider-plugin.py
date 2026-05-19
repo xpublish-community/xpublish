@@ -12,11 +12,17 @@ class TutorialDataset(Plugin):
         return list(xr.tutorial.file_formats)
 
     @hookimpl
-    def get_dataset(self, dataset_id: str):
+    def get_datatree(self, dataset_id: str, group: str):
+        # The xarray tutorial datasets are flat, so we only serve the root.
+        # Note: ``group`` must be a positional parameter (no default) — pluggy
+        # will not forward arguments that have defaults to the hookimpl.
+        if group:
+            return None
         try:
-            return xr.tutorial.open_dataset(dataset_id)
+            ds = xr.tutorial.open_dataset(dataset_id)
         except HTTPError:
             return None
+        return xr.DataTree(dataset=ds)
 
 
 rest = Rest({})

@@ -109,8 +109,8 @@ to discuss including it in a future version.
 ```
 
 In the specification, Xpublish defines if it's supposed to get responses from all
-implementations ({py:meth}`xpublish.plugins.hooks.PluginSpec.get_dataset_ids`),
-or the first non-`None` response ({py:meth}`xpublish.plugins.hooks.PluginSpec.get_dataset`).
+implementations ({py:meth}`xpublish.plugins.hooks.PluginSpec.get_datasets`),
+or the first non-`None` response ({py:meth}`xpublish.plugins.hooks.PluginSpec.get_datatree`).
 
 Pluggy also provides a lot more advanced functionality that we aren't going to go
 into at this point, but could allow for creative things like dataset middleware.
@@ -202,7 +202,51 @@ class DatasetAttrs(Plugin):
 ```
 
 {py:class}`xpublish.Dependencies` has several other types of dependency functions that
-it includes.
+it includes — notably {py:meth}`xpublish.Dependencies.datatree`, which returns
+the full {py:class}`xarray.DataTree` for the resolved dataset id.
+
+#### Hierarchical data and the `{group_path:path}` URL convention
+
+Internally, Xpublish stores every published object as an {py:class}`xarray.DataTree`
+(a bare {py:class}`xarray.Dataset` is wrapped in a single-node tree). Routes can
+opt in to per-node navigation by including a `{group_path:path}` segment in their
+path. When present, both {py:meth}`Dependencies.dataset` and
+{py:meth}`Dependencies.datatree` read it automatically:
+
+```python
+from fastapi import APIRouter, Depends
+from xpublish import Plugin, Dependencies, hookimpl
+
+
+class GroupAware(Plugin):
+    name: str = "group-aware"
+
+    @hookimpl
+    def dataset_router(self, deps: Dependencies):
+        router = APIRouter()
+
+        # Root-only: serves the dataset at the root node.
+        @router.get("/attrs")
+        def root_attrs(ds=Depends(deps.dataset)):
+            return ds.attrs
+
+        # Group-aware: ``{group_path:path}`` is optional/empty for root.
+        # ``deps.dataset`` returns the Dataset at that node.
+        @router.get("/groups/{group_path:path}/attrs")
+        def group_attrs(ds=Depends(deps.dataset)):
+            return ds.attrs
+
+        # Or operate on the full subtree directly.
+        @router.get("/tree")
+        def tree(dt=Depends(deps.datatree)):
+            return dt.groups
+
+        return router
+```
+
+Plugins that don't include `{group_path:path}` will only ever see the root
+dataset — that's the back-compat path, so flat-dataset plugins keep working
+unchanged when a DataTree is published.
 
 ## Dataset Router Plugins
 
@@ -280,28 +324,47 @@ This will return a dictionary of plugin names, and types at `/info/plugins`.
 While Xpublish can have datasets passed in to {py:class}`xpublish.Rest` on intialization,
 plugins can provide datasets (and they actually have priority over those passed in directly).
 
-In order for a plugin to provide datasets it needs to implemenent
+In order for a plugin to provide datasets it needs to implement
 {py:meth}`xpublish.plugins.hooks.PluginSpec.get_datasets`
-and {py:meth}`xpublish.plugins.hooks.PluginSpec.get_dataset` methods.
+and {py:meth}`xpublish.plugins.hooks.PluginSpec.get_datatree`.
 
-The first should return a list of all datasets that a plugin knows about.
+The first should return a list of all dataset ids that the plugin knows about.
 
-The second is provided a `dataset_id`.
-The plugin should return a dataset if it knows about the dataset corresponding to the id,
-otherwise it should return None, so that Xpublish knows to continue looking to the next
-plugin or the passed in dictionary of datasets.
+The second is provided a `dataset_id` and a `group` path. The plugin should return
+an {py:class}`xarray.DataTree` if it knows about the requested dataset/group, otherwise
+`None` so that Xpublish continues looking to the next plugin or the directly-registered
+datasets. The returned tree's **root** corresponds to the requested `group`.
 
-```{warning}
-When creating a dataset provider, you need to set a unique `_xpublish_id` attribute (use `DATASET_ID_ATTR_KEY` from `xpublish.utils.api`) on each dataset for routers to manage caching appropriately. See the `assign_attrs` call below for an example.
-
-We suggest including the plugin name as part of the attribute to help uniqueness.
-```
-
-A plugin that provides the Xarray tutorial `air_temperature` dataset.
+````{important}
+**Pluggy gotcha:** [Pluggy](https://pluggy.readthedocs.io/) does **not** forward
+arguments that have a default value in the hookimpl signature. Always declare
+`group` as a positional parameter (no default) on your `get_datatree`
+implementation, or it will silently receive an empty string regardless of the URL.
 
 ```python
+# ✅ Right — `group` is positional
+@hookimpl
+def get_datatree(self, dataset_id: str, group: str):
+    ...
+
+
+# ❌ Wrong — pluggy drops `group`, you'll only ever see the root
+@hookimpl
+def get_datatree(self, dataset_id: str, group: str = ""):
+    ...
+```
+
+Pass an empty `group` to mean "the root of the tree".
+````
+
+### Example: simple (eager) provider
+
+A plugin that publishes the Xarray tutorial `air_temperature` dataset as a single-node
+tree:
+
+```python
+import xarray as xr
 from xpublish import Plugin, hookimpl
-from xpublish.utils.api import DATASET_ID_ATTR_KEY
 
 
 class TutorialDataset(Plugin):
@@ -312,13 +375,52 @@ class TutorialDataset(Plugin):
         return ["air"]
 
     @hookimpl
-    def get_dataset(self, dataset_id: str):
-        if dataset_id == "air":
-            return xr.tutorial.open_dataset("air_temperature").assign_attrs(
-                {DATASET_ID_ATTR_KEY: f"{self.name}_air"}
-            )
+    def get_datatree(self, dataset_id: str, group: str):
+        if dataset_id != "air":
+            return None
+        if group:
+            # We only serve a flat dataset; no sub-groups exist.
+            return None
+        return xr.DataTree(dataset=xr.tutorial.open_dataset("air_temperature"))
+```
 
-        return None
+### Example: lazy-by-group provider
+
+For backends like Zarr v3 or Icechunk where opening the full tree is expensive,
+implement `get_datatree` so it opens only the requested group and wraps it in
+a single-node tree:
+
+```python
+import xarray as xr
+from xpublish import Plugin, hookimpl
+
+
+class IcechunkProvider(Plugin):
+    name: str = "icechunk"
+
+    @hookimpl
+    def get_datasets(self):
+        return list(self._known_repos)
+
+    @hookimpl
+    def get_datatree(self, dataset_id: str, group: str):
+        store = self._store_for(dataset_id)
+        if store is None:
+            return None
+        ds = xr.open_zarr(store, group=group or None, consolidated=False)
+        return xr.DataTree(dataset=ds)
+```
+
+This keeps the provider efficient — the request only ever opens the single group
+being viewed.
+
+### Legacy `get_dataset` hook (deprecated)
+
+```{warning}
+{py:meth}`xpublish.plugins.hooks.PluginSpec.get_dataset` is **deprecated** and
+emits a {py:class}`DeprecationWarning` when registered. The returned Dataset is
+wrapped in a single-node DataTree, so only the root group is reachable through
+it. Migrate to `get_datatree` to expose hierarchical data.
 ```
 
 ## Hook Spec Plugins

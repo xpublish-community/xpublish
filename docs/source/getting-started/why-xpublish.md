@@ -4,7 +4,7 @@ Xarray provides an intuitive API on top of a foundational data model, labeled ar
 This API and data model has formed the basis for a large and growing ecosystem of tools.
 
 Xpublish stands on the shoulders of Xarray and the greater PyData ecosystem enabling both new and old users, interactions, and clients.
-Xpublish does this by using Xarray datasets as the core data interchange format within the server, and surrounding that with an ecosystem of plugins.
+Xpublish does this by using Xarray datasets and DataTrees as the core data interchange format within the server, and surrounding that with an ecosystem of plugins.
 
 ```{warning} Hold on to your hats, we're about to say Xpublish a lot
 <div style='position:relative; padding-bottom:calc(75.00% + 44px)'><iframe src='https://gfycat.com/ifr/ShadowyHoarseInganue' frameborder='0' scrolling='no' width='100%' height='100%' style='position:absolute;top:0;left:0;' allowfullscreen></iframe></div><p> <a href="https://gfycat.com/shadowyhoarseinganue">via Gfycat</a></p>
