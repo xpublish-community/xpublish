@@ -13,16 +13,16 @@ end-before: <!-- badges-end -->
 
 ````{grid} 3
 
-```{grid-item-card} A quick way to serve a single Xarray dataset over HTTP using FastAPI
+```{grid-item-card} A quick way to serve a single Xarray Dataset or DataTree over HTTP using FastAPI
 :link: getting-started/tutorial/introduction
 
-Get started with `ds.rest.serve()` to explore serving data with Xpublish
+Get started with `ds.rest.serve()` or `dt.rest.serve()` to explore serving flat or hierarchical data with Xpublish
 ```
 
 ```{grid-item-card} An extendable core of a dataset server
 :link: getting-started/why-xpublish
 
-By building a server based around Xarray datasets, we can build on top of the rapid progress of Xarray and the greater PyData ecosystem.
+By building a server around Xarray's Dataset and DataTree types, we can build on top of the rapid progress of Xarray and the greater PyData ecosystem — including native support for hierarchical Zarr/Icechunk data.
 ```
 
 ```{grid-item-card} A community and ecosystem of plugins, servers, and their builders and users
@@ -37,6 +37,7 @@ Explore the [Xpublish ecosystem](./ecosystem/index.md).
 
 - [Quickly serve a single dataset for my own use](getting-started/tutorial/introduction)
 - Serve a collection of datasets with pre-configured server
+- [Serve a hierarchical DataTree and navigate its groups over HTTP](getting-started/tutorial/datatrees)
 - [Build plugins to serve datasets in new ways](getting-started/tutorial/dataset-router-plugin)
 - [Connect to a new source of datasets](getting-started/tutorial/dataset-provider-plugin)
 - [Discuss Xpublish with others](ecosystem/index.md#connect)
@@ -84,8 +85,9 @@ The contributing guidelines will guide you through the process of improving Xpub
 
 _You can run a short example application in a live session here:_ [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/xpublish-community/xpublish/master)
 
-On the server-side, one or more datasets can be published using the
-{class}`xpublish.Rest` class or the {attr}`xarray.Dataset.rest` accessor, e.g.,
+On the server-side, one or more datasets or DataTrees can be published using
+the {class}`xpublish.Rest` class, the {attr}`xarray.Dataset.rest` accessor, or
+the {attr}`xarray.DataTree.rest` accessor, e.g.,
 
 ```{include} ../../README.md
 ---
