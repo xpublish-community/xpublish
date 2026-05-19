@@ -5,9 +5,8 @@ from fastapi import FastAPI
 from .rest import SingleDatasetRest
 
 
-@xr.register_dataset_accessor('rest')
-class RestAccessor:
-    """REST API Accessor for serving one dataset via a dedicated FastAPI app."""
+class _BaseRestAccessor:
+    """Shared implementation for the Dataset and DataTree REST accessors."""
 
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
@@ -59,3 +58,13 @@ class RestAccessor:
             **kwargs: Arguments passed to :func:`xpublish.SingleDatasetRest.serve`.
         """
         self._get_rest_obj().serve(**kwargs)
+
+
+@xr.register_dataset_accessor('rest')
+class RestAccessor(_BaseRestAccessor):
+    """REST API Accessor for serving one Dataset via a dedicated FastAPI app."""
+
+
+@xr.register_datatree_accessor('rest')
+class DataTreeRestAccessor(_BaseRestAccessor):
+    """REST API Accessor for serving one DataTree via a dedicated FastAPI app."""

@@ -32,6 +32,10 @@ def get_dataset(dataset_id: str) -> xr.Dataset:
     Use this callable as dependency in any FastAPI path operation
     function where you need access to the xarray Dataset being served.
 
+    When the route includes a ``{group_path:path}`` path parameter,
+    the dataset at that node of the underlying DataTree is returned.
+    Otherwise the dataset at the root node is returned.
+
     This dummy dependency will be overridden when creating the FastAPI
     application.
 
@@ -44,6 +48,30 @@ def get_dataset(dataset_id: str) -> xr.Dataset:
 
     """
     return xr.Dataset()  # pragma: no cover
+
+
+def get_datatree(dataset_id: str) -> xr.DataTree:
+    """FastAPI dependency for accessing the published xarray DataTree object.
+
+    Use this callable as dependency in any FastAPI path operation function
+    where you need access to the xarray DataTree being served.
+
+    When the route includes a ``{group_path:path}`` path parameter, the
+    DataTree returned is rooted at that group. Otherwise the full tree
+    associated with the dataset_id is returned.
+
+    This dummy dependency will be overridden when creating the FastAPI
+    application.
+
+    Parameters:
+        dataset_id:
+            Unique path-safe key identifying dataset
+
+    Returns:
+        Requested Xarray DataTree
+
+    """
+    return xr.DataTree()  # pragma: no cover
 
 
 def get_cache() -> cachey.Cache:

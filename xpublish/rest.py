@@ -16,12 +16,14 @@ from fastapi import (
     FastAPI,
     HTTPException,
     Path,
+    Request,
 )
 
 from .dependencies import (
     get_cache,
     get_dataset,
     get_dataset_ids,
+    get_datatree,
     get_plugin_manager,
 )
 from .plugins import (
@@ -46,7 +48,10 @@ LogLevels = Literal['critical', 'error', 'warning', 'info', 'debug', 'trace']
 
 
 class Rest:
-    """Used to publish multiple Xarray Datasets via a REST API (FastAPI application).
+    """Used to publish multiple Xarray Datasets / DataTrees via a REST API (FastAPI application).
+
+    Internally everything is stored as a :py:class:`xarray.DataTree`; a bare
+    :py:class:`xarray.Dataset` is wrapped in a single-node tree.
 
     To publish a single dataset via its own FastAPI application, you might
     want to use the :attr:`xarray.Dataset.rest` accessor for more convenience.
@@ -59,22 +64,27 @@ class Rest:
     where ``{dataset_id}`` corresponds to the keys of the mapping (converted to
     strings). Still in the latter case, the endpoint ``/datasets`` is added and
     returns the list of all dataset ids.
+
+    Routes can additionally use a ``{group_path:path}`` path parameter to
+    navigate into a node of the underlying DataTree; the built-in
+    ``deps.dataset`` and ``deps.datatree`` dependencies read it automatically.
     """
 
     def __init__(
         self,
-        datasets: Optional[Dict[str, xr.Dataset]] = None,
+        datasets: Optional[Dict[str, Union[xr.Dataset, xr.DataTree]]] = None,
         routers: Optional[List[APIRouter]] = None,
         cache_kws: Optional[Dict] = None,
         app_kws: Optional[Dict] = None,
         plugins: Optional[Dict[str, Plugin]] = None,
     ):
-        """Initialize a REST object for publishing Xarray Datasets.
+        """Initialize a REST object for publishing Xarray Datasets / DataTrees.
 
         Args:
-            datasets: A mapping of datasets objects to be served. If a mapping is
-                given, keys are used as dataset ids and are converted to strings.
-                See also the notes below.
+            datasets: A mapping of dataset or DataTree objects to be served. Keys
+                are used as dataset ids (converted to strings). Bare Datasets are
+                wrapped in a single-node DataTree internally. See also the notes
+                below.
             routers: A list of dataset-specific :class:`fastapi.APIRouter`
                 instances to include in the fastAPI application. These routers are
                 in addition to any loaded via plugins. The items of the list may
@@ -92,9 +102,9 @@ class Rest:
                 automatic loading of plugins. If no plugins are desired, set to an
                 empty dict.
         """
-        if isinstance(datasets, xr.Dataset):
+        if isinstance(datasets, (xr.Dataset, xr.DataTree)):
             raise TypeError(
-                'xpublish.Rest no longer directly handles single datasets. '
+                'xpublish.Rest no longer directly handles single datasets or DataTrees. '
                 'Please use xpublish.SingleDatasetRest instead'
             )
 
@@ -111,11 +121,18 @@ class Rest:
         self.init_app_kwargs(app_kws)
         self.init_cache_kwargs(cache_kws)
 
-    def setup_datasets(self, datasets: Dict[str, xr.Dataset]) -> str:
-        """Initialize datasets and dataset accessor function.
+    def setup_datasets(
+        self,
+        datasets: Dict[str, Union[xr.Dataset, xr.DataTree]],
+    ) -> str:
+        """Initialize datasets and dataset accessor functions.
+
+        Bare :py:class:`xarray.Dataset` values are wrapped in a single-node
+        :py:class:`xarray.DataTree` so the internal storage is uniform.
 
         Args:
-            datasets: Dictionary of datasets to serve with their names as keys.
+            datasets: Dictionary of datasets/DataTrees to serve with their
+                names as keys.
 
         Returns:
             Prefix for dataset routers
@@ -123,6 +140,7 @@ class Rest:
         self._datasets = normalize_datasets(datasets)
 
         self._get_dataset_func = self.get_dataset_from_plugins
+        self._get_datatree_func = self.get_datatree_from_plugins
         self._dataset_route_prefix = '/datasets/{dataset_id}'
         return self._dataset_route_prefix
 
@@ -143,35 +161,99 @@ class Rest:
 
         return dataset_ids
 
+    @staticmethod
+    def _group_path_from_request(request: Optional[Request]) -> str:
+        """Extract a ``group_path`` from the FastAPI request path params.
+
+        Returns an empty string if the route does not declare ``group_path``.
+        Leading slashes are stripped so the returned value is suitable for
+        :py:meth:`xarray.DataTree.__getitem__`.
+        """
+        if request is None:
+            return ''
+        return (request.path_params.get('group_path') or '').strip('/')
+
+    def _resolve_datatree(self, dataset_id: str, group: str) -> xr.DataTree:
+        """Resolve a (dataset_id, group) pair to an :py:class:`xarray.DataTree`.
+
+        Tries ``get_datatree`` plugin hooks first, then falls back to the
+        deprecated ``get_dataset`` hook (for backwards compat), then the
+        directly registered datasets.
+
+        Raises:
+            FastAPI.HTTPException: 404 if the dataset_id is unknown, or if the
+                group does not exist within the resolved tree.
+        """
+        tree: Optional[xr.DataTree] = self.pm.hook.get_datatree(
+            dataset_id=dataset_id, group=group,
+        )
+
+        if tree is None:
+            legacy_ds: Optional[xr.Dataset] = self.pm.hook.get_dataset(dataset_id=dataset_id)
+            if legacy_ds is not None:
+                if group:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=(
+                            f"Group '{group}' not found in dataset '{dataset_id}' "
+                            '(provider only implements the legacy get_dataset hook)'
+                        ),
+                    )
+                tree = xr.DataTree(dataset=legacy_ds)
+
+        if tree is None:
+            if dataset_id not in self._datasets:
+                raise HTTPException(
+                    status_code=404, detail=f"Dataset '{dataset_id}' not found",
+                )
+            full_tree = self._datasets[dataset_id]
+            try:
+                tree = full_tree[group] if group else full_tree
+            except KeyError:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Group '{group}' not found in dataset '{dataset_id}'",
+                )
+
+        root_ds = tree.dataset
+        if root_ds.attrs.get(DATASET_ID_ATTR_KEY) is None:
+            tree.dataset = root_ds.assign_attrs({DATASET_ID_ATTR_KEY: dataset_id})
+
+        return tree
+
+    def get_datatree_from_plugins(
+        self,
+        request: Request,
+        dataset_id: str = Path(description='Unique ID of dataset'),
+    ) -> xr.DataTree:
+        """Resolve a DataTree by dataset_id (and optional ``{group_path}`` route param)."""
+        group = self._group_path_from_request(request)
+        return self._resolve_datatree(dataset_id, group)
+
     def get_dataset_from_plugins(
         self,
+        request: Request,
         dataset_id: str = Path(description='Unique ID of dataset'),
     ) -> xr.Dataset:
-        """Attempts to load dataset from plugins.
+        """Resolve a Dataset by dataset_id (and optional ``{group_path}`` route param).
 
-        Otherwise return dataset from passed in dictionary of datasets.
+        Returns the dataset at the requested group (or root if none).
 
         Args:
             dataset_id: Unique key of dataset to attempt to load from plugins or
                 those provided to :class:`xpublish.Rest` at initialization.
+            request: Injected by FastAPI; used to read the optional
+                ``group_path`` path parameter from the route.
 
         Returns:
-            Dataset for selected ``dataset_id``.
+            Dataset for the selected ``dataset_id`` (at the selected group node).
 
         Raises:
-            FastAPI.HTTPException: When a dataset is not found a 404 error is returned.
+            FastAPI.HTTPException: When the dataset or group is not found.
         """
-        dataset = self.pm.hook.get_dataset(dataset_id=dataset_id)
-
-        if dataset:
-            if dataset.attrs.get(DATASET_ID_ATTR_KEY, None) is None:
-                dataset.attrs[DATASET_ID_ATTR_KEY] = dataset_id
-            return dataset
-
-        if dataset_id not in self._datasets:
-            raise HTTPException(status_code=404, detail=f"Dataset '{dataset_id}' not found")
-
-        return self._datasets[dataset_id]
+        group = self._group_path_from_request(request)
+        tree = self._resolve_datatree(dataset_id, group)
+        return tree.dataset
 
     def setup_plugins(
         self,
@@ -318,6 +400,7 @@ class Rest:
         deps = Dependencies(
             dataset_ids=self.get_datasets_from_plugins,
             dataset=self._get_dataset_func,
+            datatree=self._get_datatree_func,
             cache=lambda: self.cache,
             plugins=lambda: self.plugins,
             plugin_manager=lambda: self.pm,
@@ -331,6 +414,7 @@ class Rest:
 
         self._app.dependency_overrides[get_dataset_ids] = deps.dataset_ids
         self._app.dependency_overrides[get_dataset] = deps.dataset
+        self._app.dependency_overrides[get_datatree] = deps.datatree
         self._app.dependency_overrides[get_cache] = deps.cache
         self._app.dependency_overrides[get_plugins] = deps.plugins
         self._app.dependency_overrides[get_plugin_manager] = deps.plugin_manager
@@ -391,14 +475,14 @@ class Rest:
 
 
 class SingleDatasetRest(Rest):
-    """Used to publish a single Xarray dataset via a REST API (FastAPI application).
+    """Used to publish a single Xarray Dataset or DataTree via a REST API (FastAPI application).
 
     Use :class:`xpublish.Rest` to publish multiple datasets.
     """
 
     def __init__(
         self,
-        dataset: xr.Dataset,
+        dataset: Union[xr.Dataset, xr.DataTree],
         routers: Optional[List[APIRouter]] = None,
         cache_kws: Optional[Dict] = None,
         app_kws: Optional[Dict] = None,
@@ -407,7 +491,9 @@ class SingleDatasetRest(Rest):
         """Initialize the SingleDatasetRest object.
 
         Args:
-            dataset: A single :class:`xarray.Dataset` object to be served.
+            dataset: A single :class:`xarray.Dataset` or :class:`xarray.DataTree`
+                object to be served. A Dataset is wrapped in a single-node
+                DataTree internally.
             routers: A list of dataset-specific :class:`fastapi.APIRouter`
                 instances to include in the fastAPI application. These routers are
                 in addition to any loaded via plugins. The items of the list may
@@ -425,16 +511,34 @@ class SingleDatasetRest(Rest):
                 automatic loading of plugins. If no plugins are desired, set to an
                 empty dict.
         """
-        self._dataset = dataset
+        if isinstance(dataset, xr.DataTree):
+            self._tree = dataset
+        else:
+            self._tree = xr.DataTree(dataset=dataset)
 
         super().__init__({}, routers, cache_kws, app_kws, plugins)
 
     def setup_datasets(self, datasets) -> str:
-        """Modifies dataset loading to instead connect to the single dataset."""
+        """Modifies dataset loading to instead connect to the single dataset/DataTree."""
         self._dataset_route_prefix = ''
         self._datasets = {}
 
-        self._get_dataset_func = lambda: self._dataset
+        def _single_datatree(request: Request) -> xr.DataTree:
+            group = self._group_path_from_request(request)
+            if not group:
+                return self._tree
+            try:
+                return self._tree[group]
+            except KeyError:
+                raise HTTPException(
+                    status_code=404, detail=f"Group '{group}' not found",
+                )
+
+        def _single_dataset(request: Request) -> xr.Dataset:
+            return _single_datatree(request).dataset
+
+        self._get_dataset_func = _single_dataset
+        self._get_datatree_func = _single_datatree
 
         return self._dataset_route_prefix
 

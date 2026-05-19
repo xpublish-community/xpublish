@@ -144,7 +144,7 @@ def test_init_app_kws(airtemp_ds):
 
 @pytest.mark.parametrize('datasets', ['not_a_dataset_obj', {'ds': 'not_a_dataset_obj'}])
 def test_init_dataset_type_error(datasets):
-    with pytest.raises(TypeError, match='Can only publish.*Dataset objects'):
+    with pytest.raises(TypeError, match='Can only publish.*Dataset'):
         Rest(datasets)
 
 
@@ -341,17 +341,17 @@ def test_array_group_raises_404(airtemp_app_client):
 
 
 def test_cache(airtemp_ds):
-    rest = SingleDatasetRest(airtemp_ds, cache_kws={'available_bytes': 1e9})
+    rest = Rest({'airtemp': airtemp_ds}, cache_kws={'available_bytes': 1e9})
     assert rest.cache.available_bytes == 1e9
 
     client = TestClient(rest.app)
 
-    response1 = client.get('/zarr/air/0.0.0')
+    response1 = client.get('/datasets/airtemp/zarr/air/0.0.0')
     assert response1.status_code == 200
     assert 'airtemp/air/0.0.0' in rest.cache
 
     # test that we can retrieve
-    response2 = client.get('/zarr/air/0.0.0')
+    response2 = client.get('/datasets/airtemp/zarr/air/0.0.0')
     assert response2.status_code == 200
     assert response1.content == response2.content
 

@@ -29,7 +29,7 @@ def test_single_dataset_raise(airtemp_ds):
     with pytest.raises(TypeError) as excinfo:
         xpublish.Rest(airtemp_ds)
     excinfo.match(
-        'xpublish.Rest no longer directly handles single datasets. Please use xpublish.SingleDatasetRest instead'
+        'xpublish.Rest no longer directly handles single datasets or DataTrees. Please use xpublish.SingleDatasetRest instead'
     )
 
 
