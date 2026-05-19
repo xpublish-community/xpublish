@@ -185,7 +185,8 @@ class Rest:
                 group does not exist within the resolved tree.
         """
         tree: Optional[xr.DataTree] = self.pm.hook.get_datatree(
-            dataset_id=dataset_id, group=group,
+            dataset_id=dataset_id,
+            group=group,
         )
 
         if tree is None:
@@ -204,16 +205,17 @@ class Rest:
         if tree is None:
             if dataset_id not in self._datasets:
                 raise HTTPException(
-                    status_code=404, detail=f"Dataset '{dataset_id}' not found",
+                    status_code=404,
+                    detail=f"Dataset '{dataset_id}' not found",
                 )
             full_tree = self._datasets[dataset_id]
             try:
                 tree = full_tree[group] if group else full_tree
-            except KeyError:
+            except KeyError as err:
                 raise HTTPException(
                     status_code=404,
                     detail=f"Group '{group}' not found in dataset '{dataset_id}'",
-                )
+                ) from err
 
         root_ds = tree.dataset
         if root_ds.attrs.get(DATASET_ID_ATTR_KEY) is None:
@@ -529,10 +531,11 @@ class SingleDatasetRest(Rest):
                 return self._tree
             try:
                 return self._tree[group]
-            except KeyError:
+            except KeyError as err:
                 raise HTTPException(
-                    status_code=404, detail=f"Group '{group}' not found",
-                )
+                    status_code=404,
+                    detail=f"Group '{group}' not found",
+                ) from err
 
         def _single_dataset(request: Request) -> xr.Dataset:
             return _single_datatree(request).dataset

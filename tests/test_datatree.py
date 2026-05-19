@@ -23,10 +23,10 @@ from xpublish import Plugin, Rest, SingleDatasetRest, hookimpl
 def simple_tree() -> xr.DataTree:
     """A small DataTree:
 
-        /          (no vars)
-        /a         (x[0..2])
-        /a/b       (y[0..1])
-        /c         (z[0..3])
+    /          (no vars)
+    /a         (x[0..2])
+    /a/b       (y[0..1])
+    /c         (z[0..3])
     """
     root = xr.DataTree(name='root')
     root['a'] = xr.DataTree(dataset=xr.Dataset({'x': ('i', [1, 2, 3])}))
@@ -161,7 +161,9 @@ def test_get_datatree_provider(simple_tree):
 
         @hookimpl
         def get_datatree(
-            self, dataset_id: str, group: str,
+            self,
+            dataset_id: str,
+            group: str,
         ) -> Optional[xr.DataTree]:
             if dataset_id != 'provided':
                 return None
@@ -204,7 +206,9 @@ def test_lazy_get_datatree_provider():
 
         @hookimpl
         def get_datatree(
-            self, dataset_id: str, group: str,
+            self,
+            dataset_id: str,
+            group: str,
         ) -> Optional[xr.DataTree]:
             if dataset_id != 'lazy':
                 return None
