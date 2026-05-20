@@ -32,24 +32,7 @@ ds.rest.serve(host="0.0.0.0", port=9000)
 
 <!-- client-example-start -->
 
-The published datasets can be accessed from various kinds of client applications, e.g., from within Python using Zarr and fsspec.
-
-```python
-import xarray as xr
-import zarr
-from fsspec.implementations.http import HTTPFileSystem
-
-fs = HTTPFileSystem()
-http_map = fs.get_mapper("http://0.0.0.0:9000/zarr/")
-
-# open as a zarr group
-zg = zarr.open_consolidated(http_map, mode="r")
-
-# or open as another Xarray Dataset
-ds = xr.open_zarr(http_map, consolidated=True)
-```
-
-Or to explore other access methods, open [http://0.0.0.0:9000/docs](http://0.0.0.0:9000/docs) in a browser.
+The published datasets can be accessed from various kinds of client applications, including any HTTP client. To explore the available endpoints, open [http://0.0.0.0:9000/docs](http://0.0.0.0:9000/docs) in a browser.
 
 <!-- client-example-end -->
 
@@ -64,15 +47,10 @@ Xpublish's [plugin ecosystem](https://xpublish.readthedocs.io/en/latest/ecosyste
 
 - publish on-demand or derived data products
 - turning xarray objects into streaming services (e.g. OPeNDAP)
+- Zarr-compatible access via [xpublish-zarr](https://github.com/xpublish-community/xpublish-zarr)
 
 ## How?
 
 Under the hood, Xpublish is using a web app (FastAPI) that is exposing a
-REST-like API with builtin and/or user-defined endpoints.
-
-For example, Xpublish provides by default a minimal Zarr compatible REST-like API with the following endpoints:
-
-- `zarr/.zmetadata`: returns Zarr-formatted metadata keys as json strings.
-- `zarr/var/0.0.0`: returns a variable data chunk as a binary string.
-
-Futher endpoints can be added by installing or writing plugins.
+REST-like API with builtin and/or user-defined endpoints. Additional
+endpoints can be added by installing or writing plugins.

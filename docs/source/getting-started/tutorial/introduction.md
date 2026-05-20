@@ -71,11 +71,8 @@ endpoints to get some information about the published dataset:
 - `/dict`: returns a JSON dictionary of the full dataset.
 - `/versions`: returns JSON dictionary of the versions of Python, Xarray and related libraries on the server side, similar to {func}`xarray.show_versions`.
 
-The application also provides data access through a [Zarr] compatible API with the
-following endpoints:
-
-- `/zarr/.zmetadata`: returns a JSON dictionary representing the consolidated Zarr metadata.
-- `/zarr/{var}/{key}`: returns a single chunk of an array.
+Additional data access endpoints (such as Zarr-compatible access via
+[xpublish-zarr]) can be added by installing or writing plugins.
 
 ### API Docs
 
@@ -87,26 +84,8 @@ dictionary argument when initializing the rest accessor.
 
 ## Client-Side
 
-By default, datasets served by Xpublish can be opened by any Zarr client
-that implements an HTTPStore. In Python, this can be done with `fsspec`:
-
-```python
-import zarr
-from fsspec.implementations.http import HTTPFileSystem
-
-fs = HTTPFileSystem()
-
-# The URL 'http://0.0.0.0:9000/zarr/' here serves one dataset
-http_map = fs.get_mapper("http://0.0.0.0:9000/zarr/")
-
-# open as a zarr group
-zg = zarr.open_consolidated(http_map, mode="r")
-
-# or open as another Xarray Dataset
-ds = xr.open_zarr(http_map, consolidated=True)
-```
-
-Xpublish's endpoints can also be queried programmatically. For example:
+Xpublish's endpoints can be queried programmatically with any HTTP client.
+For example:
 
 ```python
 import requests
@@ -116,4 +95,4 @@ response = requests.get("http://0.0.0.0:9000/info").json()
 
 [swagger ui]: https://github.com/swagger-api/swagger-ui
 [uvicorn docs]: https://www.uvicorn.org/deployment/#running-programmatically
-[zarr]: https://zarr.readthedocs.io/en/stable/
+[xpublish-zarr]: https://github.com/xpublish-community/xpublish-zarr

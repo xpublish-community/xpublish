@@ -53,18 +53,3 @@ Similarly the versions of the plugins currently enabled on the Xpublish server.
    :include:
     /plugins
 ```
-
-## Zarr
-
-The Zarr plugin provides consolidated Zarr v2 access to the loaded datasets.
-
-```{eval-rst}
-.. autosummary::
-   :toctree: generated/
-
-   plugins.included.zarr.ZarrPlugin
-
-.. openapi:: ./openapi.json
-   :include:
-    /datasets/{dataset_id}/zarr/*
-```

@@ -1,12 +1,26 @@
-from typing import Sequence
+from typing import Any, Sequence
 
+import numpy as np
 import xarray as xr
 from fastapi import APIRouter, Depends
 from starlette.responses import HTMLResponse  # type: ignore
 
-from xpublish.utils.api import JSONResponse
+from xpublish.utils.api import DATASET_ID_ATTR_KEY, JSONResponse
 
 from .. import Dependencies, Plugin, hookimpl
+
+
+def _jsonable(value: Any) -> Any:
+    """Convert numpy/array-like values into JSON-serializable Python types."""
+    if isinstance(value, np.ndarray):
+        return [_jsonable(v) for v in value.tolist()]
+    if isinstance(value, np.generic):
+        return value.item()
+    if isinstance(value, (list, tuple)):
+        return [_jsonable(v) for v in value]
+    if isinstance(value, dict):
+        return {k: _jsonable(v) for k, v in value.items()}
+    return value
 
 
 class DatasetInfoPlugin(Plugin):
@@ -49,31 +63,22 @@ class DatasetInfoPlugin(Plugin):
         @router.get('/info')
         def info(
             dataset=Depends(deps.dataset),
-            cache=Depends(deps.cache),
         ) -> dict:
             """Dataset schema (close to the NCO-JSON schema)."""
-            from ...utils.zarr import attrs_key, get_zmetadata, get_zvariables  # type: ignore
-
-            zvariables = get_zvariables(dataset, cache)
-            zmetadata = get_zmetadata(dataset, cache, zvariables)
-
-            info = {}
+            info: dict = {}
             info['dimensions'] = dict(dataset.dims.items())
             info['variables'] = {}
 
-            meta = zmetadata['metadata']
-
-            for name, var in zvariables.items():
-                attrs = meta[f'{name}/{attrs_key}'].copy()
-                attrs.pop('_ARRAY_DIMENSIONS')
-
+            for name, var in dataset.variables.items():
                 info['variables'][name] = {
-                    'type': var.data.dtype.name,
+                    'type': var.dtype.name,
                     'dimensions': list(var.dims),
-                    'attributes': attrs,
+                    'attributes': _jsonable(dict(var.attrs)),
                 }
 
-            info['global_attributes'] = meta[attrs_key]
+            global_attrs = dict(dataset.attrs)
+            global_attrs.pop(DATASET_ID_ATTR_KEY, None)
+            info['global_attributes'] = _jsonable(global_attrs)
 
             return JSONResponse(info)
 

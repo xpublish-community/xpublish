@@ -12,7 +12,6 @@ readme = "README.md"
 keywords = [
   "api",
   "xarray",
-  "zarr",
 ]
 license = { file = "LICENSE" }
 maintainers = [
@@ -36,23 +35,19 @@ classifiers = [
 dynamic = [ "version" ]
 dependencies = [
   "cachey",
-  "dask",
   "fastapi>=0.115",
-  "numcodecs",
   "numpy",
   "pluggy",
   "pydantic>=2.5",
   "toolz",
   "uvicorn",
   "xarray>=2025.7",
-  "zarr>=3.0.7",
 ]
 urls."documentation" = "https://xpublish.readthedocs.io/"
 urls."repository" = "https://github.com/xpublish-community/xpublish"
 entry-points."xpublish.plugin".dataset_info = "xpublish.plugins.included.dataset_info:DatasetInfoPlugin"
 entry-points."xpublish.plugin".module_version = "xpublish.plugins.included.module_version:ModuleVersionPlugin"
 entry-points."xpublish.plugin".plugin_info = "xpublish.plugins.included.plugin_info:PluginInfoPlugin"
-entry-points."xpublish.plugin".zarr = "xpublish.plugins.included.zarr:ZarrPlugin"
 
 [dependency-groups]
 dev = [
@@ -149,9 +144,7 @@ lint.isort.known-first-party = [
 ]
 lint.isort.known-third-party = [
   "cachey",
-  "dask",
   "fastapi",
-  "numcodecs",
   "numpy",
   "pandas",
   "pkg_resources",
@@ -163,7 +156,6 @@ lint.isort.known-third-party = [
   "starlette",
   "uvicorn",
   "xarray",
-  "zarr",
 ]
 # Unlike Flake8, default to a complexity level of 10.
 lint.mccabe.max-complexity = 18

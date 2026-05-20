@@ -6,25 +6,22 @@ from xpublish.plugins import manage
 
 
 def test_exclude_plugins():
-    found_plugins = manage.find_default_plugins(exclude_plugins=['zarr'])
+    found_plugins = manage.find_default_plugins(exclude_plugins=['dataset_info'])
 
-    assert 'zarr' not in found_plugins
-    assert 'dataset_info' in found_plugins
+    assert 'dataset_info' not in found_plugins
+    assert 'module_version' in found_plugins
 
 
 def test_configure_plugins(airtemp_ds):
     info_prefix = '/meta'
-    zarr_prefix = '/zarr'
     config = {
         'dataset_info': {'dataset_router_prefix': info_prefix},
-        'zarr': {'dataset_router_prefix': zarr_prefix},
     }
     found_plugins = manage.find_default_plugins()
 
     configured_plugins = manage.configure_plugins(found_plugins, config)
 
     assert configured_plugins['dataset_info'].dataset_router_prefix == info_prefix
-    assert configured_plugins['zarr'].dataset_router_prefix == zarr_prefix
 
     rest = Rest({'airtemp': airtemp_ds}, plugins=configured_plugins)
     app = rest.app

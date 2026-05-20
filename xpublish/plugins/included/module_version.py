@@ -32,8 +32,6 @@ class ModuleVersionPlugin(Plugin):
             versions = dict(get_sys_info() + netcdf_and_hdf5_versions())
             modules = [
                 'xarray',
-                'zarr',
-                'numcodecs',
                 'fastapi',
                 'starlette',
                 'pandas',
