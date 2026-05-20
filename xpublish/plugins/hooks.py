@@ -15,41 +15,6 @@ hookspec = pluggy.HookspecMarker('xpublish')
 hookimpl = pluggy.HookimplMarker('xpublish')
 
 
-class Dependencies(BaseModel):
-    """A set of dependencies that are passed into plugin routers.
-
-    Some routers may be 'borrowed' by other routers to expose different
-    geometries of data, thus the default dependencies may need to be overridden.
-    By depending on the passed in version of this class, the dependencies
-    can be overridden predictably.
-    """
-
-    dataset_ids: Callable[..., List[str]] = Field(
-        get_dataset_ids,
-        description='Returns a list of all valid dataset ids',
-    )
-    dataset: Callable[[str], xr.Dataset] = Field(
-        get_dataset,
-        description='Returns a dataset using ``/<dataset_id>/`` in the path.',
-    )
-    cache: Callable[..., cachey.Cache] = Field(
-        get_cache,
-        description='Provide access to :py:class:`cachey.Cache`',
-    )
-    plugins: Callable[..., Dict[str, 'Plugin']] = Field(
-        get_plugins,
-        description='A dictionary of plugins allowing direct access',
-    )
-    plugin_manager: Callable[..., pluggy.PluginManager] = Field(
-        get_plugin_manager,
-        description='The plugin manager itself, allowing for maximum creativity',
-    )
-
-    def __hash__(self):
-        """Dependency functions aren't easy to hash."""
-        return 0  # pragma: no cover
-
-
 class Plugin(BaseModel):
     """Xpublish plugins provide ways to extend the core of xpublish with new routers and other functionality.
 
@@ -93,6 +58,41 @@ class Plugin(BaseModel):
         d.remove('__signature__')
 
         return d
+
+
+class Dependencies(BaseModel):
+    """A set of dependencies that are passed into plugin routers.
+
+    Some routers may be 'borrowed' by other routers to expose different
+    geometries of data, thus the default dependencies may need to be overridden.
+    By depending on the passed in version of this class, the dependencies
+    can be overridden predictably.
+    """
+
+    dataset_ids: Callable[..., List[str]] = Field(
+        get_dataset_ids,
+        description='Returns a list of all valid dataset ids',
+    )
+    dataset: Callable[[str], xr.Dataset] = Field(
+        get_dataset,
+        description='Returns a dataset using ``/<dataset_id>/`` in the path.',
+    )
+    cache: Callable[..., cachey.Cache] = Field(
+        get_cache,
+        description='Provide access to :py:class:`cachey.Cache`',
+    )
+    plugins: Callable[..., Dict[str, Plugin]] = Field(
+        get_plugins,
+        description='A dictionary of plugins allowing direct access',
+    )
+    plugin_manager: Callable[..., pluggy.PluginManager] = Field(
+        get_plugin_manager,
+        description='The plugin manager itself, allowing for maximum creativity',
+    )
+
+    def __hash__(self):
+        """Dependency functions aren't easy to hash."""
+        return 0  # pragma: no cover
 
 
 class PluginSpec(Plugin):
