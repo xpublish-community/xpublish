@@ -79,14 +79,6 @@ class DatasetInfoPlugin(Plugin):
 
             return JSONResponse(info)
 
-        # Bare endpoints (operate on the root node).
-        router.get('/', name='html_representation')(html_representation)
-        router.get('/keys', name='list_keys')(list_keys)
-        router.get('/dict', name='to_dict')(to_dict)
-        router.get('/info', name='info')(info)
-
-        # Tree-shaped endpoints (expose the full DataTree directly).
-        @router.get('/tree', name='tree_html')
         def tree_html(
             datatree: xr.DataTree = Depends(deps.datatree),
         ) -> HTMLResponse:
@@ -94,12 +86,21 @@ class DatasetInfoPlugin(Plugin):
             with xr.set_options(display_style='html'):
                 return HTMLResponse(datatree._repr_html_())
 
-        @router.get('/groups', name='groups')
         def groups(
             datatree: xr.DataTree = Depends(deps.datatree),
         ) -> list[str]:
             """List of all group paths in the DataTree."""
             return JSONResponse(list(datatree.groups))
+
+        # Bare endpoints (operate on the root node).
+        router.get('/', name='html_representation')(html_representation)
+        router.get('/keys', name='list_keys')(list_keys)
+        router.get('/dict', name='to_dict')(to_dict)
+        router.get('/info', name='info')(info)
+
+        # Tree-shaped endpoints (expose the full DataTree directly).
+        router.get('/tree', name='tree_html')(tree_html)
+        router.get('/groups', name='groups')(groups)
 
         # Group-aware variants. The ``{group_path:path}`` path parameter is
         # consumed transparently by ``deps.dataset`` (see
