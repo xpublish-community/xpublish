@@ -1,4 +1,5 @@
 from typing import (
+    Annotated,
     Dict,
     List,
     Literal,
@@ -13,10 +14,10 @@ import uvicorn
 import xarray as xr
 from fastapi import (
     APIRouter,
+    Depends,
     FastAPI,
     HTTPException,
     Path,
-    Request,
 )
 
 from .dependencies import (
@@ -24,6 +25,7 @@ from .dependencies import (
     get_dataset,
     get_dataset_ids,
     get_datatree,
+    get_group_path,
     get_plugin_manager,
 )
 from .plugins import (
@@ -161,18 +163,6 @@ class Rest:
 
         return dataset_ids
 
-    @staticmethod
-    def _group_path_from_request(request: Optional[Request]) -> str:
-        """Extract a ``group_path`` from the FastAPI request path params.
-
-        Returns an empty string if the route does not declare ``group_path``.
-        Leading slashes are stripped so the returned value is suitable for
-        :py:meth:`xarray.DataTree.__getitem__`.
-        """
-        if request is None:
-            return ''
-        return (request.path_params.get('group_path') or '').strip('/')
-
     def _resolve_datatree(self, dataset_id: str, group: str) -> xr.DataTree:
         """Resolve a (dataset_id, group) pair to an :py:class:`xarray.DataTree`.
 
@@ -231,27 +221,29 @@ class Rest:
 
     def get_datatree_from_plugins(
         self,
-        request: Request,
-        dataset_id: str = Path(description='Unique ID of dataset'),
+        dataset_id: Annotated[str, Path(description='Unique ID of dataset')],
+        group: Annotated[str, Depends(get_group_path)] = '',
     ) -> xr.DataTree:
-        """Resolve a DataTree by dataset_id (and optional ``{group_path}`` route param)."""
-        group = self._group_path_from_request(request)
+        """Resolve a DataTree by ``dataset_id`` (and optional ``group``).
+
+        When used as a FastAPI dependency, ``group`` is auto-extracted from the
+        route's ``{group_path:path}`` segment via :func:`get_group_path`. When
+        called directly, ``group`` defaults to the empty string (returning the
+        root tree) and may be passed explicitly to navigate into the tree.
+        """
         return self._resolve_datatree(dataset_id, group)
 
     def get_dataset_from_plugins(
         self,
-        request: Request,
-        dataset_id: str = Path(description='Unique ID of dataset'),
+        dataset_id: Annotated[str, Path(description='Unique ID of dataset')],
+        group: Annotated[str, Depends(get_group_path)] = '',
     ) -> xr.Dataset:
-        """Resolve a Dataset by dataset_id (and optional ``{group_path}`` route param).
+        """Resolve a Dataset by ``dataset_id`` (and optional ``group``).
 
-        Returns the dataset at the requested group (or root if none).
-
-        Args:
-            dataset_id: Unique key of dataset to attempt to load from plugins or
-                those provided to :class:`xpublish.Rest` at initialization.
-            request: Injected by FastAPI; used to read the optional
-                ``group_path`` path parameter from the route.
+        When used as a FastAPI dependency, ``group`` is auto-extracted from the
+        route's ``{group_path:path}`` segment via :func:`get_group_path`. When
+        called directly, ``group`` defaults to the empty string (returning the
+        root dataset) and may be passed explicitly to navigate into the tree.
 
         Returns:
             Dataset for the selected ``dataset_id`` (at the selected group node).
@@ -259,9 +251,7 @@ class Rest:
         Raises:
             FastAPI.HTTPException: When the dataset or group is not found.
         """
-        group = self._group_path_from_request(request)
-        tree = self._resolve_datatree(dataset_id, group)
-        return tree.dataset
+        return self._resolve_datatree(dataset_id, group).dataset
 
     def setup_plugins(
         self,
@@ -531,8 +521,9 @@ class SingleDatasetRest(Rest):
         self._dataset_route_prefix = ''
         self._datasets = {}
 
-        def _single_datatree(request: Request) -> xr.DataTree:
-            group = self._group_path_from_request(request)
+        def _single_datatree(
+            group: Annotated[str, Depends(get_group_path)] = '',
+        ) -> xr.DataTree:
             if not group:
                 return self._tree
             try:
@@ -543,8 +534,10 @@ class SingleDatasetRest(Rest):
                     detail=f"Group '{group}' not found",
                 ) from err
 
-        def _single_dataset(request: Request) -> xr.Dataset:
-            return _single_datatree(request).dataset
+        def _single_dataset(
+            group: Annotated[str, Depends(get_group_path)] = '',
+        ) -> xr.Dataset:
+            return _single_datatree(group).dataset
 
         self._get_dataset_func = _single_dataset
         self._get_datatree_func = _single_datatree

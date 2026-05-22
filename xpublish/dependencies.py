@@ -5,9 +5,24 @@ from typing import TYPE_CHECKING, Dict, List
 import cachey
 import pluggy
 import xarray as xr
+from fastapi import Request
 
 if TYPE_CHECKING:
     from .plugins import Plugin  # pragma: no cover
+
+
+def get_group_path(request: Request) -> str:
+    """FastAPI dependency that reads the ``{group_path:path}`` route param.
+
+    Returns an empty string when the route does not declare ``group_path``,
+    so it can be used as a default ``Depends(...)`` on the built-in
+    ``deps.dataset`` and ``deps.datatree`` dependencies without forcing
+    every route to declare the segment.
+
+    Leading and trailing slashes are stripped so the returned value is
+    suitable for :py:meth:`xarray.DataTree.__getitem__`.
+    """
+    return (request.path_params.get('group_path') or '').strip('/')
 
 
 def get_dataset_ids() -> List[str]:
