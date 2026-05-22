@@ -25,17 +25,17 @@ all behave the same. There are two new things you may want to surface:
    dt.rest.serve(host="0.0.0.0", port=9000)
    ```
 
-2. **New built-in endpoints** on the `dataset_info` plugin (prefix
+1. **New built-in endpoints** on the `dataset_info` plugin (prefix
    `/datasets/<dataset_id>`):
 
-   | URL                   | Returns                                  |
-   | --------------------- | ---------------------------------------- |
-   | `/tree`               | HTML repr of the full DataTree           |
-   | `/groups`             | JSON list of every group path            |
-   | `/groups/<path>`      | HTML repr of the node at `<path>`        |
-   | `/groups/<path>/keys` | Variable keys at `<path>`                |
-   | `/groups/<path>/dict` | Schema dict at `<path>` (no data)        |
-   | `/groups/<path>/info` | Detailed schema info at `<path>`         |
+   | URL                   | Returns                           |
+   | --------------------- | --------------------------------- |
+   | `/tree`               | HTML repr of the full DataTree    |
+   | `/groups`             | JSON list of every group path     |
+   | `/groups/<path>`      | HTML repr of the node at `<path>` |
+   | `/groups/<path>/keys` | Variable keys at `<path>`         |
+   | `/groups/<path>/dict` | Schema dict at `<path>` (no data) |
+   | `/groups/<path>/info` | Detailed schema info at `<path>`  |
 
    For flat datasets, `/groups` returns `["/"]` and `/groups/<path>/...`
    returns 404.
