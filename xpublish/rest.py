@@ -184,10 +184,16 @@ class Rest:
             FastAPI.HTTPException: 404 if the dataset_id is unknown, or if the
                 group does not exist within the resolved tree.
         """
-        tree: Optional[xr.DataTree] = self.pm.hook.get_datatree(
-            dataset_id=dataset_id,
-            group=group,
-        )
+        try:
+            tree: Optional[xr.DataTree] = self.pm.hook.get_datatree(
+                dataset_id=dataset_id,
+                group=group,
+            )
+        except KeyError as err:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Group '{group}' not found in dataset '{dataset_id}'",
+            ) from err
 
         if tree is None:
             legacy_ds: Optional[xr.Dataset] = self.pm.hook.get_dataset(dataset_id=dataset_id)

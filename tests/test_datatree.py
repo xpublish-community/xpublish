@@ -188,6 +188,33 @@ def test_get_datatree_provider(simple_tree):
     assert r.json() == ['y']
 
 
+def test_get_datatree_provider_key_error_becomes_404(simple_tree):
+    class TreePlugin(Plugin):
+        name: str = 'tree-provider'
+
+        @hookimpl
+        def get_datasets(self):
+            return ['provided']
+
+        @hookimpl
+        def get_datatree(
+            self,
+            dataset_id: str,
+            group: str,
+        ) -> Optional[xr.DataTree]:
+            if dataset_id != 'provided':
+                return None
+            return simple_tree[group] if group else simple_tree
+
+    rest = Rest({})
+    rest.register_plugin(TreePlugin())
+    client = TestClient(rest.app)
+
+    r = client.get('/datasets/provided/groups/does_not_exist/keys')
+    assert r.status_code == 404
+    assert r.json()['detail'] == "Group 'does_not_exist' not found in dataset 'provided'"
+
+
 def test_lazy_get_datatree_provider():
     """A booth-style provider that opens only the requested node."""
     nodes = {
