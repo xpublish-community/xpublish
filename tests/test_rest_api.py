@@ -341,17 +341,19 @@ def test_array_group_raises_404(airtemp_app_client):
 
 
 def test_cache(airtemp_ds):
-    rest = Rest({'airtemp': airtemp_ds}, cache_kws={'available_bytes': 1e9})
+    rest = SingleDatasetRest(airtemp_ds, cache_kws={'available_bytes': 1e9})
     assert rest.cache.available_bytes == 1e9
 
     client = TestClient(rest.app)
 
-    response1 = client.get('/datasets/airtemp/zarr/air/0.0.0')
+    response1 = client.get('/zarr/air/0.0.0')
     assert response1.status_code == 200
-    assert 'airtemp/air/0.0.0' in rest.cache
+    # SingleDatasetRest doesn't stamp a dataset id, so the cache key has an
+    # empty prefix.
+    assert '/air/0.0.0' in rest.cache
 
     # test that we can retrieve
-    response2 = client.get('/datasets/airtemp/zarr/air/0.0.0')
+    response2 = client.get('/zarr/air/0.0.0')
     assert response2.status_code == 200
     assert response1.content == response2.content
 
