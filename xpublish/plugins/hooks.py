@@ -163,25 +163,20 @@ class PluginSpec(Plugin):
         If the plugin does not have the dataset, return ``None``.
         """
 
-    @hookspec(
-        firstresult=True,
-        warn_on_impl=DeprecationWarning(
-            'The xpublish `get_dataset` plugin hook is deprecated; implement '
-            '`get_datatree(self, dataset_id, group)` instead. The Dataset '
-            'returned by `get_dataset` is wrapped in a single-node DataTree '
-            'and only the root group is reachable.',
-        ),
-    )
+    @hookspec(firstresult=True)
     # type: ignore
     def get_dataset(self, dataset_id: str) -> Optional[xr.Dataset]:
-        """Return a dataset by requested dataset_id.
+        """Return a :py:class:`xarray.Dataset` for ``dataset_id``.
 
-        .. deprecated::
-            Use :meth:`get_datatree` instead. Implementations of ``get_dataset`` are
-            still honored — the returned Dataset is wrapped in a single-node DataTree
-            — but plugins should migrate to ``get_datatree`` for hierarchical support.
+        Use this hook when your provider only serves flat datasets — Xpublish
+        wraps the returned Dataset in a single-node :py:class:`xarray.DataTree`
+        internally. For hierarchical providers, implement :meth:`get_datatree`
+        instead, which also receives the requested ``group`` path.
 
-        If the plugin does not have the dataset, return None.
+        Both hooks are first-class and may coexist; :meth:`get_datatree` is
+        consulted first.
+
+        If the plugin does not have the dataset, return ``None``.
         """
 
     @hookspec

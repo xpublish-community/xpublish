@@ -106,25 +106,36 @@ class IcechunkProvider(Plugin):
 Each request opens just the one group being viewed, so cost stays proportional
 to what's actually queried.
 
-## Migrating from `get_dataset`
+## Choosing between `get_dataset` and `get_datatree`
 
-The older {py:meth}`xpublish.plugins.hooks.PluginSpec.get_dataset` hook is still
-honored but emits a {py:class}`DeprecationWarning`. The Dataset it returns is
-wrapped in a single-node DataTree, so only the root group is reachable through
-it. Migrate to `get_datatree` to expose hierarchical data — the rename is
-mechanical:
+Both provider hooks are first-class. Use the one that fits your data:
+
+- {py:meth}`~xpublish.plugins.hooks.PluginSpec.get_dataset` — for providers
+  that only ever serve a flat Dataset. Xpublish wraps the returned Dataset in
+  a single-node DataTree internally. Requests for a non-root group return 404.
+- {py:meth}`~xpublish.plugins.hooks.PluginSpec.get_datatree` — for providers
+  that want to expose hierarchical data, or that benefit from per-group lazy
+  loading (Zarr/Icechunk-style backends).
+
+A plugin may implement both; `get_datatree` is consulted first. Switching from
+one to the other is mechanical:
 
 ```python
-# Before
+# Flat provider
 @hookimpl
 def get_dataset(self, dataset_id: str):
     return xr.tutorial.open_dataset(dataset_id)
 
 
-# After
+# Equivalent hierarchical provider (still flat, but exposed via the tree hook)
 @hookimpl
 def get_datatree(self, dataset_id: str, group: str):
     if group:
         return None  # we only serve a flat dataset
     return xr.DataTree(dataset=xr.tutorial.open_dataset(dataset_id))
+```
+
+```{seealso}
+For a complete upgrade guide aimed at server admins and plugin authors, see
+[Migrating to the DataTree API](../../user-guide/migrating-to-datatree.md).
 ```

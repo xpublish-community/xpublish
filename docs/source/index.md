@@ -40,6 +40,7 @@ Explore the [Xpublish ecosystem](./ecosystem/index.md).
 - [Serve a hierarchical DataTree and navigate its groups over HTTP](getting-started/tutorial/datatrees)
 - [Build plugins to serve datasets in new ways](getting-started/tutorial/dataset-router-plugin)
 - [Connect to a new source of datasets](getting-started/tutorial/dataset-provider-plugin)
+- [Migrate an existing server or plugin to the DataTree API](user-guide/migrating-to-datatree)
 - [Discuss Xpublish with others](ecosystem/index.md#connect)
 
 ````{grid} 1 1 2 2

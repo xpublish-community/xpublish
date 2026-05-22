@@ -414,13 +414,22 @@ class IcechunkProvider(Plugin):
 This keeps the provider efficient — the request only ever opens the single group
 being viewed.
 
-### Legacy `get_dataset` hook (deprecated)
+### The flat `get_dataset` hook
 
-```{warning}
-{py:meth}`xpublish.plugins.hooks.PluginSpec.get_dataset` is **deprecated** and
-emits a {py:class}`DeprecationWarning` when registered. The returned Dataset is
-wrapped in a single-node DataTree, so only the root group is reachable through
-it. Migrate to `get_datatree` to expose hierarchical data.
+{py:meth}`xpublish.plugins.hooks.PluginSpec.get_dataset` is the simpler hook
+for providers that only ever serve a flat {py:class}`xarray.Dataset`. Xpublish
+wraps the returned Dataset in a single-node {py:class}`xarray.DataTree`
+internally, so the root-level routes work transparently. Requests for a
+non-root group return 404, since a single-node tree has no sub-groups.
+
+Both `get_dataset` and `get_datatree` are first-class — pick whichever fits
+your provider. `get_datatree` is consulted first, so a provider can implement
+both if it wants to serve hierarchical data when possible and fall back to a
+flat dataset otherwise.
+
+```{seealso}
+[Migrating to the DataTree API](./migrating-to-datatree.md) — a focused
+upgrade guide with sections for server admins and plugin authors.
 ```
 
 ## Hook Spec Plugins

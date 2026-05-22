@@ -166,9 +166,9 @@ class Rest:
     def _resolve_datatree(self, dataset_id: str, group: str) -> xr.DataTree:
         """Resolve a (dataset_id, group) pair to an :py:class:`xarray.DataTree`.
 
-        Tries ``get_datatree`` plugin hooks first, then falls back to the
-        deprecated ``get_dataset`` hook (for backwards compat), then the
-        directly registered datasets.
+        Tries ``get_datatree`` plugin hooks first, then the flat ``get_dataset``
+        hook (whose Dataset is wrapped in a single-node tree), then the directly
+        registered datasets.
 
         Raises:
             FastAPI.HTTPException: 404 if the dataset_id is unknown, or if the
@@ -193,7 +193,7 @@ class Rest:
                         status_code=404,
                         detail=(
                             f"Group '{group}' not found in dataset '{dataset_id}' "
-                            '(provider only implements the legacy get_dataset hook)'
+                            '(provider only implements the flat get_dataset hook)'
                         ),
                     )
                 tree = xr.DataTree(dataset=legacy_ds)

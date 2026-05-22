@@ -4,7 +4,7 @@ Covers:
   * Passing :class:`xarray.DataTree` objects to ``Rest`` and ``SingleDatasetRest``.
   * The ``get_datatree`` provider hook (and lazy-by-group providers).
   * Group navigation via the ``{group_path:path}`` URL segment.
-  * Backwards compat for the deprecated ``get_dataset`` provider hook.
+  * The flat ``get_dataset`` provider hook wrapped into a single-node tree.
   * The ``.rest`` accessor on DataTrees.
 """
 
@@ -188,6 +188,26 @@ def test_get_datatree_provider(simple_tree):
     assert r.json() == ['y']
 
 
+def test_deps_dataset_callable_directly(simple_tree):
+    """Plugins may call ``deps.dataset`` directly in a route body.
+
+    Regression guard: the entrypoint must accept a bare ``dataset_id`` with no
+    threaded ``request`` argument, returning the root dataset. An explicit
+    ``group`` argument navigates into the tree.
+    """
+    rest = Rest({'tree': simple_tree})
+    deps = rest.dependencies()
+
+    root_ds = deps.dataset('tree')
+    assert list(root_ds.variables) == []
+
+    group_ds = deps.dataset('tree', group='a')
+    assert list(group_ds.variables) == ['x']
+
+    group_tree = deps.datatree('tree', group='a/b')
+    assert list(group_tree.dataset.variables) == ['y']
+
+
 def test_get_datatree_provider_key_error_becomes_404(simple_tree):
     class TreePlugin(Plugin):
         name: str = 'tree-provider'
@@ -268,12 +288,12 @@ def test_lazy_get_datatree_provider():
 
 
 # ---------------------------------------------------------------------------
-# Legacy get_dataset provider hook still works (deprecated path)
+# Flat get_dataset provider hook is wrapped into a single-node tree
 # ---------------------------------------------------------------------------
 
 
-def test_legacy_get_dataset_provider_wrapped_into_single_node_tree(root_ds):
-    class LegacyPlugin(Plugin):
+def test_flat_get_dataset_provider_wrapped_into_single_node_tree(root_ds):
+    class FlatPlugin(Plugin):
         name: str = 'legacy'
 
         @hookimpl
@@ -287,7 +307,7 @@ def test_legacy_get_dataset_provider_wrapped_into_single_node_tree(root_ds):
             return None
 
     rest = Rest({})
-    rest.register_plugin(LegacyPlugin())
+    rest.register_plugin(FlatPlugin())
     client = TestClient(rest.app)
 
     r = client.get('/datasets/legacy/keys')
@@ -299,7 +319,7 @@ def test_legacy_get_dataset_provider_wrapped_into_single_node_tree(root_ds):
     assert r.status_code == 200
     assert r.json() == ['/']
 
-    # Asking for a sub-group on a legacy provider is a 404
+    # Asking for a sub-group on a flat-only provider is a 404
     r = client.get('/datasets/legacy/groups/anything/keys')
     assert r.status_code == 404
 
