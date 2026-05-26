@@ -30,12 +30,7 @@ class Plugin(BaseModel):
     def __hash__(self):
         """Make sure that the plugin is hashable to load with pluggy."""
         things_to_hash = []
-
-        # try/except is for pydantic backwards compatibility
-        try:
-            model_dict = self.model_dump()
-        except AttributeError:
-            model_dict = self.dict()
+        model_dict = self.model_dump()
 
         for e in model_dict:
             if isinstance(e, list):
