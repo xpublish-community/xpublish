@@ -21,10 +21,7 @@ def find_default_plugins(
 
     plugins: Dict[str, Type[Plugin]] = {}
 
-    try:
-        plugin_entry_points = entry_points(group='xpublish.plugin')
-    except TypeError:
-        plugin_entry_points = entry_points()['xpublish.plugin']
+    plugin_entry_points = entry_points(group='xpublish.plugin')
 
     for entry_point in plugin_entry_points:
         if entry_point.name not in exclude_plugins:

@@ -67,6 +67,9 @@ extensions = [
 # don't raise a warning
 # https://autodoc-pydantic.readthedocs.io/en/stable/users/configuration.html#show-schema-json-error-strategy
 autodoc_pydantic_model_show_json_error_strategy = 'coerce'
+# The Dependencies model has Callable fields that can't be turned into a JSON
+# schema. Skip the collapsible JSON schema block to avoid pydantic blow-ups.
+autodoc_pydantic_model_show_json = False
 
 # Skip rendering the JSON schema collapsible block for pydantic models.
 # Several xpublish models (e.g. Dependencies) hold Callable fields that aren't

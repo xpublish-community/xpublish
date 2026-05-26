@@ -1,5 +1,3 @@
-import json
-
 import pytest
 import uvicorn
 import xarray as xr
@@ -9,7 +7,6 @@ from starlette.testclient import TestClient
 import xpublish  # noqa: F401
 from xpublish import Plugin, Rest, SingleDatasetRest, hookimpl, hookspec
 from xpublish.dependencies import get_dataset
-from xpublish.utils.zarr import create_zmetadata, jsonify_zmetadata
 
 
 @pytest.fixture(scope='function')
@@ -259,6 +256,24 @@ def test_info(airtemp_ds, airtemp_app_client):
     assert list(json_response['variables'].keys()) == list(airtemp_ds.variables.keys())
 
 
+def test_info_jsonable_attrs():
+    """Exercises the list/tuple and numpy array branches of _jsonable on /info."""
+    import numpy as np
+
+    ds = xr.Dataset({'var': ('x', [1, 2, 3])})
+    ds.attrs['list_attr'] = [1, 2, 3]
+    ds.attrs['tuple_attr'] = (4, 5, 6)
+    ds['var'].attrs['range'] = np.array([0.0, 1.0])
+
+    client = TestClient(SingleDatasetRest(ds).app)
+    response = client.get('/info')
+    assert response.status_code == 200
+    json_response = response.json()
+    assert json_response['global_attributes']['list_attr'] == [1, 2, 3]
+    assert json_response['global_attributes']['tuple_attr'] == [4, 5, 6]
+    assert json_response['variables']['var']['attributes']['range'] == [0.0, 1.0]
+
+
 def test_dict(airtemp_ds, airtemp_app_client):
     response = airtemp_app_client.get('/dict')
     assert response.status_code == 200
@@ -292,70 +307,11 @@ def test_plugins_loaded(airtemp_app_client):
     assert 'dataset_info' in plugins
     assert 'module_version' in plugins
     assert 'plugin_info' in plugins
-    assert 'zarr' in plugins
 
 
 def test_repr(airtemp_ds, airtemp_app_client):
     response = airtemp_app_client.get('/')
     assert response.status_code == 200
-
-
-def test_zmetadata(airtemp_ds, airtemp_app_client):
-    response = airtemp_app_client.get('/zarr/.zmetadata')
-    assert response.status_code == 200
-    assert json.dumps(response.json()) == json.dumps(
-        jsonify_zmetadata(airtemp_ds, create_zmetadata(airtemp_ds))
-    )
-
-
-def test_bad_key(airtemp_app_client):
-    response = airtemp_app_client.get('/zarr/notakey')
-    assert response.status_code == 404
-
-
-def test_zgroup(airtemp_app_client):
-    response = airtemp_app_client.get('/zarr/.zgroup')
-    assert response.status_code == 200
-
-
-def test_zarray(airtemp_app_client):
-    response = airtemp_app_client.get('/zarr/air/.zarray')
-    assert response.status_code == 200
-
-
-def test_zattrs(airtemp_app_client):
-    response = airtemp_app_client.get('/zarr/air/.zattrs')
-    assert response.status_code == 200
-    response = airtemp_app_client.get('/zarr/.zattrs')
-    assert response.status_code == 200
-
-
-def test_get_chunk(airtemp_app_client):
-    response = airtemp_app_client.get('/zarr/air/0.0.0')
-    assert response.status_code == 200
-
-
-def test_array_group_raises_404(airtemp_app_client):
-    response = airtemp_app_client.get('/zarr/air/.zgroup')
-    assert response.status_code == 404
-
-
-def test_cache(airtemp_ds):
-    rest = SingleDatasetRest(airtemp_ds, cache_kws={'available_bytes': 1e9})
-    assert rest.cache.available_bytes == 1e9
-
-    client = TestClient(rest.app)
-
-    response1 = client.get('/zarr/air/0.0.0')
-    assert response1.status_code == 200
-    # SingleDatasetRest doesn't stamp a dataset id, so the cache key has an
-    # empty prefix.
-    assert '/air/0.0.0' in rest.cache
-
-    # test that we can retrieve
-    response2 = client.get('/zarr/air/0.0.0')
-    assert response2.status_code == 200
-    assert response1.content == response2.content
 
 
 def test_rest_accessor(airtemp_ds):
@@ -392,23 +348,8 @@ def test_ds_dict_keys(ds_dict, ds_dict_app_client):
     assert response.status_code == 200
     assert response.json() == list(ds_dict)
 
-    response = ds_dict_app_client.get('/datasets/zarr/not_in_dict')
+    response = ds_dict_app_client.get('/datasets/not_in_dict/info')
     assert response.status_code == 404
-
-
-def test_ds_dict_cache(ds_dict):
-    rest = Rest(ds_dict, cache_kws={'available_bytes': 1e9})
-
-    client = TestClient(rest.app)
-
-    response1 = client.get('/datasets/ds1/zarr/var/0')
-    assert response1.status_code == 200
-    assert 'ds1/var/0' in rest.cache
-
-    response2 = client.get('/datasets/ds2/info')
-    assert response2.status_code == 200
-    assert 'ds2/zvariables' in rest.cache
-    assert 'ds2/.zmetadata' in rest.cache
 
 
 def test_single_dataset_openapi_override(airtemp_rest):

@@ -22,6 +22,46 @@ hookspec = pluggy.HookspecMarker('xpublish')
 hookimpl = pluggy.HookimplMarker('xpublish')
 
 
+class Plugin(BaseModel):
+    """Xpublish plugins provide ways to extend the core of xpublish with new routers and other functionality.
+
+    To create a plugin, subclass `Plugin` and add attributes that are
+    subclasses of `PluginType` (`Router` for instance).
+
+    The specific attributes correspond to how Xpublish should use
+    the plugin.
+    """
+
+    name: str = Field(..., description='Fallback name of plugin')
+
+    def __hash__(self):
+        """Make sure that the plugin is hashable to load with pluggy."""
+        things_to_hash = []
+        model_dict = self.model_dump()
+
+        for e in model_dict:
+            if isinstance(e, list):
+                things_to_hash.append(tuple(e))  # pragma: no cover
+            else:
+                things_to_hash.append(e)
+
+        return hash(tuple(things_to_hash))
+
+    def __dir__(self) -> Iterable[str]:
+        """Overrides the dir.
+
+        We need to override the dir as pluggy will otherwise try to inspect it,
+        and Pydantic has marked it class only
+
+        https://github.com/pydantic/pydantic/pull/1466
+        """
+        d = list(super().__dir__())
+
+        d.remove('__signature__')
+
+        return d
+
+
 class Dependencies(BaseModel):
     """A set of dependencies that are passed into plugin routers.
 
@@ -54,7 +94,7 @@ class Dependencies(BaseModel):
         get_cache,
         description='Provide access to :py:class:`cachey.Cache`',
     )
-    plugins: Callable[..., Dict[str, 'Plugin']] = Field(
+    plugins: Callable[..., Dict[str, Plugin]] = Field(
         get_plugins,
         description='A dictionary of plugins allowing direct access',
     )
@@ -66,51 +106,6 @@ class Dependencies(BaseModel):
     def __hash__(self):
         """Dependency functions aren't easy to hash."""
         return 0  # pragma: no cover
-
-
-class Plugin(BaseModel):
-    """Xpublish plugins provide ways to extend the core of xpublish with new routers and other functionality.
-
-    To create a plugin, subclass `Plugin` and add attributes that are
-    subclasses of `PluginType` (`Router` for instance).
-
-    The specific attributes correspond to how Xpublish should use
-    the plugin.
-    """
-
-    name: str = Field(..., description='Fallback name of plugin')
-
-    def __hash__(self):
-        """Make sure that the plugin is hashable to load with pluggy."""
-        things_to_hash = []
-
-        # try/except is for pydantic backwards compatibility
-        try:
-            model_dict = self.model_dump()
-        except AttributeError:
-            model_dict = self.dict()
-
-        for e in model_dict:
-            if isinstance(e, list):
-                things_to_hash.append(tuple(e))  # pragma: no cover
-            else:
-                things_to_hash.append(e)
-
-        return hash(tuple(things_to_hash))
-
-    def __dir__(self) -> Iterable[str]:
-        """Overrides the dir.
-
-        We need to override the dir as pluggy will otherwise try to inspect it,
-        and Pydantic has marked it class only
-
-        https://github.com/pydantic/pydantic/pull/1466
-        """
-        d = list(super().__dir__())
-
-        d.remove('__signature__')
-
-        return d
 
 
 class PluginSpec(Plugin):
