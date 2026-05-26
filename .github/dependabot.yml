@@ -5,3 +5,5 @@ updates:
     schedule:
       # Check for updates to GitHub Actions every weekday
       interval: "monthly"
+    cooldown:
+      default-days: 7

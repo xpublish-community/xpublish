@@ -47,5 +47,10 @@ repos:
     hooks:
       - id: pyproject-fmt
 
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.22.0
+    hooks:
+      - id: zizmor
+
 ci:
   autofix_prs: false
