@@ -72,8 +72,9 @@ endpoints to get some information about the published dataset:
 - `/versions`: returns JSON dictionary of the versions of Python, Xarray and related libraries on the server side, similar to {func}`xarray.show_versions`.
 
 ```{admonition} Zarr access moved to xpublish-zarr
-:class: important
-
+---
+class: important
+---
 Previous versions of Xpublish shipped a built-in Zarr plugin exposing
 `/zarr/.zmetadata` and `/zarr/{var}/{key}` endpoints. Starting with this
 release the Zarr plugin lives in its own package,
