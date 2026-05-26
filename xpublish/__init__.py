@@ -2,7 +2,7 @@
 
 import importlib.metadata
 
-from .accessor import RestAccessor  # noqa: F401
+from .accessor import DataTreeRestAccessor, RestAccessor  # noqa: F401
 from .plugins import Dependencies, Plugin, hookimpl, hookspec  # noqa: F401
 from .rest import Rest, SingleDatasetRest  # noqa: F401
 

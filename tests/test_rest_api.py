@@ -141,7 +141,7 @@ def test_init_app_kws(airtemp_ds):
 
 @pytest.mark.parametrize('datasets', ['not_a_dataset_obj', {'ds': 'not_a_dataset_obj'}])
 def test_init_dataset_type_error(datasets):
-    with pytest.raises(TypeError, match='Can only publish.*Dataset objects'):
+    with pytest.raises(TypeError, match='Can only publish.*Dataset'):
         Rest(datasets)
 
 

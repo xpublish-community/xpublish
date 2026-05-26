@@ -11,6 +11,7 @@ hidden:
 introduction
 dataset-router
 serving-multiple-datasets
+datatrees
 using-plugins
 dataset-router-plugin
 dataset-provider-plugin

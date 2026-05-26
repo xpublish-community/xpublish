@@ -1,6 +1,6 @@
 # Xpublish
 
-Publish Xarray Datasets to the web
+Publish Xarray Datasets and DataTrees to the web
 
 <!-- badges-start -->
 
@@ -18,12 +18,14 @@ Publish Xarray Datasets to the web
 
 ## A quick example
 
-**Serverside: Publish a Xarray Dataset through a rest API**
+**Serverside: Publish an Xarray Dataset or DataTree through a REST API**
 
 <!-- server-example-start -->
 
 ```python
 ds.rest.serve(host="0.0.0.0", port=9000)
+# or, for a hierarchical DataTree, the API is identical:
+dt.rest.serve(host="0.0.0.0", port=9000)
 ```
 
 <!-- server-example-end -->
@@ -38,9 +40,9 @@ The published datasets can be accessed from various kinds of client applications
 
 ## Why?
 
-Xpublish lets you serve/share/publish Xarray Datasets via a web application.
+Xpublish lets you serve/share/publish Xarray Datasets and DataTrees via a web application.
 
-The data and/or metadata in the Xarray Datasets can be exposed in various forms through [pluggable REST API endpoints](https://xpublish.readthedocs.io/en/latest/user-guide/plugins.html).
+The data and/or metadata can be exposed in various forms through [pluggable REST API endpoints](https://xpublish.readthedocs.io/en/latest/user-guide/plugins.html). Hierarchical data is supported natively — bare Datasets are wrapped in a single-node DataTree internally so the same routes, accessors, and plugins work whether you're serving a flat dataset or a deeply nested tree.
 Efficient, on-demand delivery of large datasets may be enabled with Dask on the server-side.
 
 Xpublish's [plugin ecosystem](https://xpublish.readthedocs.io/en/latest/ecosystem/index.html#plugins) has capabilities including:

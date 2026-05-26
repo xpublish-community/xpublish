@@ -6,7 +6,14 @@ import xarray as xr
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-from ..dependencies import get_cache, get_dataset, get_dataset_ids, get_plugin_manager, get_plugins
+from ..dependencies import (
+    get_cache,
+    get_dataset,
+    get_dataset_ids,
+    get_datatree,
+    get_plugin_manager,
+    get_plugins,
+)
 
 # Decorator helper to mark functions as Xpublish hook specifications
 hookspec = pluggy.HookspecMarker('xpublish')
@@ -70,7 +77,18 @@ class Dependencies(BaseModel):
     )
     dataset: Callable[[str], xr.Dataset] = Field(
         get_dataset,
-        description='Returns a dataset using ``/<dataset_id>/`` in the path.',
+        description=(
+            'Returns the :py:class:`xarray.Dataset` at ``/<dataset_id>/`` in the path. '
+            'If the route includes a ``{group_path:path}`` parameter, returns the dataset '
+            'at that node of the underlying DataTree; otherwise returns the root dataset.'
+        ),
+    )
+    datatree: Callable[[str], xr.DataTree] = Field(
+        get_datatree,
+        description=(
+            'Returns the :py:class:`xarray.DataTree` rooted at ``/<dataset_id>/`` (or at '
+            '``{group_path:path}`` if present in the route).'
+        ),
     )
     cache: Callable[..., cachey.Cache] = Field(
         get_cache,
@@ -121,10 +139,39 @@ class PluginSpec(Plugin):
 
     @hookspec(firstresult=True)
     # type: ignore
-    def get_dataset(self, dataset_id: str) -> Optional[xr.Dataset]:
-        """Return a dataset by requested dataset_id.
+    def get_datatree(self, dataset_id: str, group: str) -> Optional[xr.DataTree]:
+        """Return a :py:class:`xarray.DataTree` for ``dataset_id`` rooted at ``group``.
 
-        If the plugin does not have the dataset, return None
+        Implementations should declare ``group`` as a positional parameter
+        (pluggy will not forward keyword-only parameters). An empty ``group``
+        string means "the root".
+
+        Providers decide how to be smart about this. Providers that only ever serve
+        flat datasets can return ``xr.DataTree(dataset=ds)`` (a single-node tree) and
+        ``None`` for any non-empty ``group``. Providers that have hierarchical data
+        can return either the full tree (and index into it with ``group``) or, for
+        lazy backends, open only the requested ``group`` and wrap it in a single-node
+        tree.
+
+        The returned tree's root corresponds to the requested ``group``.
+
+        If the plugin does not have the dataset, return ``None``.
+        """
+
+    @hookspec(firstresult=True)
+    # type: ignore
+    def get_dataset(self, dataset_id: str) -> Optional[xr.Dataset]:
+        """Return a :py:class:`xarray.Dataset` for ``dataset_id``.
+
+        Use this hook when your provider only serves flat datasets — Xpublish
+        wraps the returned Dataset in a single-node :py:class:`xarray.DataTree`
+        internally. For hierarchical providers, implement :meth:`get_datatree`
+        instead, which also receives the requested ``group`` path.
+
+        Both hooks are first-class and may coexist; :meth:`get_datatree` is
+        consulted first.
+
+        If the plugin does not have the dataset, return ``None``.
         """
 
     @hookspec

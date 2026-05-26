@@ -17,35 +17,53 @@ DATASET_ID_ATTR_KEY = '_xpublish_id'
 
 
 def normalize_datasets(
-    datasets: Union[xr.Dataset, Mapping[Any, xr.Dataset]]
-) -> Dict[str, xr.Dataset]:
-    """Normalize the given collection of datasets.
+    datasets: Union[xr.Dataset, xr.DataTree, Mapping[Any, Union[xr.Dataset, xr.DataTree]]],
+) -> Dict[str, xr.DataTree]:
+    """Normalize the given collection of datasets or DataTrees.
 
-    This function converts all keys (dataset ids) to strings and adds the
-    dataset ids to their corresponding dataset object as global attribute.
-    This is so it can be easily retrieved within path operation functions.
+    Internally xpublish stores everything as a :py:class:`xarray.DataTree`.
+    Bare :py:class:`xarray.Dataset` values are wrapped in a single-node
+    DataTree so the rest of the code can operate uniformly.
+
+    Keys (dataset ids) are converted to strings and the dataset id is
+    stored as a global attribute on the (root) dataset so it can be
+    retrieved within path operation functions.
 
     Args:
-        datasets: A single xarray.Dataset object or a mapping with Dataset
-            objects as values.
+        datasets: A single Dataset/DataTree or a mapping with Dataset
+            or DataTree objects as values.
 
     Returns:
-        A dictionary with dataset ids as keys and Dataset objects as values.
-        If a single Dataset object is given, an empty dictionary is returned.
+        A dictionary with dataset ids as keys and DataTree objects as values.
+        If a single Dataset/DataTree is given, an empty dictionary is
+        returned.
 
     Raises:
-        TypeError: If objects other than xarray.Dataset are found.
+        TypeError: If objects other than xarray.Dataset/DataTree are found.
     """
-    error_msg = 'Can only publish a xarray.Dataset object or a mapping of Dataset objects'
+    error_msg = (
+        'Can only publish a xarray.Dataset/DataTree object or a mapping '
+        'of Dataset/DataTree objects'
+    )
 
-    if isinstance(datasets, xr.Dataset):
+    if isinstance(datasets, (xr.Dataset, xr.DataTree)):
         return {}
-    elif isinstance(datasets, Mapping):
-        if not all(isinstance(obj, xr.Dataset) for obj in datasets.values()):
-            raise TypeError(error_msg)
-        return {str(k): ds.assign_attrs({DATASET_ID_ATTR_KEY: k}) for k, ds in datasets.items()}
-    else:
+    if not isinstance(datasets, Mapping):
         raise TypeError(error_msg)
+
+    if not all(isinstance(obj, (xr.Dataset, xr.DataTree)) for obj in datasets.values()):
+        raise TypeError(error_msg)
+
+    normalized: Dict[str, xr.DataTree] = {}
+    for k, obj in datasets.items():
+        key = str(k)
+        tree = obj if isinstance(obj, xr.DataTree) else xr.DataTree(dataset=obj)
+        root_ds = tree.dataset
+        if root_ds.attrs.get(DATASET_ID_ATTR_KEY) != key:
+            tree.dataset = root_ds.assign_attrs({DATASET_ID_ATTR_KEY: key})
+        normalized[key] = tree
+
+    return normalized
 
 
 def normalize_app_routers(
