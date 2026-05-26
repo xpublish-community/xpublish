@@ -1,7 +1,7 @@
 """Plugin information router."""
 
 import importlib
-from typing import Dict, Optional, Sequence
+from collections.abc import Sequence
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -13,7 +13,7 @@ class PluginInfo(BaseModel):
     """Pydantic schema for plugin info."""
 
     path: str
-    version: Optional[str] = None
+    version: str | None = None
 
 
 class PluginInfoPlugin(Plugin):
@@ -34,8 +34,8 @@ class PluginInfoPlugin(Plugin):
 
         @router.get('/plugins')
         def get_plugins(
-            plugins: Dict[str, Plugin] = Depends(deps.plugins)
-        ) -> Dict[str, PluginInfo]:
+            plugins: dict[str, Plugin] = Depends(deps.plugins),
+        ) -> dict[str, PluginInfo]:
             """Return the source and version of the currently loaded plugins."""
             plugin_info = {}
 

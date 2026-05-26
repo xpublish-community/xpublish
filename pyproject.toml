@@ -43,8 +43,8 @@ dependencies = [
   "uvicorn",
   "xarray>=2025.7",
 ]
-urls."documentation" = "https://xpublish.readthedocs.io/"
-urls."repository" = "https://github.com/xpublish-community/xpublish"
+urls.documentation = "https://xpublish.readthedocs.io/"
+urls.repository = "https://github.com/xpublish-community/xpublish"
 entry-points."xpublish.plugin".dataset_info = "xpublish.plugins.included.dataset_info:DatasetInfoPlugin"
 entry-points."xpublish.plugin".module_version = "xpublish.plugins.included.module_version:ModuleVersionPlugin"
 entry-points."xpublish.plugin".plugin_info = "xpublish.plugins.included.plugin_info:PluginInfoPlugin"
@@ -57,7 +57,7 @@ dev = [
   "netcdf4",
   "pooch",
   "pre-commit",
-  "pytest",
+  "pytest>=9",
   "pytest-asyncio",
   "pytest-cov",
   "pytest-mock",
@@ -85,15 +85,12 @@ packages = [
 version_scheme = "post-release"
 local_scheme = "dirty-tag"
 
-[tool.black]
-line-length = 100
-skip-string-normalization = true
-
 [tool.ruff]
 line-length = 100
-
-lint.select = [
-  "B", # flake8-bugbear
+format.preview = true
+format.quote-style = "single"
+lint.extend-select = [
+  "B",  # flake8-bugbear
   # "T4",
   "B9",
   "C",
@@ -101,6 +98,7 @@ lint.select = [
   "E",  # pycodestyle
   "F",  # Pyflakes
   "I",  # isort
+  "UP", # pyupgrade
   "W",  # pycodestyle
 ]
 lint.ignore = [
@@ -162,9 +160,26 @@ lint.mccabe.max-complexity = 18
 # Use Google style docstrings
 lint.pydocstyle.convention = "google"
 
-[tool.pytest.ini_options]
+[tool.repo-review]
+ignore = [
+  "MY",    # MyPy
+  "GH103", # manual triggerable workflow
+  "GH212", # Dependabot grouping
+  "PP309", # pytest filter warnings
+  "PC140", # mypy in pre-commit
+  "PC160", # spell checker
+  "PC170", # pygrep to check RST files
+  "PC901", # custom pre-commit commit message
+  "PC902", # custom pre-commit autofix message
+]
+
+[tool.pytest]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 log_cli = true
 log_level = "INFO"
-addopts = "--cov=./ --cov-report=xml --verbose"
+addopts = [ "--cov=./", "--cov-report=xml", "--verbose", "-ra", "--strict-config", "--strict-markers" ]
+# filterwarnings = [ "error" ]
+strict = true
+testpaths = [ "tests" ]
+minversion = "9"

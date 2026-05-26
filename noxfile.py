@@ -1,25 +1,36 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# dependencies = ["nox", "pyyaml"]
+# ///
+
 import argparse
 
 import nox
 import yaml
 
+nox.needs_version = '>= 2025.10.14'
+nox.options.default_venv_backend = 'uv|virtualenv'
+
 with open('./.github/workflows/main.yaml') as f:
     workflow = yaml.safe_load(f)
 
 python_versions = workflow['jobs']['test']['strategy']['matrix']['python-version']
-# pydantic_versions = workflow['jobs']['test']['strategy']['matrix']['pydantic-version']
 
-nox.options.default_venv_backend = 'uv'
+with open('.readthedocs.yml') as f:
+    rtd_config = yaml.safe_load(f)
+docs_python_version = rtd_config['build']['tools']['python']
 
 
-@nox.session(python=python_versions)
-@nox.parametrize('pydantic', ['<2', '>=2'])
-def tests(session: nox.Session, pydantic: str):
+@nox.session(python=python_versions, default=True)
+def tests(session: nox.Session):
     """Run py.test."""
     session.install('--group', 'dev')
     session.install('.')
-    session.install(f'pydantic{pydantic}')
-    session.run('pytest', '--verbose', '--pdb')
+    session.run(
+        'pytest',
+        '--verbose',
+        # '--pdb'
+    )
 
 
 @nox.session
@@ -29,7 +40,7 @@ def pre_commit(session: nox.Session):
     session.run('pre-commit', 'run')
 
 
-@nox.session
+@nox.session(python=docs_python_version, default=False)
 def docs(session: nox.Session):
     """Build docs using Sphinx.
 
@@ -47,12 +58,14 @@ def docs(session: nox.Session):
     session.install('--group', 'docs')
     session.install('sphinx-autobuild')
 
+    session.cd('docs')
+
     BUILDDIR = '_build'
 
     if args.clean:
         session.run('rm', '-rf', f'{BUILDDIR}/*')
 
-    session.run('python', 'source/api/generate_openapi.py')
+    session.run('python', 'source/_ext/generate_openapi.py')
 
     if args.live:
         session.run('sphinx-autobuild', '-b', 'dirhtml', 'source/', '_build/dirhtml/')
@@ -67,4 +80,5 @@ def docs(session: nox.Session):
         )
 
 
-nox.options.sessions = ['tests']
+if __name__ == '__main__':
+    nox.main()

@@ -1,22 +1,22 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-docstring-first
       - id: check-json
       - id: check-yaml
-      - id: double-quote-string-fixer
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.5.5"
+    rev: "v0.15.14"
     hooks:
-      - id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-check
+        args: [--fix, --exit-non-zero-on-fix, --show-fixes]
+      - id: ruff-format
 
-  - repo: https://github.com/executablebooks/mdformat
-    rev: 0.7.17
+  - repo: https://github.com/hukkin/mdformat
+    rev: 1.0.0
     hooks:
       - id: mdformat
         additional_dependencies:
@@ -29,11 +29,6 @@ repos:
         additional_dependencies:
           - black==23.1.0
 
-  - repo: https://github.com/psf/black
-    rev: 24.4.2
-    hooks:
-      - id: black
-
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v4.0.0-alpha.8
     hooks:
@@ -43,14 +38,23 @@ repos:
           - markdown # managed by mdformat
 
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: "v2.8.0"
+    rev: "v2.21.2"
     hooks:
       - id: pyproject-fmt
 
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    rev: v1.22.0
+    rev: v1.25.2
     hooks:
       - id: zizmor
 
+  - repo: https://github.com/scientific-python/repo-review
+    rev: "v1.0.3"
+    hooks:
+      - id: repo-review
+        additional_dependencies:
+          ["repo-review[cli]", "sp-repo-review==2026.4.4"]
+        pass_filenames: false
+
 ci:
   autofix_prs: false
+  autoupdate_schedule: "weekly"
