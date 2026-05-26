@@ -19,7 +19,6 @@ coverage:
         only_pulls: false
     changes:
       default:
-        threshold: 0%
         if_not_found: success
 
 ignore:
