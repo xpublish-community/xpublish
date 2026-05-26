@@ -56,15 +56,9 @@ Similarly the versions of the plugins currently enabled on the Xpublish server.
 
 ## Zarr
 
-The Zarr plugin provides consolidated Zarr v2 access to the loaded datasets.
-
-```{eval-rst}
-.. autosummary::
-   :toctree: generated/
-
-   plugins.included.zarr.ZarrPlugin
-
-.. openapi:: ./openapi.json
-   :include:
-    /datasets/{dataset_id}/zarr/*
+```{note}
+The built-in Zarr plugin has moved to its own package,
+[xpublish-zarr](https://github.com/xpublish-community/xpublish-zarr).
+Install it separately (e.g. `pip install xpublish-zarr`) to restore the
+previous `/zarr/*` endpoints.
 ```

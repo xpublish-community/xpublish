@@ -22,6 +22,9 @@ Xpublish has a channel (`#xpublish`) on [ESIP](https://www.esipfed.org/)'s (Eart
 
 ## Plugins
 
+- [Zarr](https://github.com/xpublish-community/xpublish-zarr/)
+  [![PyPI](https://img.shields.io/pypi/v/xpublish-zarr)](https://pypi.org/project/xpublish-zarr/)
+  [![Conda Version](https://img.shields.io/conda/vn/conda-forge/xpublish-zarr.svg)](https://anaconda.org/conda-forge/xpublish-zarr)
 - [OGC EDR](https://github.com/xpublish-community/xpublish-edr/)
   [![PyPI](https://img.shields.io/pypi/v/xpublish-edr)](https://pypi.org/project/xpublish-edr/)
   [![Conda Version](https://img.shields.io/conda/vn/conda-forge/xpublish-edr.svg)](https://anaconda.org/conda-forge/xpublish-edr)

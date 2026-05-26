@@ -11,9 +11,6 @@ if __name__ == '__main__':
     ds = xr.tutorial.open_dataset('air_temperature', chunks={'lat': 5, 'lon': 5}, decode_cf=False)
     print(ds)
 
-    for _k, da in ds.variables.items():
-        da.encoding['compressor'] = None
-
     app = ds.rest.app
 
     from starlette.middleware.cors import CORSMiddleware
