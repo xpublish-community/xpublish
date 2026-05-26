@@ -71,6 +71,17 @@ endpoints to get some information about the published dataset:
 - `/dict`: returns a JSON dictionary of the full dataset.
 - `/versions`: returns JSON dictionary of the versions of Python, Xarray and related libraries on the server side, similar to {func}`xarray.show_versions`.
 
+```{admonition} Zarr access moved to xpublish-zarr
+:class: important
+
+Previous versions of Xpublish shipped a built-in Zarr plugin exposing
+`/zarr/.zmetadata` and `/zarr/{var}/{key}` endpoints. Starting with this
+release the Zarr plugin lives in its own package,
+[xpublish-zarr]. Install it separately (e.g.
+`pip install xpublish-zarr`) and register it on the Rest app to restore
+the previous Zarr-compatible endpoints.
+```
+
 Additional data access endpoints (such as Zarr-compatible access via
 [xpublish-zarr]) can be added by installing or writing plugins.
 

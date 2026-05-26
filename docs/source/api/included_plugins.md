@@ -53,3 +53,12 @@ Similarly the versions of the plugins currently enabled on the Xpublish server.
    :include:
     /plugins
 ```
+
+## Zarr
+
+```{note}
+The built-in Zarr plugin has moved to its own package,
+[xpublish-zarr](https://github.com/xpublish-community/xpublish-zarr).
+Install it separately (e.g. `pip install xpublish-zarr`) to restore the
+previous `/zarr/*` endpoints.
+```

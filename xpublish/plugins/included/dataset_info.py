@@ -63,22 +63,30 @@ class DatasetInfoPlugin(Plugin):
         @router.get('/info')
         def info(
             dataset=Depends(deps.dataset),
+            cache=Depends(deps.cache),
         ) -> dict:
             """Dataset schema (close to the NCO-JSON schema)."""
-            info: dict = {}
-            info['dimensions'] = dict(dataset.dims.items())
-            info['variables'] = {}
+            cache_key = dataset.attrs.get(DATASET_ID_ATTR_KEY, '') + '/' + 'info'
+            info = cache.get(cache_key)
 
-            for name, var in dataset.variables.items():
-                info['variables'][name] = {
-                    'type': var.dtype.name,
-                    'dimensions': list(var.dims),
-                    'attributes': _jsonable(dict(var.attrs)),
+            if info is None:
+                info = {
+                    'dimensions': dict(dataset.dims.items()),
+                    'variables': {
+                        name: {
+                            'type': var.dtype.name,
+                            'dimensions': list(var.dims),
+                            'attributes': _jsonable(dict(var.attrs)),
+                        }
+                        for name, var in dataset.variables.items()
+                    },
                 }
 
-            global_attrs = dict(dataset.attrs)
-            global_attrs.pop(DATASET_ID_ATTR_KEY, None)
-            info['global_attributes'] = _jsonable(global_attrs)
+                global_attrs = dict(dataset.attrs)
+                global_attrs.pop(DATASET_ID_ATTR_KEY, None)
+                info['global_attributes'] = _jsonable(global_attrs)
+
+                cache.put(cache_key, info, 99999)
 
             return JSONResponse(info)
 
