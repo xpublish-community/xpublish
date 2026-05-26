@@ -256,6 +256,24 @@ def test_info(airtemp_ds, airtemp_app_client):
     assert list(json_response['variables'].keys()) == list(airtemp_ds.variables.keys())
 
 
+def test_info_jsonable_attrs():
+    """Exercises the list/tuple and numpy array branches of _jsonable on /info."""
+    import numpy as np
+
+    ds = xr.Dataset({'var': ('x', [1, 2, 3])})
+    ds.attrs['list_attr'] = [1, 2, 3]
+    ds.attrs['tuple_attr'] = (4, 5, 6)
+    ds['var'].attrs['range'] = np.array([0.0, 1.0])
+
+    client = TestClient(SingleDatasetRest(ds).app)
+    response = client.get('/info')
+    assert response.status_code == 200
+    json_response = response.json()
+    assert json_response['global_attributes']['list_attr'] == [1, 2, 3]
+    assert json_response['global_attributes']['tuple_attr'] == [4, 5, 6]
+    assert json_response['variables']['var']['attributes']['range'] == [0.0, 1.0]
+
+
 def test_dict(airtemp_ds, airtemp_app_client):
     response = airtemp_app_client.get('/dict')
     assert response.status_code == 200
