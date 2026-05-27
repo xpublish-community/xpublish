@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Iterable, List, Optional
+from collections.abc import Callable, Iterable
 
 import cachey  # type: ignore
 import pluggy  # type: ignore
@@ -71,7 +71,7 @@ class Dependencies(BaseModel):
     can be overridden predictably.
     """
 
-    dataset_ids: Callable[..., List[str]] = Field(
+    dataset_ids: Callable[..., list[str]] = Field(
         get_dataset_ids,
         description='Returns a list of all valid dataset ids',
     )
@@ -94,7 +94,7 @@ class Dependencies(BaseModel):
         get_cache,
         description='Provide access to :py:class:`cachey.Cache`',
     )
-    plugins: Callable[..., Dict[str, Plugin]] = Field(
+    plugins: Callable[..., dict[str, Plugin]] = Field(
         get_plugins,
         description='A dictionary of plugins allowing direct access',
     )
@@ -139,7 +139,7 @@ class PluginSpec(Plugin):
 
     @hookspec(firstresult=True)
     # type: ignore
-    def get_datatree(self, dataset_id: str, group: str) -> Optional[xr.DataTree]:
+    def get_datatree(self, dataset_id: str, group: str) -> xr.DataTree | None:
         """Return a :py:class:`xarray.DataTree` for ``dataset_id`` rooted at ``group``.
 
         Implementations should declare ``group`` as a positional parameter
@@ -160,7 +160,7 @@ class PluginSpec(Plugin):
 
     @hookspec(firstresult=True)
     # type: ignore
-    def get_dataset(self, dataset_id: str) -> Optional[xr.Dataset]:
+    def get_dataset(self, dataset_id: str) -> xr.Dataset | None:
         """Return a :py:class:`xarray.Dataset` for ``dataset_id``.
 
         Use this hook when your provider only serves flat datasets — Xpublish

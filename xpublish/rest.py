@@ -1,11 +1,6 @@
 from typing import (
     Annotated,
-    Dict,
-    List,
     Literal,
-    Optional,
-    Tuple,
-    Union,
 )
 
 import cachey
@@ -44,8 +39,8 @@ from .utils.api import (
     normalize_datasets,
 )
 
-RouterKwargs = Dict
-RouterAndKwargs = Tuple[APIRouter, RouterKwargs]
+RouterKwargs = dict
+RouterAndKwargs = tuple[APIRouter, RouterKwargs]
 LogLevels = Literal['critical', 'error', 'warning', 'info', 'debug', 'trace']
 
 
@@ -74,11 +69,11 @@ class Rest:
 
     def __init__(
         self,
-        datasets: Optional[Dict[str, Union[xr.Dataset, xr.DataTree]]] = None,
-        routers: Optional[List[APIRouter]] = None,
-        cache_kws: Optional[Dict] = None,
-        app_kws: Optional[Dict] = None,
-        plugins: Optional[Dict[str, Plugin]] = None,
+        datasets: dict[str, xr.Dataset | xr.DataTree] | None = None,
+        routers: list[APIRouter] | None = None,
+        cache_kws: dict | None = None,
+        app_kws: dict | None = None,
+        plugins: dict[str, Plugin] | None = None,
     ):
         """Initialize a REST object for publishing Xarray Datasets / DataTrees.
 
@@ -113,7 +108,7 @@ class Rest:
         self.setup_datasets(datasets or {})
         self.setup_plugins(plugins)
 
-        normalized_routers: List[Tuple[APIRouter, Dict]] = normalize_app_routers(
+        normalized_routers: list[tuple[APIRouter, dict]] = normalize_app_routers(
             routers or [],
             self._dataset_route_prefix,
         )
@@ -125,7 +120,7 @@ class Rest:
 
     def setup_datasets(
         self,
-        datasets: Dict[str, Union[xr.Dataset, xr.DataTree]],
+        datasets: dict[str, xr.Dataset | xr.DataTree],
     ) -> str:
         """Initialize datasets and dataset accessor functions.
 
@@ -146,7 +141,7 @@ class Rest:
         self._dataset_route_prefix = '/datasets/{dataset_id}'
         return self._dataset_route_prefix
 
-    def get_datasets_from_plugins(self) -> List[str]:
+    def get_datasets_from_plugins(self) -> list[str]:
         """Return dataset ids from directly loaded datasets and plugins.
 
         Used as a FastAPI dependency in dataset router plugins
@@ -175,7 +170,7 @@ class Rest:
                 group does not exist within the resolved tree.
         """
         try:
-            tree: Optional[xr.DataTree] = self.pm.hook.get_datatree(
+            tree: xr.DataTree | None = self.pm.hook.get_datatree(
                 dataset_id=dataset_id,
                 group=group,
             )
@@ -186,7 +181,7 @@ class Rest:
             ) from err
 
         if tree is None:
-            legacy_ds: Optional[xr.Dataset] = self.pm.hook.get_dataset(dataset_id=dataset_id)
+            legacy_ds: xr.Dataset | None = self.pm.hook.get_dataset(dataset_id=dataset_id)
             if legacy_ds is not None:
                 if group:
                     raise HTTPException(
@@ -255,7 +250,7 @@ class Rest:
 
     def setup_plugins(
         self,
-        plugins: Optional[Dict[str, Plugin]] = None,
+        plugins: dict[str, Plugin] | None = None,
     ) -> None:
         """Initialize and load plugins from entry_points unless explicitly provided.
 
@@ -279,7 +274,7 @@ class Rest:
     def register_plugin(
         self,
         plugin: Plugin,
-        plugin_name: Optional[str] = None,
+        plugin_name: str | None = None,
         overwrite: bool = False,
     ) -> None:
         """Register a plugin with the xpublish system.
@@ -318,7 +313,7 @@ class Rest:
         )():
             self.pm.add_hookspecs(hookspec)
 
-    def init_cache_kwargs(self, cache_kws: Union[dict, None]) -> None:
+    def init_cache_kwargs(self, cache_kws: dict | None) -> None:
         """Set up cache kwargs.
 
         Args:
@@ -329,7 +324,7 @@ class Rest:
         if cache_kws is not None:
             self._cache_kws.update(cache_kws)
 
-    def init_app_kwargs(self, app_kws: Union[dict, None]) -> None:
+    def init_app_kwargs(self, app_kws: dict | None) -> None:
         """Set up FastAPI application kwargs.
 
         Args:
@@ -348,11 +343,11 @@ class Rest:
         return self._cache
 
     @property
-    def plugins(self) -> Dict[str, Plugin]:
+    def plugins(self) -> dict[str, Plugin]:
         """Returns the loaded plugins."""
         return dict(self.pm.list_name_plugin())
 
-    def _init_routers(self, dataset_routers: Optional[APIRouter]) -> None:
+    def _init_routers(self, dataset_routers: APIRouter | None) -> None:
         """Setup plugin and dataset routers. Needs to run after dataset and plugin setup."""
         app_routers, plugin_dataset_routers = self.plugin_routers()
 
@@ -361,7 +356,8 @@ class Rest:
 
         app_routers.extend(
             normalize_app_routers(
-                plugin_dataset_routers + (dataset_routers or []), self._dataset_route_prefix
+                plugin_dataset_routers + (dataset_routers or []),
+                self._dataset_route_prefix,
             )
         )
 
@@ -369,7 +365,7 @@ class Rest:
 
         self._app_routers = app_routers
 
-    def plugin_routers(self) -> Tuple[List[RouterAndKwargs], List[RouterAndKwargs]]:
+    def plugin_routers(self) -> tuple[list[RouterAndKwargs], list[RouterAndKwargs]]:
         """Load the app and dataset routers for plugins.
 
         Returns:
@@ -447,9 +443,9 @@ class Rest:
 
     def serve(
         self,
-        host: Optional[str] = '0.0.0.0',
-        port: Optional[int] = 9000,
-        log_level: Optional[LogLevels] = 'debug',
+        host: str | None = '0.0.0.0',
+        port: int | None = 9000,
+        log_level: LogLevels | None = 'debug',
         **kwargs,
     ) -> None:
         """Serve this FastAPI application via :func:`uvicorn.run`.
@@ -480,11 +476,11 @@ class SingleDatasetRest(Rest):
 
     def __init__(
         self,
-        dataset: Union[xr.Dataset, xr.DataTree],
-        routers: Optional[List[APIRouter]] = None,
-        cache_kws: Optional[Dict] = None,
-        app_kws: Optional[Dict] = None,
-        plugins: Optional[Dict[str, Plugin]] = None,
+        dataset: xr.Dataset | xr.DataTree,
+        routers: list[APIRouter] | None = None,
+        cache_kws: dict | None = None,
+        app_kws: dict | None = None,
+        plugins: dict[str, Plugin] | None = None,
     ):
         """Initialize the SingleDatasetRest object.
 

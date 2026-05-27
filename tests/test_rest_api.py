@@ -220,7 +220,10 @@ def test_custom_plugin_hooks_register(hook_spec_plugin, hook_implementation_plug
 def test_custom_plugin_hooks_init(hook_spec_plugin, hook_implementation_plugin):
     rest = Rest(
         {},
-        plugins={'hook_implementation': hook_implementation_plugin, 'hook_spec': hook_spec_plugin},
+        plugins={
+            'hook_implementation': hook_implementation_plugin,
+            'hook_spec': hook_spec_plugin,
+        },
     )
 
     assert 'world' == rest.pm.hook.hello()

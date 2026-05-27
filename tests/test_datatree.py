@@ -10,8 +10,6 @@ Covers:
 
 from __future__ import annotations
 
-from typing import Optional
-
 import pytest
 import xarray as xr
 from starlette.testclient import TestClient
@@ -164,7 +162,7 @@ def test_get_datatree_provider(simple_tree):
             self,
             dataset_id: str,
             group: str,
-        ) -> Optional[xr.DataTree]:
+        ) -> xr.DataTree | None:
             if dataset_id != 'provided':
                 return None
             return simple_tree[group] if group else simple_tree
@@ -221,7 +219,7 @@ def test_get_datatree_provider_key_error_becomes_404(simple_tree):
             self,
             dataset_id: str,
             group: str,
-        ) -> Optional[xr.DataTree]:
+        ) -> xr.DataTree | None:
             if dataset_id != 'provided':
                 return None
             return simple_tree[group] if group else simple_tree
@@ -256,7 +254,7 @@ def test_lazy_get_datatree_provider():
             self,
             dataset_id: str,
             group: str,
-        ) -> Optional[xr.DataTree]:
+        ) -> xr.DataTree | None:
             if dataset_id != 'lazy':
                 return None
             self.call_count += 1

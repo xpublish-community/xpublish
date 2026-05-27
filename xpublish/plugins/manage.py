@@ -1,14 +1,14 @@
 """Load and configure Xpublish plugins from entry point group `xpublish.plugin`."""
 
+from collections.abc import Iterable
 from importlib.metadata import entry_points
-from typing import Dict, Iterable, Optional, Type
 
 from .hooks import Plugin
 
 
 def find_default_plugins(
-    exclude_plugins: Optional[Iterable[str]] = None,
-) -> Dict[str, Type[Plugin]]:
+    exclude_plugins: Iterable[str] | None = None,
+) -> dict[str, type[Plugin]]:
     """Find Xpublish plugins from entry point group `xpublish.plugin`.
 
     Args:
@@ -19,7 +19,7 @@ def find_default_plugins(
     """
     exclude_plugins = set(exclude_plugins or [])
 
-    plugins: Dict[str, Type[Plugin]] = {}
+    plugins: dict[str, type[Plugin]] = {}
 
     plugin_entry_points = entry_points(group='xpublish.plugin')
 
@@ -31,8 +31,8 @@ def find_default_plugins(
 
 
 def load_default_plugins(
-    exclude_plugins: Optional[Iterable[str]] = None,
-) -> Dict[str, Plugin]:
+    exclude_plugins: Iterable[str] | None = None,
+) -> dict[str, Plugin]:
     """Find and initialize plugins from entry point group `xpublish.plugin`.
 
     Args:
@@ -41,7 +41,7 @@ def load_default_plugins(
     Returns:
         A dictionary of plugin names and instances.
     """
-    initialized_plugins: Dict[str, Plugin] = {}
+    initialized_plugins: dict[str, Plugin] = {}
 
     for name, plugin in find_default_plugins(exclude_plugins=exclude_plugins).items():
         initialized_plugins[name] = plugin()
@@ -50,9 +50,9 @@ def load_default_plugins(
 
 
 def configure_plugins(
-    plugins: Dict[str, Type[Plugin]],
-    plugin_configs: Optional[Dict[str, Dict]] = None,
-) -> Dict[str, Plugin]:
+    plugins: dict[str, type[Plugin]],
+    plugin_configs: dict[str, dict] | None = None,
+) -> dict[str, Plugin]:
     """Initialize and configure plugins with given dictionary of configurations.
 
     Args:
@@ -62,7 +62,7 @@ def configure_plugins(
     Returns:
         A dictionary of plugin names and instances.
     """
-    initialized_plugins: Dict[str, Plugin] = {}
+    initialized_plugins: dict[str, Plugin] = {}
     plugin_configs = plugin_configs or {}
 
     for name, plugin in plugins.items():

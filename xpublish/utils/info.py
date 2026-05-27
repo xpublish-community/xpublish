@@ -8,13 +8,10 @@ import subprocess
 import sys
 from typing import (
     Any,
-    List,
-    Tuple,
-    Union,
 )
 
 
-def get_sys_info() -> List[Tuple[str, Any]]:
+def get_sys_info() -> list[tuple[str, Any]]:
     """Returns system information.
 
     Returns:
@@ -46,26 +43,24 @@ def get_sys_info() -> List[Tuple[str, Any]]:
         blob.append(('commit', commit))
 
     uname = platform.uname()
-    blob.extend(
-        [
-            ('python', sys.version),
-            ('python-bits', struct.calcsize('P') * 8),
-            ('OS', '%s' % (uname.system)),
-            ('OS-release', '%s' % (uname.release)),
-            ('Version', '%s' % (uname.version)),
-            ('machine', '%s' % (uname.machine)),
-            ('processor', '%s' % (uname.processor)),
-            ('byteorder', '%s' % sys.byteorder),
-            ('LC_ALL', '%s' % os.environ.get('LC_ALL', 'None')),
-            ('LANG', '%s' % os.environ.get('LANG', 'None')),
-            ('LOCALE', '%s.%s' % locale.getlocale()),
-        ]
-    )
+    blob.extend([
+        ('python', sys.version),
+        ('python-bits', struct.calcsize('P') * 8),
+        ('OS', f'{uname.system}'),
+        ('OS-release', f'{uname.release}'),
+        ('Version', f'{uname.version}'),
+        ('machine', f'{uname.machine}'),
+        ('processor', f'{uname.processor}'),
+        ('byteorder', f'{sys.byteorder}'),
+        ('LC_ALL', f'{os.environ.get("LC_ALL", "None")}'),
+        ('LANG', f'{os.environ.get("LANG", "None")}'),
+        ('LOCALE', f'{locale.getlocale()[0]}.{locale.getlocale()[1]}'),
+    ])
 
     return blob
 
 
-def netcdf_and_hdf5_versions() -> list[tuple[str, Union[str, None]]]:
+def netcdf_and_hdf5_versions() -> list[tuple[str, str | None]]:
     """Returns netCDF and HDF5 version information.
 
     Returns:

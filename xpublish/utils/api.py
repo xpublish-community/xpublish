@@ -1,12 +1,6 @@
 import json
 from collections.abc import Mapping
-from typing import (
-    Any,
-    Dict,
-    List,
-    Tuple,
-    Union,
-)
+from typing import Any
 
 import xarray as xr
 from fastapi import APIRouter
@@ -17,8 +11,8 @@ DATASET_ID_ATTR_KEY = '_xpublish_id'
 
 
 def normalize_datasets(
-    datasets: Union[xr.Dataset, xr.DataTree, Mapping[Any, Union[xr.Dataset, xr.DataTree]]],
-) -> Dict[str, xr.DataTree]:
+    datasets: xr.Dataset | xr.DataTree | Mapping[Any, xr.Dataset | xr.DataTree],
+) -> dict[str, xr.DataTree]:
     """Normalize the given collection of datasets or DataTrees.
 
     Internally xpublish stores everything as a :py:class:`xarray.DataTree`.
@@ -42,8 +36,7 @@ def normalize_datasets(
         TypeError: If objects other than xarray.Dataset/DataTree are found.
     """
     error_msg = (
-        'Can only publish a xarray.Dataset/DataTree object or a mapping '
-        'of Dataset/DataTree objects'
+        'Can only publish a xarray.Dataset/DataTree object or a mapping of Dataset/DataTree objects'
     )
 
     if isinstance(datasets, (xr.Dataset, xr.DataTree)):
@@ -54,7 +47,7 @@ def normalize_datasets(
     if not all(isinstance(obj, (xr.Dataset, xr.DataTree)) for obj in datasets.values()):
         raise TypeError(error_msg)
 
-    normalized: Dict[str, xr.DataTree] = {}
+    normalized: dict[str, xr.DataTree] = {}
     for k, obj in datasets.items():
         key = str(k)
         tree = obj if isinstance(obj, xr.DataTree) else xr.DataTree(dataset=obj)
@@ -67,9 +60,9 @@ def normalize_datasets(
 
 
 def normalize_app_routers(
-    routers: List[Union[APIRouter, Tuple[APIRouter, Dict]]],
+    routers: list[APIRouter | tuple[APIRouter, dict]],
     prefix: str,
-) -> List[Tuple[APIRouter, Dict]]:
+) -> list[tuple[APIRouter, dict]]:
     """Normalise the given list of (dataset-specific) API routers.
 
     This adds or prepends ``prefix`` to all router dictionaries.
@@ -103,7 +96,7 @@ def normalize_app_routers(
     return new_routers
 
 
-def check_route_conflicts(routers: List[Tuple[APIRouter, Dict]]) -> None:
+def check_route_conflicts(routers: list[tuple[APIRouter, dict]]) -> None:
     """Check for route conflicts in the given list of routers.
 
     Args:
