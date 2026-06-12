@@ -53,7 +53,7 @@ def dims_router():
 
     @router.get('/dims')
     def get_dims(dataset: xr.Dataset = Depends(get_dataset)):
-        return dataset.dims
+        return dataset.sizes
 
     return router
 
@@ -157,7 +157,7 @@ def test_custom_app_routers(airtemp_ds, dims_router, router_kws, path):
 
     response = client.get(path)
     assert response.status_code == 200
-    assert response.json() == airtemp_ds.dims
+    assert response.json() == airtemp_ds.sizes
 
     # test default routers not present
     response = client.get('/')
@@ -197,7 +197,7 @@ def test_custom_dataset_plugin(airtemp_ds, dataset_plugin):
 
     info_response = client.get('/datasets/airtemp/info')
     json_response = info_response.json()
-    assert json_response['dimensions'] == airtemp_ds.dims
+    assert json_response['dimensions'] == airtemp_ds.sizes
     assert list(json_response['variables'].keys()) == list(airtemp_ds.variables.keys())
 
 
@@ -248,14 +248,14 @@ def test_info(airtemp_ds, airtemp_app_client):
     response = airtemp_app_client.get('/info')
     assert response.status_code == 200
     json_response = response.json()
-    assert json_response['dimensions'] == airtemp_ds.dims
+    assert json_response['dimensions'] == airtemp_ds.sizes
     assert list(json_response['variables'].keys()) == list(airtemp_ds.variables.keys())
 
     # Second request, to make sure the cached data wasn't changed
     response = airtemp_app_client.get('/info')
     assert response.status_code == 200
     json_response = response.json()
-    assert json_response['dimensions'] == airtemp_ds.dims
+    assert json_response['dimensions'] == airtemp_ds.sizes
     assert list(json_response['variables'].keys()) == list(airtemp_ds.variables.keys())
 
 

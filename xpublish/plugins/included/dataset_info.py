@@ -74,7 +74,7 @@ class DatasetInfoPlugin(Plugin):
 
             if info is None:
                 info = {
-                    'dimensions': dict(dataset.dims.items()),
+                    'dimensions': dict(dataset.sizes),
                     'variables': {
                         name: {
                             'type': var.dtype.name,

@@ -21,6 +21,15 @@ hookspec = pluggy.HookspecMarker('xpublish')
 # Decorator helper to mark functions as Xpublish hook implementations
 hookimpl = pluggy.HookimplMarker('xpublish')
 
+# Deprecated or otherwise inaccessible Pydantic fields that pluggy should ignore when inspecting plugins
+PYDANTIC_INACCESSIBLE_FIELDS = {
+    '__fields__',  # 2.0
+    '__fields_set__',  # 2.0
+    'model_computed_fields',  # 2.1
+    'model_fields',  # 2.1
+    '__signature__',  # Class only
+}
+
 
 class Plugin(BaseModel):
     """Xpublish plugins provide ways to extend the core of xpublish with new routers and other functionality.
@@ -55,9 +64,9 @@ class Plugin(BaseModel):
 
         https://github.com/pydantic/pydantic/pull/1466
         """
-        d = list(super().__dir__())
+        d = set(super().__dir__())
 
-        d.remove('__signature__')
+        d = d.difference(PYDANTIC_INACCESSIBLE_FIELDS)
 
         return d
 

@@ -29,7 +29,7 @@ def test_configure_plugins(airtemp_ds):
 
     info_response = client.get('/datasets/airtemp/meta/info')
     json_response = info_response.json()
-    assert json_response['dimensions'] == airtemp_ds.dims
+    assert json_response['dimensions'] == airtemp_ds.sizes
     assert list(json_response['variables'].keys()) == list(airtemp_ds.variables.keys())
 
 
@@ -69,5 +69,5 @@ def test_overwrite_plugins(airtemp_ds):
     # /newinfo plugin should respond correctly
     info_response = client.get('/datasets/airtemp/newinfo/info')
     json_response = info_response.json()
-    assert json_response['dimensions'] == airtemp_ds.dims
+    assert json_response['dimensions'] == airtemp_ds.sizes
     assert list(json_response['variables'].keys()) == list(airtemp_ds.variables.keys())
