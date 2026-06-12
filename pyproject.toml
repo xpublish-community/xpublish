@@ -52,7 +52,7 @@ entry-points."xpublish.plugin".plugin_info = "xpublish.plugins.included.plugin_i
 [dependency-groups]
 dev = [
   "fsspec",
-  "httpx",
+  "httpx2",
   "importlib-metadata",
   "netcdf4",
   "pooch",
