@@ -179,7 +179,10 @@ asyncio_default_fixture_loop_scope = "function"
 log_cli = true
 log_level = "INFO"
 addopts = [ "--cov=xpublish", "--cov-report=xml", "--verbose", "-ra", "--strict-config", "--strict-markers" ]
-# filterwarnings = [ "error" ]
+filterwarnings = [
+  "error",
+  "ignore:numpy.ndarray size changed:RuntimeWarning",
+]
 strict = true
 testpaths = [ "tests" ]
 minversion = "9"
