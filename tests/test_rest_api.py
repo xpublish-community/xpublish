@@ -186,6 +186,43 @@ def test_custom_app_routers_conflict(airtemp_ds):
         Rest({'airtemp': airtemp_ds}, routers=[(router1, {'prefix': '/same'}), router2])
 
 
+def test_custom_app_routers_same_path_different_methods(airtemp_ds):
+    """Same path with disjoint HTTP methods (GET + POST) is not a conflict."""
+    router = APIRouter()
+
+    @router.get('/query')
+    def get_query():
+        return 'get'
+
+    @router.post('/query')
+    def post_query():
+        return 'post'
+
+    rest = SingleDatasetRest(airtemp_ds, routers=[router], plugins={})
+    client = TestClient(rest.app)
+
+    assert client.get('/query').json() == 'get'
+    assert client.post('/query').json() == 'post'
+
+
+def test_custom_app_routers_same_path_same_method_conflict(airtemp_ds):
+    """Two routes sharing both a path and a method is still a conflict."""
+    router1 = APIRouter()
+
+    @router1.get('/dup')
+    def first():
+        pass
+
+    router2 = APIRouter()
+
+    @router2.get('/dup')
+    def second():
+        pass
+
+    with pytest.raises(ValueError, match='Found multiple routes.*GET /dup'):
+        SingleDatasetRest(airtemp_ds, routers=[router1, router2], plugins={})
+
+
 def test_custom_dataset_plugin(airtemp_ds, dataset_plugin):
     rest = Rest({})
     rest.register_plugin(dataset_plugin)
