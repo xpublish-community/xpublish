@@ -223,6 +223,31 @@ def test_custom_app_routers_same_path_same_method_conflict(airtemp_ds):
         SingleDatasetRest(airtemp_ds, routers=[router1, router2], plugins={})
 
 
+def test_custom_app_routers_with_included_subrouter(airtemp_ds):
+    """A router built with ``include_router`` must not break conflict checking.
+
+    On Starlette >= 1.0 / FastAPI >= 0.137, ``APIRouter.include_router`` keeps
+    the nested router as an ``_IncludedRouter`` entry in ``router.routes``
+    instead of flattening it into ``APIRoute`` objects. That entry has no
+    ``.path`` attribute, which previously made ``check_route_conflicts`` raise
+    ``AttributeError: '_IncludedRouter' object has no attribute 'path'``.
+    (Older Starlette flattened the routes, hiding the bug.)
+    """
+    child = APIRouter()
+
+    @child.get('/leaf')
+    def leaf():
+        return 'leaf'
+
+    parent = APIRouter()
+    parent.include_router(child, prefix='/sub')
+
+    rest = SingleDatasetRest(airtemp_ds, routers=[parent], plugins={})
+    client = TestClient(rest.app)
+
+    assert client.get('/sub/leaf').json() == 'leaf'
+
+
 def test_custom_dataset_plugin(airtemp_ds, dataset_plugin):
     rest = Rest({})
     rest.register_plugin(dataset_plugin)

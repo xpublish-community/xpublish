@@ -16,6 +16,10 @@ with open('./.github/workflows/main.yaml') as f:
 
 python_versions = workflow['jobs']['test']['strategy']['matrix']['python-version']
 
+# Oldest supported interpreter, compared numerically so e.g. '3.9' sorts before
+# '3.14' (a plain string min() would compare lexicographically and get it wrong).
+min_python_version = min(python_versions, key=lambda v: tuple(int(p) for p in v.split('.')))
+
 with open('.readthedocs.yml') as f:
     rtd_config = yaml.safe_load(f)
 docs_python_version = rtd_config['build']['tools']['python']
@@ -33,11 +37,26 @@ def tests(session: nox.Session):
     )
 
 
-@nox.session
+@nox.session(python=min_python_version, name='min-deps', default=True)
+def min_deps(session: nox.Session):
+    """Run py.test against the minimum supported Python and dependency versions.
+
+    The test tooling (the ``dev`` group) is installed at its usual latest
+    versions; uv's ``lowest-direct`` resolution is applied only to the package
+    itself, pinning each runtime dependency to the floor of its version
+    specifier. This catches lower bounds that have drifted out of date, e.g.
+    using an API added after the minimum pinned version.
+    """
+    session.install('--group', 'dev')
+    session.install('--resolution', 'lowest-direct', '.')
+    session.run('pytest', '--verbose')
+
+
+@nox.session(default=False)
 def pre_commit(session: nox.Session):
     """Run pre-commit."""
-    session.install('pre-commit')
-    session.run('pre-commit', 'run')
+    session.install('prek')
+    session.run('prek', 'run')
 
 
 @nox.session(python=docs_python_version, default=False)
