@@ -96,29 +96,32 @@ def normalize_app_routers(
     return new_routers
 
 
-def check_route_conflicts(routers: list[tuple[APIRouter, dict]]) -> None:
+def check_route_conflicts(routers: list[tuple[APIRouter, dict[str, Any]]]) -> None:
     """Check for route conflicts in the given list of routers.
 
     Args:
         routers: A list of (APIRouter, {...}) tuples.
 
     Raises:
-        ValueError: If multiple routes are defined for the same path.
+        ValueError: If multiple routes are defined for the same path and HTTP
+            method. The same path with disjoint methods (e.g. a GET and a POST
+            query endpoint) is legitimate routing and is allowed.
     """
-    paths = []
-
-    for router, kws in routers:
-        prefix = kws.get('prefix', '')
-        paths += [prefix + r.path for r in router.routes]
-
     seen = set()
     duplicates = []
 
-    for p in paths:
-        if p in seen:
-            duplicates.append(p)
-        else:
-            seen.add(p)
+    for router, kws in routers:
+        prefix = kws.get('prefix', '')
+        for r in router.routes:
+            path = prefix + r.path  # type: ignore[attr-defined]
+            # Routes without methods (e.g. a Mount) collide on path alone.
+            methods = getattr(r, 'methods', None) or {None}
+            for method in methods:
+                key = (path, method)
+                if key in seen:
+                    duplicates.append(path if method is None else f'{method} {path}')
+                else:
+                    seen.add(key)
 
     if len(duplicates):
         raise ValueError(f'Found multiple routes defined for the following paths: {duplicates}')
