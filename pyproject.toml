@@ -178,15 +178,15 @@ ignore = [
 ]
 
 [tool.pytest]
-asyncio_mode = "auto"
-asyncio_default_fixture_loop_scope = "function"
-log_cli = true
-log_level = "INFO"
 addopts = [ "--cov=xpublish", "--cov-report=xml", "--verbose", "-ra", "--strict-config", "--strict-markers" ]
+asyncio_default_fixture_loop_scope = "function"
+asyncio_mode = "auto"
 filterwarnings = [
   "error",
   "ignore:numpy.ndarray size changed:RuntimeWarning",
 ]
+log_cli = true
+log_level = "INFO"
+minversion = "9"
 strict = true
 testpaths = [ "tests" ]
-minversion = "9"
