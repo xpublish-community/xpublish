@@ -34,14 +34,14 @@ classifiers = [
 ]
 dynamic = [ "version" ]
 dependencies = [
-  "cachey",
+  "cachey>=0.2.1",
   "fastapi>=0.115",
-  "numpy",
-  "pluggy",
-  "pydantic>=2.5",
-  "toolz",
-  "uvicorn",
-  "xarray>=2025.7",
+  "numpy>=1.26",
+  "pluggy>=1",
+  "pydantic>=2.6",
+  "toolz>=0.12",
+  "uvicorn>=0.22",
+  "xarray>=2025.7.1",
 ]
 urls.documentation = "https://xpublish.readthedocs.io/"
 urls.repository = "https://github.com/xpublish-community/xpublish"
@@ -52,6 +52,10 @@ entry-points."xpublish.plugin".plugin_info = "xpublish.plugins.included.plugin_i
 [dependency-groups]
 dev = [
   "fsspec",
+  # Starlette's TestClient imports httpx2 on recent releases and plain httpx on
+  # older ones; keep both so the suite runs across the supported fastapi range
+  # (e.g. the min-deps session pins fastapi to its floor, pulling old starlette).
+  "httpx",
   "httpx2",
   "importlib-metadata",
   "netcdf4",

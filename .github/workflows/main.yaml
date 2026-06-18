@@ -97,3 +97,26 @@ jobs:
       - name: Running Tests
         run: |
           python -m pytest --verbose
+
+  test-min-deps:
+    name: min-deps (3.11)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
+        with:
+          enable-cache: true
+          python-version: "3.11"
+
+      - name: Install dev dependencies
+        run: uv sync --group dev
+
+      - name: Install package at minimum versions
+        run: uv pip install --resolution lowest-direct .
+
+      - name: Running Tests
+        run: uv run pytest --verbose

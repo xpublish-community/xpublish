@@ -1,5 +1,5 @@
 import json
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from typing import Any
 
 import xarray as xr
@@ -96,6 +96,28 @@ def normalize_app_routers(
     return new_routers
 
 
+def _iter_route_paths(routes: list[Any], prefix: str) -> Iterator[tuple[str, Any]]:
+    """Yield ``(path, methods)`` for every leaf route under ``routes``.
+
+    Routes added via :meth:`fastapi.APIRouter.include_router` are not always
+    flattened into the parent's route list. On Starlette >= 1.0 the nested
+    router is kept as an ``_IncludedRouter`` entry that exposes neither
+    ``.path`` nor ``.methods``; its routes (and the prefix it was mounted at)
+    live on ``original_router`` and ``include_context``. Recurse into those so
+    conflict detection sees the same paths the running app will serve.
+    """
+    for r in routes:
+        if hasattr(r, 'path'):
+            yield prefix + r.path, getattr(r, 'methods', None)
+            continue
+
+        included = getattr(r, 'original_router', None)
+        context = getattr(r, 'include_context', None)
+        if included is not None and context is not None:
+            sub_prefix = prefix + getattr(context, 'prefix', '')
+            yield from _iter_route_paths(included.routes, sub_prefix)
+
+
 def check_route_conflicts(routers: list[tuple[APIRouter, dict[str, Any]]]) -> None:
     """Check for route conflicts in the given list of routers.
 
@@ -112,10 +134,9 @@ def check_route_conflicts(routers: list[tuple[APIRouter, dict[str, Any]]]) -> No
 
     for router, kws in routers:
         prefix = kws.get('prefix', '')
-        for r in router.routes:
-            path = prefix + r.path  # type: ignore[attr-defined]
+        for path, route_methods in _iter_route_paths(router.routes, prefix):
             # Routes without methods (e.g. a Mount) collide on path alone.
-            methods = getattr(r, 'methods', None) or {None}
+            methods = route_methods or {None}
             for method in methods:
                 key = (path, method)
                 if key in seen:
