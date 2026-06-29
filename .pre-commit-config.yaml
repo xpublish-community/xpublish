@@ -9,7 +9,7 @@ repos:
       - id: check-yaml
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.15.16"
+    rev: "v0.15.20"
     hooks:
       - id: ruff-check
         args: [--fix, --exit-non-zero-on-fix, --show-fixes]
@@ -38,17 +38,17 @@ repos:
           - markdown # managed by mdformat
 
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: "v2.24.0"
+    rev: "v2.25.1"
     hooks:
       - id: pyproject-fmt
 
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    rev: v1.25.2
+    rev: v1.26.1
     hooks:
       - id: zizmor
 
   - repo: https://github.com/scientific-python/repo-review
-    rev: "v1.1.3"
+    rev: "v1.2.1"
     hooks:
       - id: repo-review
         additional_dependencies:
