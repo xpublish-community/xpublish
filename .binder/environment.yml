@@ -10,7 +10,7 @@ dependencies:
   - fsspec
   - dask
   - distributed
-  - cachey
+  - cachetools
   - dask-labextension
   - jupyter-server-proxy
   - toolz

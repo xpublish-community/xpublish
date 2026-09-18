@@ -8,15 +8,17 @@ from typing import Any, NamedTuple, Protocol, runtime_checkable
 
 import cachetools
 
+# Environment variable overriding the size of the application cache, in bytes
+CACHE_BYTES_ENV = 'XPUBLISH_CACHE_BYTES'
+
 
 @runtime_checkable
 class CacheProtocol(Protocol):
     """The cache contract that xpublish plugins rely on.
 
     Any object providing these two methods can be used as the application
-    cache. The signatures match :class:`cachey.Cache`, which was the
-    historical implementation, so cachey caches (and anything else that is
-    cachey-compatible) satisfy the protocol.
+    cache. The signatures match ``cachey.Cache``, which was the historical
+    implementation, so any cachey-compatible cache satisfies the protocol.
 
     Implementations are free to ignore ``cost`` and ``nbytes`` hints, and may
     silently decline to store a value, so callers must always be prepared for

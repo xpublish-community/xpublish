@@ -7,6 +7,7 @@ from starlette.testclient import TestClient
 import xpublish  # noqa: F401
 from xpublish import Plugin, Rest, SingleDatasetRest, hookimpl, hookspec
 from xpublish.dependencies import get_dataset
+from xpublish.utils.cache import CACHE_BYTES_ENV
 
 
 @pytest.fixture(scope='function')
@@ -111,7 +112,49 @@ def hook_implementation_plugin():
 
 def test_init_cache_kws(airtemp_ds):
     rest = Rest({'airtemp': airtemp_ds}, cache_kws={'available_bytes': 999})
-    assert rest.cache.available_bytes == 999
+    assert rest.cache.mapping.maxsize == 999
+
+
+def test_init_cache_kws_unknown_key(airtemp_ds):
+    with pytest.raises(TypeError, match='nbytes'):
+        Rest({'airtemp': airtemp_ds}, cache_kws={'nbytes': 999})
+
+
+def test_cache_bytes_env_var_overrides_default(airtemp_ds, monkeypatch):
+    monkeypatch.setenv(CACHE_BYTES_ENV, '12345')
+
+    rest = Rest({'airtemp': airtemp_ds})
+
+    assert rest.cache.mapping.maxsize == 12345
+
+
+def test_cache_bytes_env_var_overrides_cache_kws(airtemp_ds, monkeypatch):
+    monkeypatch.setenv(CACHE_BYTES_ENV, '12345')
+
+    rest = Rest({'airtemp': airtemp_ds}, cache_kws={'available_bytes': 999})
+
+    assert rest.cache.mapping.maxsize == 12345
+
+
+def test_cache_bytes_env_var_invalid(airtemp_ds, monkeypatch):
+    monkeypatch.setenv(CACHE_BYTES_ENV, 'a lot')
+
+    with pytest.raises(ValueError, match=CACHE_BYTES_ENV):
+        Rest({'airtemp': airtemp_ds})
+
+
+def test_info_is_cached(airtemp_ds):
+    rest = Rest({'airtemp': airtemp_ds})
+    client = TestClient(rest.app)
+
+    assert 'airtemp/info' not in rest.cache
+
+    first = client.get('/datasets/airtemp/info')
+    assert first.status_code == 200
+    assert 'airtemp/info' in rest.cache
+
+    second = client.get('/datasets/airtemp/info')
+    assert second.json() == first.json()
 
 
 def test_init_app_kws(airtemp_ds):
@@ -393,7 +436,7 @@ def test_rest_accessor_kws(airtemp_ds):
         cache_kws={'available_bytes': 1e9},
     )
 
-    assert airtemp_ds.rest.cache.available_bytes == 1e9
+    assert airtemp_ds.rest.cache.mapping.maxsize == 1e9
 
     client = TestClient(airtemp_ds.rest.app)
 

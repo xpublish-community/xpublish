@@ -2,12 +2,11 @@
 
 from typing import TYPE_CHECKING
 
-import cachey
 import pluggy
 import xarray as xr
 from fastapi import Request
 
-from .utils.cache import CacheProtocol
+from .utils.cache import CacheProtocol, lru_bytes_cache
 
 if TYPE_CHECKING:
     from .plugins import Plugin  # pragma: no cover
@@ -103,7 +102,7 @@ def get_cache() -> CacheProtocol:
     application.
 
     """
-    return cachey.Cache(available_bytes=1e6)  # pragma: no cover
+    return lru_bytes_cache(available_bytes=1e6)  # pragma: no cover
 
 
 def get_plugins() -> dict[str, 'Plugin']:
