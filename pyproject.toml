@@ -34,6 +34,7 @@ classifiers = [
 ]
 dynamic = [ "version" ]
 dependencies = [
+  "cachetools>=5",
   "cachey>=0.2.1",
   "fastapi>=0.115",
   "numpy>=1.26",
