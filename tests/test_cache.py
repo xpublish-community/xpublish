@@ -10,13 +10,16 @@ import numpy as np
 import pytest
 from starlette.testclient import TestClient
 
-from xpublish import Rest
+from xpublish import Plugin, Rest, hookimpl
+from xpublish.plugins.included.dataset_info import DatasetInfoPlugin
 from xpublish.utils.cache import (
     CACHE_BYTES_ENV,
+    CacheEntry,
     CacheProtocol,
     CacheyCache,
     LockedMapping,
     SerializedMapping,
+    entry_size,
     lru_bytes_cache,
     lru_bytes_store,
     nbytes,
@@ -318,7 +321,7 @@ def test_concurrent_access_keeps_the_store_consistent():
 
     mapping = cache.mapping
     assert mapping.currsize <= mapping.maxsize
-    assert mapping.currsize == sum(value[1] for value in mapping.values())
+    assert mapping.currsize == sum(entry_size(value) for value in mapping.values())
 
 
 def test_locked_mapping_round_trip():
@@ -434,7 +437,7 @@ def test_locked_mapping_concurrent_access_stays_consistent():
         list(pool.map(worker, range(8)))
 
     assert store.currsize <= store.maxsize
-    assert store.currsize == sum(value[1] for value in store.mapping.values())
+    assert store.currsize == sum(entry_size(value) for value in store.mapping.values())
 
 
 def test_cache_kwarg_accepts_a_mapping(airtemp_ds):
@@ -535,3 +538,193 @@ def test_two_apps_can_share_one_store(airtemp_ds):
         assert client.get('/datasets/airtemp/info').status_code == 200
 
     assert store.writes['airtemp/info'] == 1
+
+
+def cache_plugin(store, calls=None):
+    """Build a plugin whose get_cache hook returns ``store``.
+
+    The store is captured in a closure rather than held as a pydantic field so
+    that arbitrary mapping types can be used.
+    """
+
+    class CacheProviderPlugin(Plugin):
+        name: str = 'cache_provider'
+
+        @hookimpl
+        def get_cache(self, cache_kws):
+            """Provide the backing store for the application cache."""
+            if calls is not None:
+                calls.append(cache_kws)
+            return store
+
+    return CacheProviderPlugin()
+
+
+def plugins_with(plugin):
+    """Plugins for a Rest app: the cache provider plus /info."""
+    return {'dataset_info': DatasetInfoPlugin(), 'cache_provider': plugin}
+
+
+def test_plugin_can_provide_the_cache_store(airtemp_ds):
+    store = cachetools.LRUCache(maxsize=1e6, getsizeof=lambda item: item[1])
+    rest = Rest({'airtemp': airtemp_ds}, plugins=plugins_with(cache_plugin(store)))
+
+    assert isinstance(rest.cache, CacheyCache)
+    assert rest.cache.mapping is store
+    assert rest.dependencies().cache_store() is store
+
+    client = TestClient(rest.app)
+    assert client.get('/datasets/airtemp/info').status_code == 200
+    assert 'airtemp/info' in store
+
+
+def test_plugin_can_provide_a_plain_dict(airtemp_ds):
+    store = {}
+    rest = Rest({'airtemp': airtemp_ds}, plugins=plugins_with(cache_plugin(store)))
+
+    client = TestClient(rest.app)
+    assert client.get('/datasets/airtemp/info').status_code == 200
+    assert 'airtemp/info' in store
+
+
+def test_plugin_returning_none_falls_back_to_the_default(airtemp_ds):
+    rest = Rest(
+        {'airtemp': airtemp_ds},
+        plugins=plugins_with(cache_plugin(None)),
+        cache_kws={'available_bytes': 999},
+    )
+
+    assert isinstance(rest.cache.mapping, LockedMapping)
+    assert isinstance(rest.cache.mapping.mapping, cachetools.LRUCache)
+    assert rest.cache.mapping.maxsize == 999
+
+
+def test_explicit_cache_beats_the_plugin(airtemp_ds):
+    explicit = {}
+    from_plugin = {}
+    rest = Rest(
+        {'airtemp': airtemp_ds},
+        plugins=plugins_with(cache_plugin(from_plugin)),
+        cache=explicit,
+    )
+
+    assert rest.cache.mapping is explicit
+
+    client = TestClient(rest.app)
+    assert client.get('/datasets/airtemp/info').status_code == 200
+    assert 'airtemp/info' in explicit
+    assert from_plugin == {}
+
+
+def test_plugin_hook_receives_the_merged_cache_kws(airtemp_ds, monkeypatch):
+    monkeypatch.setenv(CACHE_BYTES_ENV, '12345')
+    calls = []
+
+    rest = Rest({'airtemp': airtemp_ds}, plugins=plugins_with(cache_plugin({}, calls)))
+    _ = rest.cache
+
+    assert calls == [{'available_bytes': 12345.0}]
+
+
+# -- CacheEntry / entry_size: raw values written directly to xpublish stores --
+
+
+def _by_kind(kind):
+    return {'float': 1.5, 'dict': {'a': 1}, 'str': 'hello', 'tuple': ('x', 5)}[kind]
+
+
+def test_cachetools_cached_accepts_raw_values_of_any_type():
+    store = lru_bytes_store(1e6)
+
+    @cachetools.cached(store)
+    def compute(kind):
+        return _by_kind(kind)
+
+    assert compute('float') == 1.5
+    assert compute('dict') == {'a': 1}
+    assert compute('str') == 'hello'
+    assert compute('tuple') == ('x', 5)
+
+    # a raw 2-tuple is measured by nbytes(), not treated as a (value, nbytes)
+    # pair, so it is no longer silently sized as 5 bytes
+    assert entry_size(('x', 5)) != 5
+
+    assert store.currsize == sum(entry_size(value) for value in store.values())
+
+
+def test_cachetools_cached_via_prefixed_cache_accepts_raw_values():
+    ctu = pytest.importorskip('CacheToolsUtils')
+
+    store = lru_bytes_store(1e6)
+    prefixed = ctu.PrefixedCache(store, 'p:')
+
+    @cachetools.cached(prefixed, key=lambda kind: f'g/{kind}')
+    def compute(kind):
+        return _by_kind(kind)
+
+    assert compute('float') == 1.5
+    assert compute('dict') == {'a': 1}
+    assert compute('str') == 'hello'
+    assert compute('tuple') == ('x', 5)
+
+    assert store.currsize == sum(entry_size(value) for value in store.values())
+
+
+def test_mixed_raw_and_cacheycache_entries_evict_lru_by_bytes():
+    store = lru_bytes_store(10)
+    cache = CacheyCache(store)
+
+    cache.put('a', b'aaaa', 1.0)  # CacheEntry, 4 bytes
+    store['b'] = b'bbbb'  # raw value written directly, 4 bytes
+    cache.put('c', b'cc', 1.0)  # CacheEntry, 2 bytes; store is now full (10)
+
+    # touch 'b' so it is more recently used than 'a'
+    assert store['b'] == b'bbbb'
+
+    # inserting another 4-byte entry evicts the least-recently-used ('a')
+    cache.put('d', b'dddd', 1.0)
+
+    assert 'a' not in store
+    assert store['b'] == b'bbbb'
+    assert cache.get('c') == b'cc'
+    assert cache.get('d') == b'dddd'
+
+
+def test_oversize_raw_value_via_cachetools_cached_is_dropped_silently():
+    store = lru_bytes_store(10)
+
+    @cachetools.cached(store)
+    def big():
+        return b'x' * 100
+
+    assert big() == b'x' * 100
+    assert len(store) == 0
+
+
+def test_cacheycache_get_returns_a_raw_value_written_directly():
+    store = {}
+    store['key'] = 'raw-value'
+    cache = CacheyCache(store)
+
+    assert cache.get('key') == 'raw-value'
+
+
+def test_cacheycache_put_stores_a_cache_entry():
+    store = {}
+    cache = CacheyCache(store)
+
+    cache.put('key', 'value', 1.0)
+
+    assert isinstance(store['key'], CacheEntry)
+    assert store['key'] == ('value', nbytes('value'))
+
+
+def test_cache_entry_round_trips_through_serialized_mapping():
+    store = {}
+    mapping = SerializedMapping(store)
+
+    mapping['key'] = CacheEntry('value', 5)
+
+    result = mapping['key']
+    assert isinstance(result, CacheEntry)
+    assert result == ('value', 5)

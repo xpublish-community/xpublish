@@ -51,6 +51,7 @@ entry-points."xpublish.plugin".plugin_info = "xpublish.plugins.included.plugin_i
 
 [dependency-groups]
 dev = [
+  "cachetoolsutils",
   "fsspec",
   # Starlette's TestClient imports httpx2 on recent releases and plain httpx on
   # older ones; keep both so the suite runs across the supported fastapi range
