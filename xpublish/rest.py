@@ -1,5 +1,6 @@
 import logging
 import os
+from collections.abc import MutableMapping
 from typing import (
     Annotated,
     Literal,
@@ -18,6 +19,7 @@ from fastapi import (
 
 from .dependencies import (
     get_cache,
+    get_cache_store,
     get_dataset,
     get_dataset_ids,
     get_datatree,
@@ -39,7 +41,13 @@ from .utils.api import (
     normalize_app_routers,
     normalize_datasets,
 )
-from .utils.cache import CACHE_BYTES_ENV, CacheProtocol, lru_bytes_cache
+from .utils.cache import (
+    CACHE_BYTES_ENV,
+    CacheProtocol,
+    CacheyCache,
+    lru_bytes_cache,
+    lru_bytes_store,
+)
 
 RouterKwargs = dict
 RouterAndKwargs = tuple[APIRouter, RouterKwargs]
@@ -78,6 +86,7 @@ class Rest:
         cache_kws: dict | None = None,
         app_kws: dict | None = None,
         plugins: dict[str, Plugin] | None = None,
+        cache: CacheProtocol | MutableMapping | None = None,
     ):
         """Initialize a REST object for publishing Xarray Datasets / DataTrees.
 
@@ -103,6 +112,11 @@ class Rest:
             plugins: Optional dictionary of loaded, configured plugins. Overrides
                 automatic loading of plugins. If no plugins are desired, set to an
                 empty dict.
+            cache: An explicit cache to use instead of the one xpublish builds.
+                Either a mutable mapping to store cached values in (a
+                ``cachetools`` cache, a plain dict, a shared store, ...), or an
+                object following :class:`xpublish.CacheProtocol`. Mutually
+                exclusive with ``cache_kws``.
         """
         if isinstance(datasets, (xr.Dataset, xr.DataTree)):
             raise TypeError(
@@ -121,7 +135,7 @@ class Rest:
         self._routers = normalized_routers
 
         self.init_app_kwargs(app_kws)
-        self.init_cache_kwargs(cache_kws)
+        self.init_cache(cache, cache_kws)
 
     def setup_datasets(
         self,
@@ -327,21 +341,39 @@ class Rest:
         )():
             self.pm.add_hookspecs(hookspec)
 
-    def init_cache_kwargs(self, cache_kws: dict | None) -> None:
-        """Set up cache kwargs.
+    def init_cache(
+        self,
+        cache: CacheProtocol | MutableMapping | None,
+        cache_kws: dict | None,
+    ) -> None:
+        """Set up the application cache.
 
-        The cache size can be overridden at runtime with the
-        ``XPUBLISH_CACHE_BYTES`` environment variable.
+        Either an explicit cache instance or a dictionary of cache options may
+        be given, not both. Without an explicit cache, the size can be
+        overridden at runtime with the ``XPUBLISH_CACHE_BYTES`` environment
+        variable.
 
         Args:
+            cache: An explicit cache to use, either a mutable mapping to store
+                cached values in, or an object following
+                :class:`xpublish.CacheProtocol`.
             cache_kws: Dictionary of cache keyword arguments. The only
                 supported key is ``available_bytes``.
 
         Raises:
-            TypeError: An unsupported key was passed.
-            ValueError: ``XPUBLISH_CACHE_BYTES`` is not a number.
+            TypeError: An unsupported cache keyword argument was passed.
+            ValueError: Both ``cache`` and ``cache_kws`` were given, or
+                ``XPUBLISH_CACHE_BYTES`` is not a number.
         """
+        if cache is not None and cache_kws is not None:
+            raise ValueError(
+                'Pass either cache or cache_kws, not both. cache_kws only '
+                'configures the cache that xpublish builds for itself.'
+            )
+
         self._cache = None
+        self._cache_store = None
+        self._cache_instance = cache
         self._cache_kws = {'available_bytes': 1e6}
         if cache_kws is not None:
             for key in cache_kws:
@@ -354,18 +386,44 @@ class Rest:
             self._cache_kws.update(cache_kws)
 
         env_bytes = os.environ.get(CACHE_BYTES_ENV)
-        if env_bytes is not None:
-            try:
-                available_bytes = float(env_bytes)
-            except ValueError as err:
-                raise ValueError(f'{CACHE_BYTES_ENV} must be a number, got {env_bytes!r}') from err
+        if env_bytes is None:
+            return
 
-            self._cache_kws['available_bytes'] = available_bytes
+        try:
+            available_bytes = float(env_bytes)
+        except ValueError as err:
+            raise ValueError(f'{CACHE_BYTES_ENV} must be a number, got {env_bytes!r}') from err
+
+        if isinstance(cache, MutableMapping):
+            logger.warning(
+                '%s is ignored because a cache instance was supplied',
+                CACHE_BYTES_ENV,
+            )
+            return
+
+        self._cache_kws['available_bytes'] = available_bytes
+        if cache is None:
             logger.info(
                 '%s overrode the cache size, which is now %s bytes',
                 CACHE_BYTES_ENV,
                 available_bytes,
             )
+        else:
+            logger.info(
+                '%s sizes only the plugin cache_store (not the supplied '
+                'cache), which is now %s bytes',
+                CACHE_BYTES_ENV,
+                available_bytes,
+            )
+
+    def init_cache_kwargs(self, cache_kws: dict | None) -> None:
+        """Set up cache kwargs, without an explicit cache instance.
+
+        Args:
+            cache_kws: Dictionary of cache keyword arguments, as described on
+                :meth:`Rest.init_cache`.
+        """
+        self.init_cache(None, cache_kws)
 
     def init_app_kwargs(self, app_kws: dict | None) -> None:
         """Set up FastAPI application kwargs.
@@ -378,6 +436,26 @@ class Rest:
         if app_kws is not None:
             self._app_kws.update(app_kws)
 
+    def _build_cache(self) -> CacheProtocol:
+        """Build the cache, from an explicit instance or from the cache kwargs.
+
+        Raises:
+            TypeError: An explicit cache was given that is neither a mutable
+                mapping nor a :class:`xpublish.CacheProtocol`.
+        """
+        cache = self._cache_instance
+        if cache is not None:
+            if isinstance(cache, MutableMapping):
+                return CacheyCache(cache)
+            if isinstance(cache, CacheProtocol):
+                return cache
+            raise TypeError(
+                f'{type(cache).__name__} is neither a MutableMapping nor a CacheProtocol '
+                '(an object with cachey-compatible get() and put() methods)'
+            )
+
+        return lru_bytes_cache(**self._cache_kws)
+
     @property
     def cache(self) -> CacheProtocol:
         """Returns the cache used by the FastAPI application.
@@ -385,8 +463,29 @@ class Rest:
         The cache follows :class:`xpublish.CacheProtocol`.
         """
         if self._cache is None:
-            self._cache = lru_bytes_cache(**self._cache_kws)
+            self._cache = self._build_cache()
         return self._cache
+
+    @property
+    def cache_store(self) -> MutableMapping:
+        """Returns the raw mapping behind the application cache.
+
+        Plugins that want to layer their own policy over the shared store can
+        use this instead of :attr:`Rest.cache`. The store is always present.
+        When the cache is a user-supplied get/put-only
+        :class:`xpublish.CacheProtocol` object, xpublish can't see inside it,
+        so this instead returns a separate store, built once and reused on
+        every call, for plugins to use. That fallback store is a
+        byte-budgeted LRU cache sized 1 MB by default, or by
+        ``available_bytes``/``XPUBLISH_CACHE_BYTES``; entries written to it
+        are not visible through :attr:`Rest.cache`.
+        """
+        cache = self.cache
+        if isinstance(cache, CacheyCache):
+            return cache.mapping
+        if self._cache_store is None:
+            self._cache_store = lru_bytes_store(self._cache_kws['available_bytes'])
+        return self._cache_store
 
     @property
     def plugins(self) -> dict[str, Plugin]:
@@ -442,6 +541,7 @@ class Rest:
             dataset=self._get_dataset_func,
             datatree=self._get_datatree_func,
             cache=lambda: self.cache,
+            cache_store=lambda: self.cache_store,
             plugins=lambda: self.plugins,
             plugin_manager=lambda: self.pm,
         )
@@ -456,6 +556,7 @@ class Rest:
         self._app.dependency_overrides[get_dataset] = deps.dataset
         self._app.dependency_overrides[get_datatree] = deps.datatree
         self._app.dependency_overrides[get_cache] = deps.cache
+        self._app.dependency_overrides[get_cache_store] = deps.cache_store
         self._app.dependency_overrides[get_plugins] = deps.plugins
         self._app.dependency_overrides[get_plugin_manager] = deps.plugin_manager
 
@@ -527,6 +628,7 @@ class SingleDatasetRest(Rest):
         cache_kws: dict | None = None,
         app_kws: dict | None = None,
         plugins: dict[str, Plugin] | None = None,
+        cache: CacheProtocol | MutableMapping | None = None,
     ):
         """Initialize the SingleDatasetRest object.
 
@@ -551,13 +653,25 @@ class SingleDatasetRest(Rest):
             plugins: Optional dictionary of loaded, configured plugins. Overrides
                 automatic loading of plugins. If no plugins are desired, set to an
                 empty dict.
+            cache: An explicit cache to use instead of the one xpublish builds.
+                Either a mutable mapping to store cached values in (a
+                ``cachetools`` cache, a plain dict, a shared store, ...), or an
+                object following :class:`xpublish.CacheProtocol`. Mutually
+                exclusive with ``cache_kws``.
         """
         if isinstance(dataset, xr.DataTree):
             self._tree = dataset
         else:
             self._tree = xr.DataTree(dataset=dataset)
 
-        super().__init__({}, routers, cache_kws, app_kws, plugins)
+        super().__init__(
+            datasets={},
+            routers=routers,
+            cache_kws=cache_kws,
+            app_kws=app_kws,
+            plugins=plugins,
+            cache=cache,
+        )
 
     def setup_datasets(self, datasets) -> str:
         """Modifies dataset loading to instead connect to the single dataset/DataTree."""
