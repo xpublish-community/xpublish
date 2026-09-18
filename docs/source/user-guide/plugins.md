@@ -475,6 +475,59 @@ of the same dataset will share a cache key.
 upgrade guide with sections for server admins and plugin authors.
 ```
 
+## Cache Provider Plugins
+
+Plugins can also supply the store that backs the application cache, via
+{py:meth}`xpublish.plugins.hooks.PluginSpec.get_cache`. This lets a
+deployment-specific plugin point every application at a shared or
+differently-tuned cache without each one configuring it by hand.
+
+```python
+import cachetools
+from xpublish import LockedMapping, Plugin, entry_size, hookimpl
+
+
+class TTLCachePlugin(Plugin):
+    name: str = "ttl-cache"
+
+    ttl: int = 300
+
+    @hookimpl
+    def get_cache(self, cache_kws: dict):
+        return LockedMapping(
+            cachetools.TTLCache(
+                maxsize=cache_kws["available_bytes"],
+                ttl=self.ttl,
+                getsizeof=entry_size,
+            )
+        )
+```
+
+The hook returns any {py:class}`collections.abc.MutableMapping`; Xpublish wraps
+it for {py:meth}`xpublish.Dependencies.cache` and hands the bare instance to
+plugins as {py:meth}`xpublish.Dependencies.cache_store`. Values put through
+{py:class}`xpublish.CacheyCache` are stored as {py:class}`xpublish.CacheEntry`
+instances carrying their measured size, which is why size-aware stores are
+built with `getsizeof=entry_size` — it reads that size back off a
+`CacheEntry`, and measures anything else (such as a raw value written
+directly to the store) the same way `nbytes` would. Return `None` to defer to
+another plugin or to the default cache.
+
+```{warning}
+Mappings returned from `get_cache` are used exactly as given. FastAPI runs
+sync endpoints in a thread pool, and `cachetools` caches are not thread-safe,
+so wrap the store in {py:class}`xpublish.LockedMapping`, as above, before
+returning it — {py:class}`xpublish.CacheyCache` then shares its lock rather
+than adding a second one. [CacheToolsUtils'
+`LockedCache`](https://zx80.github.io/cachetools-utils/DOCUMENTATION/#lockedcache)
+also works.
+```
+
+```{seealso}
+[Caching](./caching.md) — configuring the cache, supplying your own store, and
+what plugins can expect from it.
+```
+
 ## Hook Spec Plugins
 
 Plugins can also provide new hook specifications that other plugins can then implement.
