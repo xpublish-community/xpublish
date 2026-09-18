@@ -55,7 +55,9 @@ are not supported in this case).
 
 Xpublish also provides a {func}`~xpublish.dependencies.get_cache` dependency
 function to get/put any useful key-value pair from/into the cache that is
-created along with a running instance of the application.
+created along with a running instance of the application. See
+[Caching](../../user-guide/caching.md) for how to size that cache, or replace
+it with a store of your own.
 
 To use our route, we then need to tell Xpublish about it, by passing it into `ds.rest`.
 

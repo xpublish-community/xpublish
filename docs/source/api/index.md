@@ -29,6 +29,7 @@ The main interfaces to Xpublish that many users may use.
    Rest
    Rest.app
    Rest.cache
+   Rest.cache_store
    Rest.plugins
    Rest.serve
    Rest.register_plugin
@@ -48,9 +49,29 @@ by plugin dependencies.
    Rest.get_dataset_from_plugins
    Rest.get_datatree_from_plugins
    Rest.setup_plugins
+   Rest.init_cache
    Rest.init_cache_kwargs
    Rest.init_app_kwargs
    Rest.plugin_routers
+```
+
+## Caching
+
+The cache that {class}`~xpublish.Rest` builds, and the pieces to build or
+supply your own. See [Caching](../user-guide/caching.md) for a walkthrough.
+
+```{eval-rst}
+.. autosummary::
+   :toctree: generated/
+
+   CacheEntry
+   CacheProtocol
+   CacheyCache
+   LockedMapping
+   SerializedMapping
+   entry_size
+   lru_bytes_cache
+   lru_bytes_store
 ```
 
 There is also a specialized version of {class}`xpublish.Rest` for use
@@ -188,6 +209,7 @@ passed in to the `Plugin.app_router` or `Plugin.dataset_router` method.
    get_dataset
    get_datatree
    get_cache
+   get_cache_store
    get_plugins
    get_plugin_manager
 ```
