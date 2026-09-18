@@ -191,6 +191,20 @@ class PluginSpec(Plugin):
         If the plugin does not have the dataset, return ``None``.
         """
 
+    @hookspec(firstresult=True)
+    # type: ignore
+    def get_cache(self, cache_kws: dict) -> MutableMapping | None:
+        """Return the backing store for the application cache, or ``None`` to defer.
+
+        Usually a ``cachetools.Cache`` subclass (``LRUCache``, ``TTLCache``, ...),
+        but any ``MutableMapping`` works, for instance a CacheToolsUtils
+        ``TwoLevelCache`` over Redis. Xpublish wraps the store in
+        :class:`xpublish.CacheyCache` for ``deps.cache`` and hands the bare
+        instance to plugins as ``deps.cache_store``. ``cache_kws`` are the
+        merged cache options (``available_bytes`` and any override from
+        ``XPUBLISH_CACHE_BYTES``) so a provider can honour the configured size.
+        """
+
     @hookspec
     def register_hookspec(self):  # type: ignore
         """Return additional hookspec class to register with the plugin manager."""

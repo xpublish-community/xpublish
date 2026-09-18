@@ -437,7 +437,11 @@ class Rest:
             self._app_kws.update(app_kws)
 
     def _build_cache(self) -> CacheProtocol:
-        """Build the cache, from an explicit instance or from the cache kwargs.
+        """Build the cache.
+
+        An explicit ``cache=`` wins, then any store offered by a plugin's
+        ``get_cache`` hook, and otherwise xpublish builds its own byte-budgeted
+        LRU cache.
 
         Raises:
             TypeError: An explicit cache was given that is neither a mutable
@@ -453,6 +457,18 @@ class Rest:
                 f'{type(cache).__name__} is neither a MutableMapping nor a CacheProtocol '
                 '(an object with cachey-compatible get() and put() methods)'
             )
+
+        store = self.pm.hook.get_cache(cache_kws=dict(self._cache_kws))
+        if store is not None:
+            providers = ', '.join(
+                impl.plugin_name for impl in self.pm.hook.get_cache.get_hookimpls()
+            )
+            logger.info(
+                'Using the %s cache store provided by plugin(s) %s',
+                type(store).__name__,
+                providers,
+            )
+            return CacheyCache(store)
 
         return lru_bytes_cache(**self._cache_kws)
 
