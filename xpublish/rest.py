@@ -1,9 +1,10 @@
+import logging
+import os
 from typing import (
     Annotated,
     Literal,
 )
 
-import cachey
 import pluggy
 import uvicorn
 import xarray as xr
@@ -38,11 +39,13 @@ from .utils.api import (
     normalize_app_routers,
     normalize_datasets,
 )
-from .utils.cache import CacheProtocol
+from .utils.cache import CACHE_BYTES_ENV, CacheProtocol, lru_bytes_cache
 
 RouterKwargs = dict
 RouterAndKwargs = tuple[APIRouter, RouterKwargs]
 LogLevels = Literal['critical', 'error', 'warning', 'info', 'debug', 'trace']
+
+logger = logging.getLogger(__name__)
 
 
 class Rest:
@@ -91,9 +94,10 @@ class Rest:
                 the 1st tuple element is a :class:`fastapi.APIRouter` instance and
                 the 2nd element is a dictionary that is used to pass keyword
                 arguments to :meth:`fastapi.FastAPI.include_router`.
-            cache_kws: Dictionary of keyword arguments to be passed to
-                :meth:`cachey.Cache.__init__()`. By default, the cache size is set
-                to 1MB, but this can be changed with ``available_bytes``.
+            cache_kws: Dictionary of cache keyword arguments. The cache is a
+                least-recently-used cache with a byte budget, which defaults to
+                1MB and can be changed with ``available_bytes``. The
+                ``XPUBLISH_CACHE_BYTES`` environment variable overrides both.
             app_kws: Dictionary of keyword arguments to be passed to
                 :meth:`fastapi.FastAPI.__init__()`.
             plugins: Optional dictionary of loaded, configured plugins. Overrides
@@ -326,13 +330,42 @@ class Rest:
     def init_cache_kwargs(self, cache_kws: dict | None) -> None:
         """Set up cache kwargs.
 
+        The cache size can be overridden at runtime with the
+        ``XPUBLISH_CACHE_BYTES`` environment variable.
+
         Args:
-            cache_kws: Dictionary of cache keyword arguments.
+            cache_kws: Dictionary of cache keyword arguments. The only
+                supported key is ``available_bytes``.
+
+        Raises:
+            TypeError: An unsupported key was passed.
+            ValueError: ``XPUBLISH_CACHE_BYTES`` is not a number.
         """
         self._cache = None
         self._cache_kws = {'available_bytes': 1e6}
         if cache_kws is not None:
+            for key in cache_kws:
+                if key != 'available_bytes':
+                    raise TypeError(
+                        f'Unsupported cache keyword argument {key!r}. '
+                        'cachey-specific cache options have been removed; '
+                        'pass a custom cache instead.'
+                    )
             self._cache_kws.update(cache_kws)
+
+        env_bytes = os.environ.get(CACHE_BYTES_ENV)
+        if env_bytes is not None:
+            try:
+                available_bytes = float(env_bytes)
+            except ValueError as err:
+                raise ValueError(f'{CACHE_BYTES_ENV} must be a number, got {env_bytes!r}') from err
+
+            self._cache_kws['available_bytes'] = available_bytes
+            logger.info(
+                '%s overrode the cache size, which is now %s bytes',
+                CACHE_BYTES_ENV,
+                available_bytes,
+            )
 
     def init_app_kwargs(self, app_kws: dict | None) -> None:
         """Set up FastAPI application kwargs.
@@ -352,7 +385,7 @@ class Rest:
         The cache follows :class:`xpublish.CacheProtocol`.
         """
         if self._cache is None:
-            self._cache = cachey.Cache(**self._cache_kws)
+            self._cache = lru_bytes_cache(**self._cache_kws)
         return self._cache
 
     @property
@@ -509,9 +542,10 @@ class SingleDatasetRest(Rest):
                 the 1st tuple element is a :class:`fastapi.APIRouter` instance and
                 the 2nd element is a dictionary that is used to pass keyword
                 arguments to :meth:`fastapi.FastAPI.include_router`.
-            cache_kws: Dictionary of keyword arguments to be passed to
-                :meth:`cachey.Cache.__init__()`. By default, the cache size is set
-                to 1MB, but this can be changed with ``available_bytes``.
+            cache_kws: Dictionary of cache keyword arguments. The cache is a
+                least-recently-used cache with a byte budget, which defaults to
+                1MB and can be changed with ``available_bytes``. The
+                ``XPUBLISH_CACHE_BYTES`` environment variable overrides both.
             app_kws: Dictionary of keyword arguments to be passed to
                 :meth:`fastapi.FastAPI.__init__()`.
             plugins: Optional dictionary of loaded, configured plugins. Overrides

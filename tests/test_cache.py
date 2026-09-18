@@ -3,7 +3,6 @@ import pickle
 import sys
 from concurrent.futures import ThreadPoolExecutor
 
-import cachey
 import numpy as np
 import pytest
 
@@ -30,8 +29,8 @@ class RecordingLock:
         return False
 
 
-def test_cachey_cache_satisfies_protocol():
-    assert isinstance(cachey.Cache(available_bytes=1), CacheProtocol)
+def test_lru_bytes_cache_satisfies_protocol():
+    assert isinstance(lru_bytes_cache(1), CacheProtocol)
 
 
 def test_object_without_put_is_not_a_cache():
@@ -56,10 +55,6 @@ def test_object_with_get_and_put_is_a_cache():
 def test_protocol_cannot_be_instantiated():
     with pytest.raises(TypeError):
         CacheProtocol()
-
-
-def test_cachey_cache_satisfies_the_protocol():
-    assert isinstance(lru_bytes_cache(1000), CacheProtocol)
 
 
 def test_dict_store_round_trip():
