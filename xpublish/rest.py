@@ -38,6 +38,7 @@ from .utils.api import (
     normalize_app_routers,
     normalize_datasets,
 )
+from .utils.cache import CacheProtocol
 
 RouterKwargs = dict
 RouterAndKwargs = tuple[APIRouter, RouterKwargs]
@@ -345,8 +346,11 @@ class Rest:
             self._app_kws.update(app_kws)
 
     @property
-    def cache(self) -> cachey.Cache:
-        """Returns the :class:`cachey.Cache` instance used by the FastAPI application."""
+    def cache(self) -> CacheProtocol:
+        """Returns the cache used by the FastAPI application.
+
+        The cache follows :class:`xpublish.CacheProtocol`.
+        """
         if self._cache is None:
             self._cache = cachey.Cache(**self._cache_kws)
         return self._cache

@@ -7,6 +7,8 @@ import pluggy
 import xarray as xr
 from fastapi import Request
 
+from .utils.cache import CacheProtocol
+
 if TYPE_CHECKING:
     from .plugins import Plugin  # pragma: no cover
 
@@ -89,12 +91,13 @@ def get_datatree(dataset_id: str) -> xr.DataTree:
     return xr.DataTree()  # pragma: no cover
 
 
-def get_cache() -> cachey.Cache:
+def get_cache() -> CacheProtocol:
     """FastAPI dependency for accessing the application's cache.
 
     Use this callable as dependency in any FastAPI path operation
     function where you need access to the cache provided with the
-    application.
+    application. The returned object follows
+    :class:`xpublish.CacheProtocol`.
 
     This dummy dependency will be overridden when creating the FastAPI
     application.

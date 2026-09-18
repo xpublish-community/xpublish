@@ -1,6 +1,5 @@
 from collections.abc import Callable, Iterable
 
-import cachey  # type: ignore
 import pluggy  # type: ignore
 import xarray as xr
 from fastapi import APIRouter
@@ -14,6 +13,7 @@ from ..dependencies import (
     get_plugin_manager,
     get_plugins,
 )
+from ..utils.cache import CacheProtocol
 
 # Decorator helper to mark functions as Xpublish hook specifications
 hookspec = pluggy.HookspecMarker('xpublish')
@@ -99,9 +99,9 @@ class Dependencies(BaseModel):
             '``{group_path:path}`` if present in the route).'
         ),
     )
-    cache: Callable[..., cachey.Cache] = Field(
+    cache: Callable[..., CacheProtocol] = Field(
         get_cache,
-        description='Provide access to :py:class:`cachey.Cache`',
+        description='Provide access to the application cache (:py:class:`xpublish.CacheProtocol`)',
     )
     plugins: Callable[..., dict[str, Plugin]] = Field(
         get_plugins,
