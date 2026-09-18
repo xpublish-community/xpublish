@@ -1,4 +1,4 @@
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, MutableMapping
 
 import pluggy  # type: ignore
 import xarray as xr
@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from ..dependencies import (
     get_cache,
+    get_cache_store,
     get_dataset,
     get_dataset_ids,
     get_datatree,
@@ -102,6 +103,13 @@ class Dependencies(BaseModel):
     cache: Callable[..., CacheProtocol] = Field(
         get_cache,
         description='Provide access to the application cache (:py:class:`xpublish.CacheProtocol`)',
+    )
+    cache_store: Callable[..., MutableMapping] = Field(
+        get_cache_store,
+        description=(
+            'The raw mapping behind the application cache, for plugins that want to '
+            'layer their own policy over the shared store'
+        ),
     )
     plugins: Callable[..., dict[str, Plugin]] = Field(
         get_plugins,

@@ -1,12 +1,13 @@
 """Helper functions to use a FastAPI dependencies."""
 
+from collections.abc import MutableMapping
 from typing import TYPE_CHECKING
 
 import pluggy
 import xarray as xr
 from fastapi import Request
 
-from .utils.cache import CacheProtocol, lru_bytes_cache
+from .utils.cache import CacheProtocol, lru_bytes_cache, lru_bytes_store
 
 if TYPE_CHECKING:
     from .plugins import Plugin  # pragma: no cover
@@ -103,6 +104,20 @@ def get_cache() -> CacheProtocol:
 
     """
     return lru_bytes_cache(available_bytes=1e6)  # pragma: no cover
+
+
+def get_cache_store() -> MutableMapping:
+    """FastAPI dependency for accessing the store behind the application's cache.
+
+    Use this callable as dependency in any FastAPI path operation function
+    where you want to layer your own caching policy over the store that the
+    application cache is built on.
+
+    This dummy dependency will be overridden when creating the FastAPI
+    application.
+
+    """
+    return lru_bytes_store(1e6)  # pragma: no cover
 
 
 def get_plugins() -> dict[str, 'Plugin']:
