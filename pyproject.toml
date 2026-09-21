@@ -184,6 +184,10 @@ asyncio_mode = "auto"
 filterwarnings = [
   "error",
   "ignore:numpy.ndarray size changed:RuntimeWarning",
+  # starlette's TestClient still imports the `anyio.abc.BlockingPortal` alias,
+  # which anyio 4.15.1 deprecated. Drop this once starlette releases past 1.6.0
+  # with anyio.from_thread.BlockingPortal.
+  "ignore:The anyio.abc.BlockingPortal alias is deprecated:DeprecationWarning",
 ]
 log_cli = true
 log_level = "INFO"
