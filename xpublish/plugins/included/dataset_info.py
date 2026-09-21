@@ -6,6 +6,7 @@ import xarray as xr
 from fastapi import APIRouter, Depends
 from starlette.responses import HTMLResponse  # type: ignore
 
+from xpublish.dependencies import get_group_path
 from xpublish.utils.api import DATASET_ID_ATTR_KEY, JSONResponse
 
 from .. import Dependencies, Plugin, hookimpl
@@ -67,9 +68,14 @@ class DatasetInfoPlugin(Plugin):
         def info(
             dataset=Depends(deps.dataset),
             cache=Depends(deps.cache),
+            group_path: str = Depends(get_group_path),
         ) -> dict:
             """Dataset schema (close to the NCO-JSON schema)."""
-            cache_key = dataset.attrs.get(DATASET_ID_ATTR_KEY, '') + '/' + 'info'
+            # ``group_path`` has to be part of the key: ``deps.dataset`` stamps the
+            # same dataset id onto every node of the tree, so without it the root
+            # and every group would share a single cache entry.
+            dataset_id = dataset.attrs.get(DATASET_ID_ATTR_KEY, '')
+            cache_key = f'{dataset_id}/{group_path}/info'
             info = cache.get(cache_key)
 
             if info is None:

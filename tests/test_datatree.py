@@ -354,3 +354,73 @@ def test_datatree_accessor(simple_tree):
     r = client.get('/groups/a/keys')
     assert r.status_code == 200
     assert r.json() == ['x']
+
+
+# ---------------------------------------------------------------------------
+# /info is cached, so it needs a per-group cache key
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    'group_path,expected_vars,expected_dims',
+    [
+        ('', [], {}),
+        ('a', ['x'], {'i': 3}),
+        ('a/b', ['y'], {'j': 2}),
+        ('c', ['z'], {'k': 4}),
+    ],
+)
+def test_group_info(simple_tree, group_path, expected_vars, expected_dims):
+    rest = Rest({'tree': simple_tree})
+    client = TestClient(rest.app)
+
+    suffix = f'groups/{group_path}/info' if group_path else 'info'
+    r = client.get(f'/datasets/tree/{suffix}')
+
+    assert r.status_code == 200
+    body = r.json()
+    assert list(body['variables']) == expected_vars
+    assert body['dimensions'] == expected_dims
+
+
+def test_group_info_is_not_shared_between_groups(simple_tree):
+    """Every node must get its own cache entry.
+
+    ``deps.dataset`` stamps the same dataset id onto each node of the tree, so a
+    cache key built from the dataset id alone made the first group requested
+    answer for the root and for every other group.
+    """
+    rest = Rest({'tree': simple_tree})
+    client = TestClient(rest.app)
+
+    # Prime the cache from a group rather than the root, so a shared key would
+    # leak '/a' into the answers below instead of an empty root.
+    assert list(client.get('/datasets/tree/groups/a/info').json()['variables']) == ['x']
+
+    assert list(client.get('/datasets/tree/groups/a/b/info').json()['variables']) == ['y']
+    assert list(client.get('/datasets/tree/groups/c/info').json()['variables']) == ['z']
+    assert list(client.get('/datasets/tree/info').json()['variables']) == []
+
+    # One entry per node actually requested, not one shared by all of them.
+    assert sorted(rest.cache.data) == [
+        'tree//info',
+        'tree/a/b/info',
+        'tree/a/info',
+        'tree/c/info',
+    ]
+
+
+def test_group_info_served_from_cache(simple_tree):
+    """A second request for the same group is answered from the cache."""
+    rest = Rest({'tree': simple_tree})
+    client = TestClient(rest.app)
+
+    first = client.get('/datasets/tree/groups/a/info')
+    assert first.status_code == 200
+
+    # Mutating the cached entry is visible on the next request only if that
+    # request is served from the cache.
+    rest.cache.data['tree/a/info']['dimensions'] = {'sentinel': 1}
+
+    second = client.get('/datasets/tree/groups/a/info')
+    assert second.json()['dimensions'] == {'sentinel': 1}
