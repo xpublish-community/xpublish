@@ -211,10 +211,23 @@ class Rest:
         # The id identifies the node, not just the dataset: every node of the
         # tree would otherwise carry the same value, and anything keyed off it
         # (caches especially) would conflate the root with each of its groups.
-        # A provider that set the attr itself keeps its own value.
-        node_id = f'{dataset_id}/{group}' if group else dataset_id
+        #
+        # A group's id hangs off the id on its tree's root, so a provider that
+        # versions that id (a refreshed dataset, say) moves every node under it
+        # and the caches keyed on them fall out of date together. It is derived
+        # on every resolve rather than kept, because the value on a group node is
+        # one xpublish wrote there itself and goes stale when the root's changes.
+        #
+        # A node that is its own root keeps the id it carries: that one belongs
+        # to whoever set it, and is the only id a provider returning a detached
+        # single-node tree (as the get_datatree hookspec allows for lazy
+        # backends) can offer.
+        root_node = tree.root
+        base_id = root_node.dataset.attrs.get(DATASET_ID_ATTR_KEY) or dataset_id
+        node_id = base_id if root_node is tree else f'{base_id}/{group}'
+
         root_ds = tree.dataset
-        if root_ds.attrs.get(DATASET_ID_ATTR_KEY) is None:
+        if root_ds.attrs.get(DATASET_ID_ATTR_KEY) != node_id:
             tree.dataset = root_ds.assign_attrs({DATASET_ID_ATTR_KEY: node_id})
 
         return tree

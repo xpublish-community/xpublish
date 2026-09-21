@@ -15,7 +15,7 @@ import xarray as xr
 from starlette.testclient import TestClient
 
 from xpublish import Plugin, Rest, SingleDatasetRest, hookimpl
-from xpublish.utils.api import DATASET_ID_ATTR_KEY
+from xpublish.utils.api import DATASET_ID_ATTR_KEY, normalize_datasets
 
 
 @pytest.fixture(scope='function')
@@ -478,3 +478,49 @@ def test_group_info_served_from_cache(simple_tree):
 
     second = client.get('/datasets/tree/groups/a/info')
     assert second.json()['dimensions'] == {'sentinel': 1}
+
+
+def test_root_id_drives_the_ids_of_its_groups(simple_tree):
+    """A root id the caller set is the base every group hangs off.
+
+    A provider that versions the root id — a refreshed dataset, say — moves
+    every node under it, so caches keyed on those ids fall out of date
+    together rather than one group at a time.
+    """
+    simple_tree.dataset = simple_tree.dataset.assign_attrs({DATASET_ID_ATTR_KEY: 'tree@v2'})
+    rest = Rest({'tree': simple_tree})
+
+    assert rest.get_dataset_from_plugins('tree').attrs[DATASET_ID_ATTR_KEY] == 'tree@v2'
+    assert (
+        rest.get_dataset_from_plugins('tree', group='a').attrs[DATASET_ID_ATTR_KEY] == 'tree@v2/a'
+    )
+    assert (
+        rest.get_dataset_from_plugins('tree', group='a/b').attrs[DATASET_ID_ATTR_KEY]
+        == 'tree@v2/a/b'
+    )
+
+
+def test_registration_keeps_a_root_id_the_caller_set(simple_tree):
+    """``normalize_datasets`` no longer replaces an id already on the root."""
+    simple_tree.dataset = simple_tree.dataset.assign_attrs({DATASET_ID_ATTR_KEY: 'tree@v2'})
+
+    normalized = normalize_datasets({'tree': simple_tree})
+
+    assert normalized['tree'].dataset.attrs[DATASET_ID_ATTR_KEY] == 'tree@v2'
+
+
+def test_bumping_the_root_id_changes_the_group_cache_keys(simple_tree):
+    """The point of the above: new ids mean new cache entries, not stale ones."""
+    rest = Rest({'tree': simple_tree})
+    client = TestClient(rest.app)
+
+    client.get('/datasets/tree/groups/a/info')
+    assert 'tree/a/info' in rest.cache.data
+
+    # The dataset is refreshed and the provider versions its id.
+    rest._datasets['tree'].dataset = rest._datasets['tree'].dataset.assign_attrs(
+        {DATASET_ID_ATTR_KEY: 'tree@v2'},
+    )
+
+    client.get('/datasets/tree/groups/a/info')
+    assert 'tree@v2/a/info' in rest.cache.data
