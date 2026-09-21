@@ -15,6 +15,7 @@ import xarray as xr
 from starlette.testclient import TestClient
 
 from xpublish import Plugin, Rest, SingleDatasetRest, hookimpl
+from xpublish.utils.api import DATASET_ID_ATTR_KEY
 
 
 @pytest.fixture(scope='function')
@@ -357,7 +358,60 @@ def test_datatree_accessor(simple_tree):
 
 
 # ---------------------------------------------------------------------------
-# /info is cached, so it needs a per-group cache key
+# Each node of the tree carries its own dataset id
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    'group_path,expected_id',
+    [
+        ('', 'tree'),
+        ('a', 'tree/a'),
+        ('a/b', 'tree/a/b'),
+        ('c', 'tree/c'),
+    ],
+)
+def test_node_gets_its_own_dataset_id(simple_tree, group_path, expected_id):
+    """``deps.dataset`` identifies the node, not just the dataset.
+
+    Anything keyed off ``DATASET_ID_ATTR_KEY`` — the built-in ``/info`` cache,
+    and the zarr/opendap plugins out of tree — would otherwise conflate the
+    root with every one of its groups.
+    """
+    rest = Rest({'tree': simple_tree})
+
+    dataset = rest.get_dataset_from_plugins('tree', group=group_path)
+
+    assert dataset.attrs[DATASET_ID_ATTR_KEY] == expected_id
+
+
+def test_provider_keeps_the_dataset_id_it_set(simple_tree):
+    """A provider that stamps the attr itself keeps its own value."""
+
+    class IdSettingProvider(Plugin):
+        name: str = 'id_setting_provider'
+
+        @hookimpl
+        def get_datasets(self) -> list[str]:
+            return ['provided']
+
+        @hookimpl
+        def get_datatree(self, dataset_id: str, group: str) -> xr.DataTree | None:
+            if dataset_id != 'provided':
+                return None
+            node = simple_tree[group] if group else simple_tree
+            tree = xr.DataTree(dataset=node.dataset.assign_attrs({DATASET_ID_ATTR_KEY: 'mine'}))
+            return tree
+
+    rest = Rest({}, plugins={'id_setting_provider': IdSettingProvider()})
+
+    dataset = rest.get_dataset_from_plugins('provided', group='a')
+
+    assert dataset.attrs[DATASET_ID_ATTR_KEY] == 'mine'
+
+
+# ---------------------------------------------------------------------------
+# /info is cached, so each node needs its own cache entry
 # ---------------------------------------------------------------------------
 
 
@@ -403,10 +457,10 @@ def test_group_info_is_not_shared_between_groups(simple_tree):
 
     # One entry per node actually requested, not one shared by all of them.
     assert sorted(rest.cache.data) == [
-        'tree//info',
         'tree/a/b/info',
         'tree/a/info',
         'tree/c/info',
+        'tree/info',
     ]
 
 

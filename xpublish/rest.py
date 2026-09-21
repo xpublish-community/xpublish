@@ -208,9 +208,14 @@ class Rest:
                     detail=f"Group '{group}' not found in dataset '{dataset_id}'",
                 ) from err
 
+        # The id identifies the node, not just the dataset: every node of the
+        # tree would otherwise carry the same value, and anything keyed off it
+        # (caches especially) would conflate the root with each of its groups.
+        # A provider that set the attr itself keeps its own value.
+        node_id = f'{dataset_id}/{group}' if group else dataset_id
         root_ds = tree.dataset
         if root_ds.attrs.get(DATASET_ID_ATTR_KEY) is None:
-            tree.dataset = root_ds.assign_attrs({DATASET_ID_ATTR_KEY: dataset_id})
+            tree.dataset = root_ds.assign_attrs({DATASET_ID_ATTR_KEY: node_id})
 
         return tree
 
