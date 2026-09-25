@@ -427,6 +427,51 @@ your provider. `get_datatree` is consulted first, so a provider can implement
 both if it wants to serve hierarchical data when possible and fall back to a
 flat dataset otherwise.
 
+### Dataset ids and cache keys
+
+Xpublish stamps an id onto the dataset of every node it serves, under the
+`_xpublish_id` attribute (exported as
+{py:data}`xpublish.utils.api.DATASET_ID_ATTR_KEY`). Plugins build their cache
+keys from it, so the id is what decides when a cached response is still good.
+
+A provider is free to leave the id alone — Xpublish falls back to the
+`dataset_id` from the URL. But setting it yourself is worth doing, because the
+id is then something you control:
+
+```python
+from xpublish.utils.api import DATASET_ID_ATTR_KEY
+
+
+@hookimpl
+def get_datatree(self, dataset_id: str, group: str):
+    tree = self._open(dataset_id)
+    if tree is None:
+        return None
+    snapshot = self._snapshot_id(dataset_id)
+    tree.dataset = tree.dataset.assign_attrs(
+        {DATASET_ID_ATTR_KEY: f"{dataset_id}@{snapshot}"},
+    )
+    return tree
+```
+
+Set the id on the **root** of the tree you return. Xpublish derives the id of
+each group beneath it as `{root_id}/{group}`, so the root id is the one knob
+that moves every node under it.
+
+That is what makes versioning useful. When the data behind a dataset changes —
+a new Icechunk snapshot, a re-written Zarr store, a nightly model run — hand
+back a different root id and every cache entry keyed off the old one is
+abandoned, for the root and for all of its groups at once. Keep the id stable
+and the caches stay warm.
+
+```{note}
+A provider that serves a group lazily by returning a detached single-node tree
+(the [lazy-by-group pattern](#example-lazy-by-group-provider)) has no root for
+Xpublish to consult, so the id it sets on that node is used as-is. Compose the
+group into it yourself — `f"{dataset_id}@{snapshot}/{group}"` — or two groups
+of the same dataset will share a cache key.
+```
+
 ```{seealso}
 [Migrating to the DataTree API](./migrating-to-datatree.md) — a focused
 upgrade guide with sections for server admins and plugin authors.
