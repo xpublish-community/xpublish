@@ -115,10 +115,18 @@ class CacheEntry(NamedTuple):
     ``CacheEntry`` is a plain tuple, so it pickles through
     :class:`SerializedMapping` like any other value, and it must stay
     importable at module level so it can be unpickled.
+
+    ``cost`` carries the ``cost`` argument passed to :meth:`CacheyCache.put`.
+    A raw value written directly to the store -- by a ``cachetools``
+    decorator or by plain ``store[key] = value`` -- carries no cost. A
+    custom ``cachetools`` cache can read ``cost`` (alongside ``nbytes``) from
+    a stored entry to make its own eviction decisions, for instance evicting
+    whichever entry has the lowest cost per byte.
     """
 
     value: Any
     nbytes: int
+    cost: float = 0.0
 
 
 def entry_size(item: Any) -> int:
@@ -339,7 +347,7 @@ class CacheyCache:
 
         with self._lock:
             try:
-                self._mapping[key] = CacheEntry(value, nbytes)
+                self._mapping[key] = CacheEntry(value, nbytes, cost)
             except ValueError:
                 # cachetools raises for items that can never fit; cachey drops
                 # them silently and consumers rely on that

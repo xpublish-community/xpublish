@@ -716,15 +716,59 @@ def test_cacheycache_put_stores_a_cache_entry():
     cache.put('key', 'value', 1.0)
 
     assert isinstance(store['key'], CacheEntry)
-    assert store['key'] == ('value', nbytes('value'))
+    assert store['key'] == ('value', nbytes('value'), 1.0)
+
+
+def test_put_records_the_cost():
+    store = {}
+    cache = CacheyCache(store)
+
+    cache.put('key', 'value', 2.5)
+
+    assert store['key'].cost == 2.5
 
 
 def test_cache_entry_round_trips_through_serialized_mapping():
     store = {}
     mapping = SerializedMapping(store)
 
-    mapping['key'] = CacheEntry('value', 5)
+    mapping['key'] = CacheEntry('value', 5, 2.5)
 
     result = mapping['key']
     assert isinstance(result, CacheEntry)
-    assert result == ('value', 5)
+    assert result == ('value', 5, 2.5)
+
+
+class CostAwareCache(cachetools.Cache):
+    """A cachetools cache that evicts the entry with the lowest cost per byte.
+
+    Treats a raw (non-:class:`CacheEntry`) value as costing nothing, and
+    floors ``nbytes`` at 1 to avoid dividing by zero.
+    """
+
+    def popitem(self):
+        """Evict the entry with the lowest cost per byte."""
+
+        def cost_per_byte(key):
+            entry = self[key]
+            cost = entry.cost if isinstance(entry, CacheEntry) else 0
+            size = entry.nbytes if isinstance(entry, CacheEntry) else entry_size(entry)
+            return cost / max(size, 1)
+
+        key = min(self, key=cost_per_byte)
+        return key, self.pop(key)
+
+
+def test_cost_aware_eviction_keeps_the_expensive_entry():
+    store = LockedMapping(CostAwareCache(maxsize=10, getsizeof=entry_size))
+    cache = CacheyCache(store)
+
+    cache.put('cheap', b'aaaa', cost=0.1)
+    cache.put('expensive', b'bbbb', cost=10.0)
+
+    # a third entry forces an eviction: cheap + expensive + third is 12
+    # bytes, over the 10-byte budget
+    cache.put('third', b'cccc', cost=1.0)
+
+    assert cache.get('expensive') == b'bbbb'
+    assert cache.get('cheap') is None
