@@ -65,20 +65,32 @@ Pass it when you already know the size (it saves a walk over large containers).
 ## Configuring the cache size
 
 The default cache holds 1 MB of values and evicts the least recently used
-ones to stay inside that budget:
+ones to stay inside that budget.
 
-```python
-rest = xpublish.Rest(datasets, cache_kws={"available_bytes": 1e8})
-```
-
-The `XPUBLISH_CACHE_BYTES` environment variable overrides that, which is handy
-for tuning a deployment without changing code:
+The `XPUBLISH_CACHE_BYTES` environment variable resizes that default cache
+without changing code, which is handy for tuning a deployment:
 
 ```console
 $ XPUBLISH_CACHE_BYTES=1e8 python serve.py
 ```
 
+To size it in code instead, pass `cache=`:
+
+```python
+rest = xpublish.Rest(datasets, cache=xpublish.lru_bytes_store(1e8))
+```
+
+`XPUBLISH_CACHE_BYTES` does not apply when `cache=` is given: xpublish then
+has no store of its own left to size, and logs that the variable is being
+ignored.
+
 To change the cache in any other way, supply your own store.
+
+```{deprecated} 0.6.0
+`cache_kws={"available_bytes": ...}` still works but emits a `FutureWarning`.
+Use `cache=xpublish.lru_bytes_store(available_bytes)` or
+`XPUBLISH_CACHE_BYTES` instead.
+```
 
 ## Supplying your own store
 
@@ -206,11 +218,9 @@ class RedisCachePlugin(Plugin):
     name: str = "redis-cache"
 
     @hookimpl
-    def get_cache(self, cache_kws: dict):
+    def get_cache(self, available_bytes: float):
         local = LockedMapping(
-            cachetools.LRUCache(
-                maxsize=cache_kws["available_bytes"], getsizeof=entry_size
-            )
+            cachetools.LRUCache(maxsize=available_bytes, getsizeof=entry_size)
         )
         shared = SerializedMapping(
             PrefixedRedisCache(redis.Redis(...), "xpublish:", ttl=300, raw=True)
@@ -219,7 +229,7 @@ class RedisCachePlugin(Plugin):
         return two_level
 ```
 
-The hook receives the merged cache options, including any
+The hook receives the resolved cache size, including any
 `XPUBLISH_CACHE_BYTES` override, so a provider can honour the configured size.
 
 Returning `None` defers to the next plugin, and then to the default cache. An
@@ -230,7 +240,7 @@ Mappings returned from `get_cache` are used exactly as given, with the same
 thread-safety caveat as `cache=`: wrap the store in
 {py:class}`xpublish.LockedMapping` (or CacheToolsUtils' `LockedCache`) before
 returning it, for example
-`return LockedMapping(cachetools.TTLCache(maxsize=cache_kws["available_bytes"], ttl=300, getsizeof=entry_size))`.
+`return LockedMapping(cachetools.TTLCache(maxsize=available_bytes, ttl=300, getsizeof=entry_size))`.
 ```
 
 ## Layering your own policy
@@ -353,7 +363,9 @@ need to change. Three things did:
   cachey-like cost-scored eviction back.
 - **Cachey-only `cache_kws` raise `TypeError`.** Options such as `halflife`,
   `nbytes` and `limit` no longer exist. `available_bytes` is the only one left;
-  use `cache=` for anything more specific.
+  use `cache=` for anything more specific. `cache_kws` itself is now
+  deprecated — see [Configuring the cache size](#configuring-the-cache-size)
+  above.
 - **{py:class}`xpublish.CacheProtocol` replaces `cachey.Cache` in annotations.**
   Plugins that used to annotate a cache parameter as `cachey.Cache` should use
   {py:class}`xpublish.CacheProtocol` instead.
