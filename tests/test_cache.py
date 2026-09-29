@@ -52,21 +52,6 @@ class CountingDict(dict):
         super().__setitem__(key, value)
 
 
-class OnlyGetPutCache:
-    """A minimal CacheProtocol implementation with no store xpublish knows about."""
-
-    def __init__(self):
-        self.store = {}
-
-    def get(self, key, default=None):
-        """Return the cached value, or the default."""
-        return self.store.get(key, default)
-
-    def put(self, key, value, cost, nbytes=None):
-        """Cache a value, ignoring the cost and size hints."""
-        self.store[key] = value
-
-
 def test_lru_bytes_cache_satisfies_protocol():
     assert isinstance(lru_bytes_cache(1), CacheProtocol)
 
@@ -452,28 +437,21 @@ def test_cache_kwarg_accepts_a_mapping(airtemp_ds):
     assert rest.cache_store is store
 
 
-def test_cache_kwarg_accepts_a_cache_protocol(airtemp_ds):
-    custom = OnlyGetPutCache()
-    rest = Rest({'airtemp': airtemp_ds}, cache=custom)
-
-    assert rest.cache is custom
-    assert rest.dependencies().cache() is custom
-
-    assert isinstance(rest.cache_store, LockedMapping)
-    assert rest.cache_store is rest.cache_store
-    assert rest.cache_store is not custom
-    assert rest.dependencies().cache_store() is rest.cache_store
-
-    client = TestClient(rest.app)
-    assert client.get('/datasets/airtemp/info').status_code == 200
-    assert 'airtemp/info' in custom.store
-
-
 def test_cache_kwarg_rejects_other_objects(airtemp_ds):
-    rest = Rest({'airtemp': airtemp_ds}, cache=object())
+    with pytest.raises(TypeError, match='MutableMapping'):
+        Rest({'airtemp': airtemp_ds}, cache=object())
 
-    with pytest.raises(TypeError, match='CacheProtocol'):
-        _ = rest.cache
+
+def test_cache_kwarg_rejects_a_get_put_only_object(airtemp_ds):
+    class OnlyGetPut:
+        def get(self, key, default=None):
+            return default
+
+        def put(self, key, value, cost, nbytes=None):
+            pass
+
+    with pytest.raises(TypeError, match='MutableMapping'):
+        Rest({'airtemp': airtemp_ds}, cache=OnlyGetPut())
 
 
 def test_cache_and_cache_kws_are_mutually_exclusive(airtemp_ds):
@@ -509,24 +487,14 @@ def test_cache_kwarg_with_a_mapping_ignores_the_env_var(airtemp_ds, monkeypatch,
     assert rest.cache.mapping is store
 
 
-def test_cache_kwarg_with_a_protocol_object_sizes_the_fallback_store_from_the_env_var(
-    airtemp_ds, monkeypatch, caplog
-):
-    monkeypatch.setenv(CACHE_BYTES_ENV, '12345')
-    custom = OnlyGetPutCache()
-
-    with caplog.at_level(logging.INFO, logger='xpublish.rest'):
-        rest = Rest({'airtemp': airtemp_ds}, cache=custom)
-
-    assert rest.cache_store.maxsize == 12345
-    assert CACHE_BYTES_ENV in caplog.text
-
-
-def test_cache_kwarg_with_a_protocol_object_and_a_bad_env_value_raises(airtemp_ds, monkeypatch):
+def test_cache_kwarg_ignores_a_malformed_env_var(airtemp_ds, monkeypatch, caplog):
     monkeypatch.setenv(CACHE_BYTES_ENV, 'not-a-number')
 
-    with pytest.raises(ValueError, match=CACHE_BYTES_ENV):
-        Rest({'airtemp': airtemp_ds}, cache=OnlyGetPutCache())
+    with caplog.at_level(logging.WARNING, logger='xpublish.rest'):
+        rest = Rest({'airtemp': airtemp_ds}, cache={})
+
+    assert CACHE_BYTES_ENV in caplog.text
+    assert isinstance(rest.cache, CacheyCache)
 
 
 def test_two_apps_can_share_one_store(airtemp_ds):

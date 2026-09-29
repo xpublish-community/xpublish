@@ -82,9 +82,8 @@ To change the cache in any other way, supply your own store.
 
 ## Supplying your own store
 
-`cache=` takes either a {py:class}`collections.abc.MutableMapping` to keep
-values in, or an object that satisfies {py:class}`xpublish.CacheProtocol`. It
-is mutually exclusive with `cache_kws`.
+`cache=` takes a {py:class}`collections.abc.MutableMapping` to keep values
+in. It is mutually exclusive with `cache_kws`.
 
 A mapping is wrapped in {py:class}`xpublish.CacheyCache`, which stores values
 as {py:class}`xpublish.CacheEntry` instances carrying their measured size.
@@ -315,12 +314,8 @@ Stores xpublish builds, including the default cache's store, are sized with
 writes, and raw values written by anything else. If you build your own store
 with a custom `getsizeof`, it must handle both cases too.
 
-`cache_store` is always a mapping. When the application was given a get/put-only
-{py:class}`xpublish.CacheProtocol` object rather than a mapping, xpublish can't
-see inside it, so it builds a separate 1 MB LRU store for plugins to use
-instead — sized by `available_bytes`/`XPUBLISH_CACHE_BYTES` like the default
-cache. Entries written to that fallback store are not visible through
-`deps.cache`. Both the default store and this fallback store are thread-safe.
+`cache_store` is always the store behind `deps.cache`, and stores that
+xpublish builds are thread-safe.
 
 ## Caching and multiple workers
 
@@ -360,5 +355,5 @@ need to change. Three things did:
   `nbytes` and `limit` no longer exist. `available_bytes` is the only one left;
   use `cache=` for anything more specific.
 - **{py:class}`xpublish.CacheProtocol` replaces `cachey.Cache` in annotations.**
-  It is a runtime-checkable protocol, so a `cachey.Cache` still satisfies it if
-  you want to keep using cachey by passing it as `cache=`.
+  Plugins that used to annotate a cache parameter as `cachey.Cache` should use
+  {py:class}`xpublish.CacheProtocol` instead.
