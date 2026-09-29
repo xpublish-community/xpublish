@@ -126,6 +126,41 @@ lock rather than adding a second one. [CacheToolsUtils'
 also works.
 ```
 
+### Cost-aware eviction
+
+{py:class}`xpublish.CacheEntry` carries the `cost` passed to `put` alongside
+the measured size, so a custom `cachetools` cache can score evictions by cost
+per byte instead of by recency. A raw value written directly to the store
+(rather than through {py:class}`xpublish.CacheyCache`) carries no cost, since
+it never passed through `put`.
+
+```python
+import cachetools
+from xpublish import CacheEntry, CacheyCache, LockedMapping, entry_size
+
+
+class CostAwareCache(cachetools.Cache):
+    """Evicts the entry with the lowest cost per byte."""
+
+    def popitem(self):
+        def cost_per_byte(key):
+            entry = self[key]
+            cost = entry.cost if isinstance(entry, CacheEntry) else 0
+            size = entry.nbytes if isinstance(entry, CacheEntry) else entry_size(entry)
+            return cost / max(size, 1)
+
+        key = min(self, key=cost_per_byte)
+        return key, self.pop(key)
+
+
+cache = LockedMapping(CostAwareCache(maxsize=1e8, getsizeof=entry_size))
+rest = xpublish.Rest(datasets, cache=cache)
+```
+
+This is how to get cachey-like cost-scored eviction back: pass a real `cost`
+to `put` (for instance from {py:class}`xpublish.utils.cache.CostTimer`), and
+let a `CacheEntry`-aware `popitem` make eviction decisions from it.
+
 ### Sharing a cache between processes
 
 For a store shared by several workers, wrap a network cache in
@@ -318,7 +353,9 @@ need to change. Three things did:
   scored best on a cost/size/recency heuristic; the default cache now simply
   evicts the least recently used values to stay within `available_bytes`. The
   `cost` argument to `put` is still accepted and is still worth passing (a
-  custom store may use it), but the default cache ignores it.
+  custom store may use it), but the default cache ignores it. See
+  [Cost-aware eviction](#cost-aware-eviction) above for how to get
+  cachey-like cost-scored eviction back.
 - **Cachey-only `cache_kws` raise `TypeError`.** Options such as `halflife`,
   `nbytes` and `limit` no longer exist. `available_bytes` is the only one left;
   use `cache=` for anything more specific.
