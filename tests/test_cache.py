@@ -519,10 +519,10 @@ def cache_plugin(store, calls=None):
         name: str = 'cache_provider'
 
         @hookimpl
-        def get_cache(self, cache_kws):
+        def get_cache(self, available_bytes):
             """Provide the backing store for the application cache."""
             if calls is not None:
-                calls.append(cache_kws)
+                calls.append(available_bytes)
             return store
 
     return CacheProviderPlugin()
@@ -556,11 +556,12 @@ def test_plugin_can_provide_a_plain_dict(airtemp_ds):
 
 
 def test_plugin_returning_none_falls_back_to_the_default(airtemp_ds):
-    rest = Rest(
-        {'airtemp': airtemp_ds},
-        plugins=plugins_with(cache_plugin(None)),
-        cache_kws={'available_bytes': 999},
-    )
+    with pytest.warns(FutureWarning, match='cache_kws'):
+        rest = Rest(
+            {'airtemp': airtemp_ds},
+            plugins=plugins_with(cache_plugin(None)),
+            cache_kws={'available_bytes': 999},
+        )
 
     assert isinstance(rest.cache.mapping, LockedMapping)
     assert isinstance(rest.cache.mapping.mapping, cachetools.LRUCache)
@@ -584,14 +585,23 @@ def test_explicit_cache_beats_the_plugin(airtemp_ds):
     assert from_plugin == {}
 
 
-def test_plugin_hook_receives_the_merged_cache_kws(airtemp_ds, monkeypatch):
+def test_plugin_hook_receives_the_resolved_available_bytes(airtemp_ds):
+    calls = []
+
+    rest = Rest({'airtemp': airtemp_ds}, plugins=plugins_with(cache_plugin({}, calls)))
+    _ = rest.cache
+
+    assert calls == [1e6]
+
+
+def test_plugin_hook_receives_the_env_var_override(airtemp_ds, monkeypatch):
     monkeypatch.setenv(CACHE_BYTES_ENV, '12345')
     calls = []
 
     rest = Rest({'airtemp': airtemp_ds}, plugins=plugins_with(cache_plugin({}, calls)))
     _ = rest.cache
 
-    assert calls == [{'available_bytes': 12345.0}]
+    assert calls == [12345.0]
 
 
 # -- CacheEntry / entry_size: raw values written directly to xpublish stores --

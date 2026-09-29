@@ -493,10 +493,10 @@ class TTLCachePlugin(Plugin):
     ttl: int = 300
 
     @hookimpl
-    def get_cache(self, cache_kws: dict):
+    def get_cache(self, available_bytes: float):
         return LockedMapping(
             cachetools.TTLCache(
-                maxsize=cache_kws["available_bytes"],
+                maxsize=available_bytes,
                 ttl=self.ttl,
                 getsizeof=entry_size,
             )

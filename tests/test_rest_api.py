@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 import uvicorn
 import xarray as xr
@@ -7,7 +9,7 @@ from starlette.testclient import TestClient
 import xpublish  # noqa: F401
 from xpublish import Plugin, Rest, SingleDatasetRest, hookimpl, hookspec
 from xpublish.dependencies import get_dataset
-from xpublish.utils.cache import CACHE_BYTES_ENV
+from xpublish.utils.cache import CACHE_BYTES_ENV, lru_bytes_store
 
 
 @pytest.fixture(scope='function')
@@ -111,13 +113,26 @@ def hook_implementation_plugin():
 
 
 def test_init_cache_kws(airtemp_ds):
-    rest = Rest({'airtemp': airtemp_ds}, cache_kws={'available_bytes': 999})
+    with pytest.warns(FutureWarning, match='cache_kws'):
+        rest = Rest({'airtemp': airtemp_ds}, cache_kws={'available_bytes': 999})
     assert rest.cache.mapping.maxsize == 999
 
 
 def test_init_cache_kws_unknown_key(airtemp_ds):
-    with pytest.raises(TypeError, match='nbytes'):
+    with pytest.warns(FutureWarning, match='cache_kws'), pytest.raises(TypeError, match='nbytes'):
         Rest({'airtemp': airtemp_ds}, cache_kws={'nbytes': 999})
+
+
+def test_cache_kws_deprecation_warning_points_at_the_caller(airtemp_ds):
+    with pytest.warns(FutureWarning, match='cache_kws') as record:
+        Rest({'airtemp': airtemp_ds}, cache_kws={'available_bytes': 999})
+    assert record[0].filename == __file__
+
+
+def test_cache_kws_deprecation_warning_points_at_the_caller_for_single_dataset(airtemp_ds):
+    with pytest.warns(FutureWarning, match='cache_kws') as record:
+        SingleDatasetRest(airtemp_ds, cache_kws={'available_bytes': 999})
+    assert record[0].filename == __file__
 
 
 def test_cache_bytes_env_var_overrides_default(airtemp_ds, monkeypatch):
@@ -131,7 +146,8 @@ def test_cache_bytes_env_var_overrides_default(airtemp_ds, monkeypatch):
 def test_cache_bytes_env_var_overrides_cache_kws(airtemp_ds, monkeypatch):
     monkeypatch.setenv(CACHE_BYTES_ENV, '12345')
 
-    rest = Rest({'airtemp': airtemp_ds}, cache_kws={'available_bytes': 999})
+    with pytest.warns(FutureWarning, match='cache_kws'):
+        rest = Rest({'airtemp': airtemp_ds}, cache_kws={'available_bytes': 999})
 
     assert rest.cache.mapping.maxsize == 12345
 
@@ -141,6 +157,32 @@ def test_cache_bytes_env_var_invalid(airtemp_ds, monkeypatch):
 
     with pytest.raises(ValueError, match=CACHE_BYTES_ENV):
         Rest({'airtemp': airtemp_ds})
+
+
+def test_single_dataset_cache_kwarg_ignores_a_malformed_env_var(airtemp_ds, monkeypatch, caplog):
+    # Regression test: SingleDatasetRest used to reach init_cache twice (once
+    # via super().__init__() with cache=None, cache_kws=None, then again
+    # directly), and the first call parsed XPUBLISH_CACHE_BYTES before the
+    # real cache= was ever seen, so a malformed value raised even though an
+    # explicit mapping made it irrelevant.
+    monkeypatch.setenv(CACHE_BYTES_ENV, 'not-a-number')
+    store = {}
+
+    with caplog.at_level(logging.WARNING, logger='xpublish.rest'):
+        rest = SingleDatasetRest(airtemp_ds, cache=store)
+
+    assert CACHE_BYTES_ENV in caplog.text
+    assert rest.cache.mapping is store
+
+
+def test_single_dataset_env_var_override_logged_once(airtemp_ds, monkeypatch, caplog):
+    monkeypatch.setenv(CACHE_BYTES_ENV, '12345')
+
+    with caplog.at_level(logging.INFO, logger='xpublish.rest'):
+        rest = SingleDatasetRest(airtemp_ds)
+
+    assert rest.cache.mapping.maxsize == 12345
+    assert caplog.text.count('overrode') == 1
 
 
 def test_info_is_cached(airtemp_ds):
@@ -433,7 +475,7 @@ def test_rest_accessor(airtemp_ds):
 def test_rest_accessor_kws(airtemp_ds):
     airtemp_ds.rest(
         app_kws={'docs_url': '/data-docs'},
-        cache_kws={'available_bytes': 1e9},
+        cache=lru_bytes_store(1e9),
     )
 
     assert airtemp_ds.rest.cache.mapping.maxsize == 1e9
