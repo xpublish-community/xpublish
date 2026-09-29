@@ -111,7 +111,8 @@ def get_cache_store() -> MutableMapping:
 
     Use this callable as dependency in any FastAPI path operation function
     where you want to layer your own caching policy over the store that the
-    application cache is built on.
+    application cache is built on. It is always the raw mapping backing
+    :func:`get_cache`.
 
     This dummy dependency will be overridden when creating the FastAPI
     application.

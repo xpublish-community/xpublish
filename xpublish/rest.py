@@ -43,9 +43,7 @@ from .utils.api import (
 )
 from .utils.cache import (
     CACHE_BYTES_ENV,
-    CacheProtocol,
     CacheyCache,
-    lru_bytes_cache,
     lru_bytes_store,
 )
 
@@ -86,7 +84,7 @@ class Rest:
         cache_kws: dict | None = None,
         app_kws: dict | None = None,
         plugins: dict[str, Plugin] | None = None,
-        cache: CacheProtocol | MutableMapping | None = None,
+        cache: MutableMapping | None = None,
     ):
         """Initialize a REST object for publishing Xarray Datasets / DataTrees.
 
@@ -112,11 +110,10 @@ class Rest:
             plugins: Optional dictionary of loaded, configured plugins. Overrides
                 automatic loading of plugins. If no plugins are desired, set to an
                 empty dict.
-            cache: An explicit cache to use instead of the one xpublish builds.
-                Either a mutable mapping to store cached values in (a
-                ``cachetools`` cache, a plain dict, a shared store, ...), or an
-                object following :class:`xpublish.CacheProtocol`. Mutually
-                exclusive with ``cache_kws``.
+            cache: An explicit mutable mapping to store cached values in (a
+                ``cachetools`` cache, a plain dict, a shared store, ...),
+                instead of the one xpublish builds. Mutually exclusive with
+                ``cache_kws``.
         """
         if isinstance(datasets, (xr.Dataset, xr.DataTree)):
             raise TypeError(
@@ -343,25 +340,25 @@ class Rest:
 
     def init_cache(
         self,
-        cache: CacheProtocol | MutableMapping | None,
+        cache: MutableMapping | None,
         cache_kws: dict | None,
     ) -> None:
         """Set up the application cache.
 
-        Either an explicit cache instance or a dictionary of cache options may
+        Either an explicit cache mapping or a dictionary of cache options may
         be given, not both. Without an explicit cache, the size can be
         overridden at runtime with the ``XPUBLISH_CACHE_BYTES`` environment
         variable.
 
         Args:
-            cache: An explicit cache to use, either a mutable mapping to store
-                cached values in, or an object following
-                :class:`xpublish.CacheProtocol`.
+            cache: An explicit mutable mapping to store cached values in.
             cache_kws: Dictionary of cache keyword arguments. The only
                 supported key is ``available_bytes``.
 
         Raises:
-            TypeError: An unsupported cache keyword argument was passed.
+            TypeError: ``cache`` was given and is not a
+                :class:`collections.abc.MutableMapping`, or an unsupported
+                cache keyword argument was passed.
             ValueError: Both ``cache`` and ``cache_kws`` were given, or
                 ``XPUBLISH_CACHE_BYTES`` is not a number.
         """
@@ -371,8 +368,14 @@ class Rest:
                 'configures the cache that xpublish builds for itself.'
             )
 
+        if cache is not None and not isinstance(cache, MutableMapping):
+            raise TypeError(
+                f'{type(cache).__name__} is not a MutableMapping. Pass a '
+                'mutable mapping such as xpublish.lru_bytes_store(n) or a '
+                'LockedMapping(...).'
+            )
+
         self._cache = None
-        self._cache_store = None
         self._cache_instance = cache
         self._cache_kws = {'available_bytes': 1e6}
         if cache_kws is not None:
@@ -389,32 +392,26 @@ class Rest:
         if env_bytes is None:
             return
 
-        try:
-            available_bytes = float(env_bytes)
-        except ValueError as err:
-            raise ValueError(f'{CACHE_BYTES_ENV} must be a number, got {env_bytes!r}') from err
-
-        if isinstance(cache, MutableMapping):
+        if cache is not None:
+            # An explicit mapping was supplied, so the env var is irrelevant;
+            # it isn't even parsed, so a malformed value can't fail startup.
             logger.warning(
                 '%s is ignored because a cache instance was supplied',
                 CACHE_BYTES_ENV,
             )
             return
 
+        try:
+            available_bytes = float(env_bytes)
+        except ValueError as err:
+            raise ValueError(f'{CACHE_BYTES_ENV} must be a number, got {env_bytes!r}') from err
+
         self._cache_kws['available_bytes'] = available_bytes
-        if cache is None:
-            logger.info(
-                '%s overrode the cache size, which is now %s bytes',
-                CACHE_BYTES_ENV,
-                available_bytes,
-            )
-        else:
-            logger.info(
-                '%s sizes only the plugin cache_store (not the supplied '
-                'cache), which is now %s bytes',
-                CACHE_BYTES_ENV,
-                available_bytes,
-            )
+        logger.info(
+            '%s overrode the cache size, which is now %s bytes',
+            CACHE_BYTES_ENV,
+            available_bytes,
+        )
 
     def init_cache_kwargs(self, cache_kws: dict | None) -> None:
         """Set up cache kwargs, without an explicit cache instance.
@@ -436,48 +433,36 @@ class Rest:
         if app_kws is not None:
             self._app_kws.update(app_kws)
 
-    def _build_cache(self) -> CacheProtocol:
+    def _build_cache(self) -> CacheyCache:
         """Build the cache.
 
         An explicit ``cache=`` wins, then any store offered by a plugin's
         ``get_cache`` hook, and otherwise xpublish builds its own byte-budgeted
-        LRU cache.
-
-        Raises:
-            TypeError: An explicit cache was given that is neither a mutable
-                mapping nor a :class:`xpublish.CacheProtocol`.
+        LRU store. Whichever store is chosen is always wrapped in
+        :class:`xpublish.CacheyCache`.
         """
-        cache = self._cache_instance
-        if cache is not None:
-            if isinstance(cache, MutableMapping):
-                return CacheyCache(cache)
-            if isinstance(cache, CacheProtocol):
-                return cache
-            raise TypeError(
-                f'{type(cache).__name__} is neither a MutableMapping nor a CacheProtocol '
-                '(an object with cachey-compatible get() and put() methods)'
-            )
+        store = self._cache_instance
 
-        store = self.pm.hook.get_cache(cache_kws=dict(self._cache_kws))
-        if store is not None:
-            providers = ', '.join(
-                impl.plugin_name for impl in self.pm.hook.get_cache.get_hookimpls()
-            )
-            logger.info(
-                'Using the %s cache store provided by plugin(s) %s',
-                type(store).__name__,
-                providers,
-            )
-            return CacheyCache(store)
+        if store is None:
+            store = self.pm.hook.get_cache(cache_kws=dict(self._cache_kws))
+            if store is not None:
+                providers = ', '.join(
+                    impl.plugin_name for impl in self.pm.hook.get_cache.get_hookimpls()
+                )
+                logger.info(
+                    'Using the %s cache store provided by plugin(s) %s',
+                    type(store).__name__,
+                    providers,
+                )
 
-        return lru_bytes_cache(**self._cache_kws)
+        if store is None:
+            store = lru_bytes_store(self._cache_kws['available_bytes'])
+
+        return CacheyCache(store)
 
     @property
-    def cache(self) -> CacheProtocol:
-        """Returns the cache used by the FastAPI application.
-
-        The cache follows :class:`xpublish.CacheProtocol`.
-        """
+    def cache(self) -> CacheyCache:
+        """Returns the cache used by the FastAPI application."""
         if self._cache is None:
             self._cache = self._build_cache()
         return self._cache
@@ -487,21 +472,10 @@ class Rest:
         """Returns the raw mapping behind the application cache.
 
         Plugins that want to layer their own policy over the shared store can
-        use this instead of :attr:`Rest.cache`. The store is always present.
-        When the cache is a user-supplied get/put-only
-        :class:`xpublish.CacheProtocol` object, xpublish can't see inside it,
-        so this instead returns a separate store, built once and reused on
-        every call, for plugins to use. That fallback store is a
-        byte-budgeted LRU cache sized 1 MB by default, or by
-        ``available_bytes``/``XPUBLISH_CACHE_BYTES``; entries written to it
-        are not visible through :attr:`Rest.cache`.
+        use this instead of :attr:`Rest.cache`. The store is always present
+        and is always the mapping backing :attr:`Rest.cache`.
         """
-        cache = self.cache
-        if isinstance(cache, CacheyCache):
-            return cache.mapping
-        if self._cache_store is None:
-            self._cache_store = lru_bytes_store(self._cache_kws['available_bytes'])
-        return self._cache_store
+        return self.cache.mapping
 
     @property
     def plugins(self) -> dict[str, Plugin]:
@@ -644,7 +618,7 @@ class SingleDatasetRest(Rest):
         cache_kws: dict | None = None,
         app_kws: dict | None = None,
         plugins: dict[str, Plugin] | None = None,
-        cache: CacheProtocol | MutableMapping | None = None,
+        cache: MutableMapping | None = None,
     ):
         """Initialize the SingleDatasetRest object.
 
@@ -669,11 +643,10 @@ class SingleDatasetRest(Rest):
             plugins: Optional dictionary of loaded, configured plugins. Overrides
                 automatic loading of plugins. If no plugins are desired, set to an
                 empty dict.
-            cache: An explicit cache to use instead of the one xpublish builds.
-                Either a mutable mapping to store cached values in (a
-                ``cachetools`` cache, a plain dict, a shared store, ...), or an
-                object following :class:`xpublish.CacheProtocol`. Mutually
-                exclusive with ``cache_kws``.
+            cache: An explicit mutable mapping to store cached values in (a
+                ``cachetools`` cache, a plain dict, a shared store, ...),
+                instead of the one xpublish builds. Mutually exclusive with
+                ``cache_kws``.
         """
         if isinstance(dataset, xr.DataTree):
             self._tree = dataset

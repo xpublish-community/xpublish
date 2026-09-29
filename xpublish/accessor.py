@@ -2,7 +2,7 @@ import xarray as xr
 from fastapi import FastAPI
 
 from .rest import SingleDatasetRest
-from .utils.cache import CacheProtocol
+from .utils.cache import CacheyCache
 
 
 class _BaseRestAccessor:
@@ -40,11 +40,8 @@ class _BaseRestAccessor:
         return self
 
     @property
-    def cache(self) -> CacheProtocol:
-        """Returns the cache used by the FastAPI application.
-
-        The cache follows :class:`xpublish.CacheProtocol`.
-        """
+    def cache(self) -> CacheyCache:
+        """Returns the cache used by the FastAPI application."""
         return self._get_rest_obj().cache
 
     @property
