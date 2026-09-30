@@ -138,12 +138,12 @@ DOWNSTREAM_PLUGINS = {
         requirements=('requirements-dev.txt',),
         pytest_args=('tests',),
     ),
-    'opendap': Downstream(
-        'xpublish-community/xpublish-opendap',
-        requirements=('requirements-dev.txt',),
-        # pytest-flake8 is lint tooling, and breaks collection on modern pytest.
-        pytest_args=('-p', 'no:flake8'),
-    ),
+    # 'opendap': Downstream(
+    #     'xpublish-community/xpublish-opendap',
+    #     requirements=('requirements-dev.txt',),
+    #     # pytest-flake8 is lint tooling, and breaks collection on modern pytest.
+    #     pytest_args=('-p', 'no:flake8'),
+    # ),
     'intake-provider': Downstream(
         'xpublish-community/xpublish-intake-provider',
         requirements=('requirements-dev.txt',),
