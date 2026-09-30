@@ -432,11 +432,10 @@ flat dataset otherwise.
 Xpublish stamps an id onto the dataset of every node it serves, under the
 `_xpublish_id` attribute (exported as
 {py:data}`xpublish.utils.api.DATASET_ID_ATTR_KEY`). Plugins build their cache
-keys from it, so the id is what decides when a cached response is still good.
+keys from it, so updating the id will expire old caches within Xpublish.
 
-A provider is free to leave the id alone — Xpublish falls back to the
-`dataset_id` from the URL. But setting it yourself is worth doing, because the
-id is then something you control:
+A data provider doesn't need to set the id as Xpublish falls back to the
+`dataset_id` from the URL.
 
 ```python
 from xpublish.utils.api import DATASET_ID_ATTR_KEY
@@ -455,11 +454,10 @@ def get_datatree(self, dataset_id: str, group: str):
 ```
 
 Set the id on the **root** of the tree you return. Xpublish derives the id of
-each group beneath it as `{root_id}/{group}`, so the root id is the one knob
-that moves every node under it.
+each group beneath it as `{root_id}/{group}`, so the root id updates the nodes under it.
 
-That is what makes versioning useful. When the data behind a dataset changes —
-a new Icechunk snapshot, a re-written Zarr store, a nightly model run — hand
+When the data behind a dataset changes
+(a new Icechunk snapshot, a re-written Zarr store, a nightly model run) hand
 back a different root id and every cache entry keyed off the old one is
 abandoned, for the root and for all of its groups at once. Keep the id stable
 and the caches stay warm.
@@ -468,7 +466,7 @@ and the caches stay warm.
 A provider that serves a group lazily by returning a detached single-node tree
 (the [lazy-by-group pattern](#example-lazy-by-group-provider)) has no root for
 Xpublish to consult, so the id it sets on that node is used as-is. Compose the
-group into it yourself — `f"{dataset_id}@{snapshot}/{group}"` — or two groups
+group into it yourself — `f"{dataset_id}@{snapshot}/{group}"`, or two groups
 of the same dataset will share a cache key.
 ```
 
