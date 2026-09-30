@@ -15,6 +15,7 @@ import xarray as xr
 from starlette.testclient import TestClient
 
 from xpublish import Plugin, Rest, SingleDatasetRest, hookimpl
+from xpublish.utils.api import DATASET_ID_ATTR_KEY, normalize_datasets
 
 
 @pytest.fixture(scope='function')
@@ -354,3 +355,172 @@ def test_datatree_accessor(simple_tree):
     r = client.get('/groups/a/keys')
     assert r.status_code == 200
     assert r.json() == ['x']
+
+
+# ---------------------------------------------------------------------------
+# Each node of the tree carries its own dataset id
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    'group_path,expected_id',
+    [
+        ('', 'tree'),
+        ('a', 'tree/a'),
+        ('a/b', 'tree/a/b'),
+        ('c', 'tree/c'),
+    ],
+)
+def test_node_gets_its_own_dataset_id(simple_tree, group_path, expected_id):
+    """``deps.dataset`` identifies the node, not just the dataset.
+
+    Anything keyed off ``DATASET_ID_ATTR_KEY`` — the built-in ``/info`` cache,
+    and the zarr/opendap plugins out of tree — would otherwise conflate the
+    root with every one of its groups.
+    """
+    rest = Rest({'tree': simple_tree})
+
+    dataset = rest.get_dataset_from_plugins('tree', group=group_path)
+
+    assert dataset.attrs[DATASET_ID_ATTR_KEY] == expected_id
+
+
+def test_provider_keeps_the_dataset_id_it_set(simple_tree):
+    """A provider that stamps the attr itself keeps its own value."""
+
+    class IdSettingProvider(Plugin):
+        name: str = 'id_setting_provider'
+
+        @hookimpl
+        def get_datasets(self) -> list[str]:
+            return ['provided']
+
+        @hookimpl
+        def get_datatree(self, dataset_id: str, group: str) -> xr.DataTree | None:
+            if dataset_id != 'provided':
+                return None
+            node = simple_tree[group] if group else simple_tree
+            tree = xr.DataTree(dataset=node.dataset.assign_attrs({DATASET_ID_ATTR_KEY: 'mine'}))
+            return tree
+
+    rest = Rest({}, plugins={'id_setting_provider': IdSettingProvider()})
+
+    dataset = rest.get_dataset_from_plugins('provided', group='a')
+
+    assert dataset.attrs[DATASET_ID_ATTR_KEY] == 'mine'
+
+
+# ---------------------------------------------------------------------------
+# /info is cached, so each node needs its own cache entry
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    'group_path,expected_vars,expected_dims',
+    [
+        ('', [], {}),
+        ('a', ['x'], {'i': 3}),
+        ('a/b', ['y'], {'j': 2}),
+        ('c', ['z'], {'k': 4}),
+    ],
+)
+def test_group_info(simple_tree, group_path, expected_vars, expected_dims):
+    rest = Rest({'tree': simple_tree})
+    client = TestClient(rest.app)
+
+    suffix = f'groups/{group_path}/info' if group_path else 'info'
+    r = client.get(f'/datasets/tree/{suffix}')
+
+    assert r.status_code == 200
+    body = r.json()
+    assert list(body['variables']) == expected_vars
+    assert body['dimensions'] == expected_dims
+
+
+def test_group_info_is_not_shared_between_groups(simple_tree):
+    """Every node must get its own cache entry.
+
+    ``deps.dataset`` stamps the same dataset id onto each node of the tree, so a
+    cache key built from the dataset id alone made the first group requested
+    answer for the root and for every other group.
+    """
+    rest = Rest({'tree': simple_tree})
+    client = TestClient(rest.app)
+
+    # Prime the cache from a group rather than the root, so a shared key would
+    # leak '/a' into the answers below instead of an empty root.
+    assert list(client.get('/datasets/tree/groups/a/info').json()['variables']) == ['x']
+
+    assert list(client.get('/datasets/tree/groups/a/b/info').json()['variables']) == ['y']
+    assert list(client.get('/datasets/tree/groups/c/info').json()['variables']) == ['z']
+    assert list(client.get('/datasets/tree/info').json()['variables']) == []
+
+    # One entry per node actually requested, not one shared by all of them.
+    assert sorted(rest.cache.data) == [
+        'tree/a/b/info',
+        'tree/a/info',
+        'tree/c/info',
+        'tree/info',
+    ]
+
+
+def test_group_info_served_from_cache(simple_tree):
+    """A second request for the same group is answered from the cache."""
+    rest = Rest({'tree': simple_tree})
+    client = TestClient(rest.app)
+
+    first = client.get('/datasets/tree/groups/a/info')
+    assert first.status_code == 200
+
+    # Mutating the cached entry is visible on the next request only if that
+    # request is served from the cache.
+    rest.cache.data['tree/a/info']['dimensions'] = {'sentinel': 1}
+
+    second = client.get('/datasets/tree/groups/a/info')
+    assert second.json()['dimensions'] == {'sentinel': 1}
+
+
+def test_root_id_drives_the_ids_of_its_groups(simple_tree):
+    """A root id the caller set is the base every group hangs off.
+
+    A provider that versions the root id — a refreshed dataset, say — moves
+    every node under it, so caches keyed on those ids fall out of date
+    together rather than one group at a time.
+    """
+    simple_tree.dataset = simple_tree.dataset.assign_attrs({DATASET_ID_ATTR_KEY: 'tree@v2'})
+    rest = Rest({'tree': simple_tree})
+
+    assert rest.get_dataset_from_plugins('tree').attrs[DATASET_ID_ATTR_KEY] == 'tree@v2'
+    assert (
+        rest.get_dataset_from_plugins('tree', group='a').attrs[DATASET_ID_ATTR_KEY] == 'tree@v2/a'
+    )
+    assert (
+        rest.get_dataset_from_plugins('tree', group='a/b').attrs[DATASET_ID_ATTR_KEY]
+        == 'tree@v2/a/b'
+    )
+
+
+def test_registration_keeps_a_root_id_the_caller_set(simple_tree):
+    """``normalize_datasets`` no longer replaces an id already on the root."""
+    simple_tree.dataset = simple_tree.dataset.assign_attrs({DATASET_ID_ATTR_KEY: 'tree@v2'})
+
+    normalized = normalize_datasets({'tree': simple_tree})
+
+    assert normalized['tree'].dataset.attrs[DATASET_ID_ATTR_KEY] == 'tree@v2'
+
+
+def test_bumping_the_root_id_changes_the_group_cache_keys(simple_tree):
+    """The point of the above: new ids mean new cache entries, not stale ones."""
+    rest = Rest({'tree': simple_tree})
+    client = TestClient(rest.app)
+
+    client.get('/datasets/tree/groups/a/info')
+    assert 'tree/a/info' in rest.cache.data
+
+    # The dataset is refreshed and the provider versions its id.
+    rest._datasets['tree'].dataset = rest._datasets['tree'].dataset.assign_attrs(
+        {DATASET_ID_ATTR_KEY: 'tree@v2'},
+    )
+
+    client.get('/datasets/tree/groups/a/info')
+    assert 'tree@v2/a/info' in rest.cache.data

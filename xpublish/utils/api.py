@@ -21,7 +21,10 @@ def normalize_datasets(
 
     Keys (dataset ids) are converted to strings and the dataset id is
     stored as a global attribute on the (root) dataset so it can be
-    retrieved within path operation functions.
+    retrieved within path operation functions. A root that already carries
+    the attribute keeps its own value, so a caller can version the id (to
+    invalidate caches keyed on it, say) without that value being replaced
+    by the mapping key.
 
     Args:
         datasets: A single Dataset/DataTree or a mapping with Dataset
@@ -52,7 +55,7 @@ def normalize_datasets(
         key = str(k)
         tree = obj if isinstance(obj, xr.DataTree) else xr.DataTree(dataset=obj)
         root_ds = tree.dataset
-        if root_ds.attrs.get(DATASET_ID_ATTR_KEY) != key:
+        if root_ds.attrs.get(DATASET_ID_ATTR_KEY) is None:
             tree.dataset = root_ds.assign_attrs({DATASET_ID_ATTR_KEY: key})
         normalized[key] = tree
 
