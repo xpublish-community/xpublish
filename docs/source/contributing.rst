@@ -136,3 +136,26 @@ Preparing Pull Requests
 
     base-fork: xpublish-community/xpublish
     base: main
+
+Downstream plugin tests
+------------------------
+
+xpublish changes can break plugins without xpublish's own test suite
+noticing. ``noxfile.py`` has a ``downstream`` session, tagged ``downstream``
+and not run by default, that clones a plugin's repository, installs it
+together with your local xpublish checkout in a single resolution, and runs
+its test suite::
+
+    $ ./noxfile.py -t downstream            # every plugin
+    $ ./noxfile.py -s "downstream(edr)"     # just one
+
+Point it at an existing local checkout for a plugin instead of cloning with ``--src``::
+
+    $ ./noxfile.py -s "downstream(edr)" -- --src ../xpublish-edr
+
+Other arguments after ``--`` are passed on to pytest.
+
+The ``.github/workflows/downstream.yaml`` workflow runs the same sessions in CI
+on a schedule and on PRs/pushes to ``main``, but it is intentionally
+non-blocking: it is not a required check, and each plugin's job uses
+``continue-on-error`` so one plugin's breakage never blocks a merge.
