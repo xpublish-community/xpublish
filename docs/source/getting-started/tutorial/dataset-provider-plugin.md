@@ -16,9 +16,9 @@ is also first-class — pick it for providers that only ever serve flat datasets
 See the [DataTrees tutorial](./datatrees.md) for the lazy-by-group pattern used
 by Zarr/Icechunk-backed providers.
 
-A provider can also set the id Xpublish serves its datasets under, which is
-what plugins build their cache keys from. Versioning that id — when a store is
-re-written or a new model run lands — turns over the cached responses for the
+A provider can set the id Xpublish serves its datasets under, which is
+what plugins build their cache keys from. Versioning that id (e.g. when a store is
+re-written or a new model run lands) turns over the cached responses for the
 dataset and all of its groups at once. See [dataset ids and cache
 keys](../../user-guide/plugins.md#dataset-ids-and-cache-keys).
 

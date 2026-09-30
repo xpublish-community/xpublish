@@ -208,9 +208,7 @@ class Rest:
                     detail=f"Group '{group}' not found in dataset '{dataset_id}'",
                 ) from err
 
-        # The id identifies the node, not just the dataset: every node of the
-        # tree would otherwise carry the same value, and anything keyed off it
-        # (caches especially) would conflate the root with each of its groups.
+        # The id identifies the node, not only the root dataset.
         #
         # A group's id is built from the id on its tree's root, so a provider that
         # versions that id (a refreshed dataset, say) moves every node under it
