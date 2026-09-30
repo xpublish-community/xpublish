@@ -170,12 +170,19 @@ def downstream(session: nox.Session, plugin_name: str):
 
     Add --src PATH to test against an existing local checkout instead of
     cloning, e.g. ``nox -s "downstream(edr)" -- --src ../xpublish-edr``.
+    Dependencies are constrained to the plugin's uv.lock when it has one;
+    add --no-lock to resolve the latest versions instead.
     Anything else after ``--`` is passed on to pytest.
     """
     plugin_config = DOWNSTREAM_PLUGINS[plugin_name]
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--src', help='Use an existing local checkout instead of cloning')
+    parser.add_argument(
+        '--no-lock',
+        action='store_true',
+        help="Ignore the plugin's uv.lock and resolve the latest dependencies",
+    )
     args, extra = parser.parse_known_args(session.posargs)
 
     if args.src:
@@ -211,6 +218,32 @@ def downstream(session: nox.Session, plugin_name: str):
 
     # One resolution, so the local xpublish checkout wins over PyPI's xpublish.
     install_args = []
+    # Constrain to the plugin's uv.lock when it has one, so failures point at
+    # xpublish rather than at dependency releases the plugin hasn't caught up
+    # with. xpublish is left out so this checkout is still what gets tested.
+    lock_file = os.path.join(src, 'uv.lock')
+    if not args.no_lock and os.path.isfile(lock_file) and session.venv_backend == 'uv':
+        constraints = os.path.abspath(os.path.join(session.create_tmp(), 'constraints.txt'))
+        session.run(
+            'uv',
+            'export',
+            '--directory',
+            src,
+            '--frozen',
+            '--all-extras',
+            '--all-groups',
+            '--no-emit-project',
+            '--no-emit-package',
+            'xpublish',
+            '--no-hashes',
+            '--no-header',
+            '--no-annotate',
+            '--quiet',
+            '--output-file',
+            constraints,
+            external=True,
+        )
+        install_args += ['-c', constraints]
     for group in plugin_config.groups:
         install_args += ['--group', f'{src}/pyproject.toml:{group}']
     for req in plugin_config.requirements:

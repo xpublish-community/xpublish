@@ -153,6 +153,13 @@ Point it at an existing local checkout for a plugin instead of cloning with ``--
 
     $ ./noxfile.py -s "downstream(edr)" -- --src ../xpublish-edr
 
+When a plugin has a ``uv.lock``, its dependencies are constrained to the
+locked versions (except xpublish itself), so failures point at xpublish rather
+than at new dependency releases the plugin hasn't caught up with yet. Add
+``--no-lock`` to resolve the latest versions instead::
+
+    $ ./noxfile.py -s "downstream(tiles)" -- --no-lock
+
 Other arguments after ``--`` are passed on to pytest.
 
 The ``.github/workflows/downstream.yaml`` workflow runs the same sessions in CI
