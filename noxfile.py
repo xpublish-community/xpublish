@@ -220,6 +220,12 @@ def downstream(session: nox.Session, plugin_name: str):
     install_args.append(session.invoked_from)
     session.install(*install_args)
 
+    # List what was resolved, to make dependency drift easier to debug.
+    if session.venv_backend == 'uv':
+        session.run('uv', 'pip', 'list', external=True)
+    else:
+        session.run('python', '-m', 'pip', 'list')
+
     # Run from the plugin's own directory, keeps `xpublish/` from shadowing
     # the installed package when run from the workspace root.
     session.chdir(src)
