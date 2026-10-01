@@ -1,9 +1,13 @@
+import logging
+import os
+import warnings
+from collections.abc import MutableMapping
 from typing import (
     Annotated,
+    ClassVar,
     Literal,
 )
 
-import cachey
 import pluggy
 import uvicorn
 import xarray as xr
@@ -17,6 +21,7 @@ from fastapi import (
 
 from .dependencies import (
     get_cache,
+    get_cache_store,
     get_dataset,
     get_dataset_ids,
     get_datatree,
@@ -38,10 +43,17 @@ from .utils.api import (
     normalize_app_routers,
     normalize_datasets,
 )
+from .utils.cache import (
+    CACHE_BYTES_ENV,
+    CacheyCache,
+    lru_bytes_store,
+)
 
 RouterKwargs = dict
 RouterAndKwargs = tuple[APIRouter, RouterKwargs]
 LogLevels = Literal['critical', 'error', 'warning', 'info', 'debug', 'trace']
+
+logger = logging.getLogger(__name__)
 
 
 class Rest:
@@ -67,6 +79,14 @@ class Rest:
     ``deps.dataset`` and ``deps.datatree`` dependencies read it automatically.
     """
 
+    #: ``stacklevel`` for the ``cache_kws`` deprecation warning raised from
+    #: :meth:`init_cache`, so it points at this class's own ``__init__``
+    #: caller rather than somewhere inside xpublish. Subclasses that add a
+    #: frame between their ``__init__`` and :meth:`init_cache` (for instance
+    #: by calling it indirectly through ``super().__init__()``) should
+    #: override this with one more than :class:`Rest`'s value.
+    _init_cache_stacklevel: ClassVar[int] = 3
+
     def __init__(
         self,
         datasets: dict[str, xr.Dataset | xr.DataTree] | None = None,
@@ -74,6 +94,7 @@ class Rest:
         cache_kws: dict | None = None,
         app_kws: dict | None = None,
         plugins: dict[str, Plugin] | None = None,
+        cache: MutableMapping | None = None,
     ):
         """Initialize a REST object for publishing Xarray Datasets / DataTrees.
 
@@ -90,14 +111,22 @@ class Rest:
                 the 1st tuple element is a :class:`fastapi.APIRouter` instance and
                 the 2nd element is a dictionary that is used to pass keyword
                 arguments to :meth:`fastapi.FastAPI.include_router`.
-            cache_kws: Dictionary of keyword arguments to be passed to
-                :meth:`cachey.Cache.__init__()`. By default, the cache size is set
-                to 1MB, but this can be changed with ``available_bytes``.
+            cache_kws: Deprecated. Dictionary of cache keyword arguments. The
+                cache is a least-recently-used cache with a byte budget, which
+                defaults to 1MB and can be changed with ``available_bytes``.
+                The ``XPUBLISH_CACHE_BYTES`` environment variable overrides
+                both. Pass ``cache=xpublish.lru_bytes_store(available_bytes)``
+                or set ``XPUBLISH_CACHE_BYTES`` instead; emits a
+                ``FutureWarning``.
             app_kws: Dictionary of keyword arguments to be passed to
                 :meth:`fastapi.FastAPI.__init__()`.
             plugins: Optional dictionary of loaded, configured plugins. Overrides
                 automatic loading of plugins. If no plugins are desired, set to an
                 empty dict.
+            cache: An explicit mutable mapping to store cached values in (a
+                ``cachetools`` cache, a plain dict, a shared store, ...),
+                instead of the one xpublish builds. Mutually exclusive with
+                ``cache_kws``.
         """
         if isinstance(datasets, (xr.Dataset, xr.DataTree)):
             raise TypeError(
@@ -116,7 +145,7 @@ class Rest:
         self._routers = normalized_routers
 
         self.init_app_kwargs(app_kws)
-        self.init_cache_kwargs(cache_kws)
+        self.init_cache(cache, cache_kws, stacklevel=self._init_cache_stacklevel)
 
     def setup_datasets(
         self,
@@ -322,16 +351,108 @@ class Rest:
         )():
             self.pm.add_hookspecs(hookspec)
 
-    def init_cache_kwargs(self, cache_kws: dict | None) -> None:
-        """Set up cache kwargs.
+    def init_cache(
+        self,
+        cache: MutableMapping | None,
+        cache_kws: dict | None,
+        *,
+        stacklevel: int = 3,
+    ) -> None:
+        """Set up the application cache.
+
+        Either an explicit cache mapping or a dictionary of cache options may
+        be given, not both. Without an explicit cache, the size can be
+        overridden at runtime with the ``XPUBLISH_CACHE_BYTES`` environment
+        variable.
 
         Args:
-            cache_kws: Dictionary of cache keyword arguments.
+            cache: An explicit mutable mapping to store cached values in.
+            cache_kws: Deprecated dictionary of cache keyword arguments. The
+                only supported key is ``available_bytes``. Pass
+                ``cache=xpublish.lru_bytes_store(available_bytes)`` or set
+                ``XPUBLISH_CACHE_BYTES`` instead.
+            stacklevel: ``stacklevel`` for the ``cache_kws`` deprecation
+                warning, so it points at the caller rather than at this
+                method.
+
+        Raises:
+            TypeError: ``cache`` was given and is not a
+                :class:`collections.abc.MutableMapping`, or an unsupported
+                cache keyword argument was passed.
+            ValueError: Both ``cache`` and ``cache_kws`` were given, or
+                ``XPUBLISH_CACHE_BYTES`` is not a number.
         """
-        self._cache = None
-        self._cache_kws = {'available_bytes': 1e6}
+        if cache is not None and cache_kws is not None:
+            raise ValueError(
+                'Pass either cache or cache_kws, not both. cache_kws only '
+                'configures the cache that xpublish builds for itself.'
+            )
+
+        if cache is not None and not isinstance(cache, MutableMapping):
+            raise TypeError(
+                f'{type(cache).__name__} is not a MutableMapping. Pass a '
+                'mutable mapping such as xpublish.lru_bytes_store(n) or a '
+                'LockedMapping(...).'
+            )
+
         if cache_kws is not None:
-            self._cache_kws.update(cache_kws)
+            warnings.warn(
+                'cache_kws is deprecated and will be removed in a future '
+                'release; pass cache=xpublish.lru_bytes_store(available_bytes) '
+                'or set XPUBLISH_CACHE_BYTES instead',
+                FutureWarning,
+                stacklevel=stacklevel,
+            )
+
+        self._cache = None
+        self._cache_instance = cache
+        self._available_bytes = 1e6
+        if cache_kws is not None:
+            for key in cache_kws:
+                if key != 'available_bytes':
+                    raise TypeError(
+                        f'Unsupported cache keyword argument {key!r}. '
+                        'cachey-specific cache options have been removed; '
+                        'pass a custom cache instead.'
+                    )
+            self._available_bytes = cache_kws['available_bytes']
+
+        env_bytes = os.environ.get(CACHE_BYTES_ENV)
+        if env_bytes is None:
+            return
+
+        if cache is not None:
+            # An explicit mapping was supplied, so the env var is irrelevant;
+            # it isn't even parsed, so a malformed value can't fail startup.
+            logger.warning(
+                '%s is ignored because a cache instance was supplied',
+                CACHE_BYTES_ENV,
+            )
+            return
+
+        try:
+            available_bytes = float(env_bytes)
+        except ValueError as err:
+            raise ValueError(f'{CACHE_BYTES_ENV} must be a number, got {env_bytes!r}') from err
+
+        self._available_bytes = available_bytes
+        logger.info(
+            '%s overrode the cache size, which is now %s bytes',
+            CACHE_BYTES_ENV,
+            available_bytes,
+        )
+
+    def init_cache_kwargs(self, cache_kws: dict | None) -> None:
+        """Set up cache kwargs, without an explicit cache instance.
+
+        Deprecated: pass ``cache=xpublish.lru_bytes_store(available_bytes)``
+        or set ``XPUBLISH_CACHE_BYTES`` instead.
+
+        Args:
+            cache_kws: Dictionary of cache keyword arguments, as described on
+                :meth:`Rest.init_cache`.
+        """
+        self.init_cache(None, cache_kws)
 
     def init_app_kwargs(self, app_kws: dict | None) -> None:
         """Set up FastAPI application kwargs.
@@ -344,12 +465,49 @@ class Rest:
         if app_kws is not None:
             self._app_kws.update(app_kws)
 
+    def _build_cache(self) -> CacheyCache:
+        """Build the cache.
+
+        An explicit ``cache=`` wins, then any store offered by a plugin's
+        ``get_cache`` hook, and otherwise xpublish builds its own byte-budgeted
+        LRU store. Whichever store is chosen is always wrapped in
+        :class:`xpublish.CacheyCache`.
+        """
+        store = self._cache_instance
+
+        if store is None:
+            store = self.pm.hook.get_cache(available_bytes=self._available_bytes)
+            if store is not None:
+                providers = ', '.join(
+                    impl.plugin_name for impl in self.pm.hook.get_cache.get_hookimpls()
+                )
+                logger.info(
+                    'Using the %s cache store provided by plugin(s) %s',
+                    type(store).__name__,
+                    providers,
+                )
+
+        if store is None:
+            store = lru_bytes_store(self._available_bytes)
+
+        return CacheyCache(store)
+
     @property
-    def cache(self) -> cachey.Cache:
-        """Returns the :class:`cachey.Cache` instance used by the FastAPI application."""
+    def cache(self) -> CacheyCache:
+        """Returns the cache used by the FastAPI application."""
         if self._cache is None:
-            self._cache = cachey.Cache(**self._cache_kws)
+            self._cache = self._build_cache()
         return self._cache
+
+    @property
+    def cache_store(self) -> MutableMapping:
+        """Returns the raw mapping behind the application cache.
+
+        Plugins that want to layer their own policy over the shared store can
+        use this instead of :attr:`Rest.cache`. The store is always present
+        and is always the mapping backing :attr:`Rest.cache`.
+        """
+        return self.cache.mapping
 
     @property
     def plugins(self) -> dict[str, Plugin]:
@@ -405,6 +563,7 @@ class Rest:
             dataset=self._get_dataset_func,
             datatree=self._get_datatree_func,
             cache=lambda: self.cache,
+            cache_store=lambda: self.cache_store,
             plugins=lambda: self.plugins,
             plugin_manager=lambda: self.pm,
         )
@@ -419,6 +578,7 @@ class Rest:
         self._app.dependency_overrides[get_dataset] = deps.dataset
         self._app.dependency_overrides[get_datatree] = deps.datatree
         self._app.dependency_overrides[get_cache] = deps.cache
+        self._app.dependency_overrides[get_cache_store] = deps.cache_store
         self._app.dependency_overrides[get_plugins] = deps.plugins
         self._app.dependency_overrides[get_plugin_manager] = deps.plugin_manager
 
@@ -483,6 +643,11 @@ class SingleDatasetRest(Rest):
     Use :class:`xpublish.Rest` to publish multiple datasets.
     """
 
+    # One more than Rest's, since this class reaches Rest.init_cache (and
+    # thus the cache_kws deprecation warning) through an extra frame: its
+    # own super().__init__() call.
+    _init_cache_stacklevel: ClassVar[int] = 4
+
     def __init__(
         self,
         dataset: xr.Dataset | xr.DataTree,
@@ -490,6 +655,7 @@ class SingleDatasetRest(Rest):
         cache_kws: dict | None = None,
         app_kws: dict | None = None,
         plugins: dict[str, Plugin] | None = None,
+        cache: MutableMapping | None = None,
     ):
         """Initialize the SingleDatasetRest object.
 
@@ -505,21 +671,36 @@ class SingleDatasetRest(Rest):
                 the 1st tuple element is a :class:`fastapi.APIRouter` instance and
                 the 2nd element is a dictionary that is used to pass keyword
                 arguments to :meth:`fastapi.FastAPI.include_router`.
-            cache_kws: Dictionary of keyword arguments to be passed to
-                :meth:`cachey.Cache.__init__()`. By default, the cache size is set
-                to 1MB, but this can be changed with ``available_bytes``.
+            cache_kws: Deprecated. Dictionary of cache keyword arguments. The
+                cache is a least-recently-used cache with a byte budget, which
+                defaults to 1MB and can be changed with ``available_bytes``.
+                The ``XPUBLISH_CACHE_BYTES`` environment variable overrides
+                both. Pass ``cache=xpublish.lru_bytes_store(available_bytes)``
+                or set ``XPUBLISH_CACHE_BYTES`` instead; emits a
+                ``FutureWarning``.
             app_kws: Dictionary of keyword arguments to be passed to
                 :meth:`fastapi.FastAPI.__init__()`.
             plugins: Optional dictionary of loaded, configured plugins. Overrides
                 automatic loading of plugins. If no plugins are desired, set to an
                 empty dict.
+            cache: An explicit mutable mapping to store cached values in (a
+                ``cachetools`` cache, a plain dict, a shared store, ...),
+                instead of the one xpublish builds. Mutually exclusive with
+                ``cache_kws``.
         """
         if isinstance(dataset, xr.DataTree):
             self._tree = dataset
         else:
             self._tree = xr.DataTree(dataset=dataset)
 
-        super().__init__({}, routers, cache_kws, app_kws, plugins)
+        super().__init__(
+            datasets={},
+            routers=routers,
+            cache_kws=cache_kws,
+            app_kws=app_kws,
+            plugins=plugins,
+            cache=cache,
+        )
 
     def setup_datasets(self, datasets) -> str:
         """Modifies dataset loading to instead connect to the single dataset/DataTree."""

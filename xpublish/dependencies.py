@@ -1,11 +1,13 @@
 """Helper functions to use a FastAPI dependencies."""
 
+from collections.abc import MutableMapping
 from typing import TYPE_CHECKING
 
-import cachey
 import pluggy
 import xarray as xr
 from fastapi import Request
+
+from .utils.cache import CacheProtocol, lru_bytes_cache, lru_bytes_store
 
 if TYPE_CHECKING:
     from .plugins import Plugin  # pragma: no cover
@@ -89,18 +91,34 @@ def get_datatree(dataset_id: str) -> xr.DataTree:
     return xr.DataTree()  # pragma: no cover
 
 
-def get_cache() -> cachey.Cache:
+def get_cache() -> CacheProtocol:
     """FastAPI dependency for accessing the application's cache.
 
     Use this callable as dependency in any FastAPI path operation
     function where you need access to the cache provided with the
-    application.
+    application. The returned object follows
+    :class:`xpublish.CacheProtocol`.
 
     This dummy dependency will be overridden when creating the FastAPI
     application.
 
     """
-    return cachey.Cache(available_bytes=1e6)  # pragma: no cover
+    return lru_bytes_cache(available_bytes=1e6)  # pragma: no cover
+
+
+def get_cache_store() -> MutableMapping:
+    """FastAPI dependency for accessing the store behind the application's cache.
+
+    Use this callable as dependency in any FastAPI path operation function
+    where you want to layer your own caching policy over the store that the
+    application cache is built on. It is always the raw mapping backing
+    :func:`get_cache`.
+
+    This dummy dependency will be overridden when creating the FastAPI
+    application.
+
+    """
+    return lru_bytes_store(1e6)  # pragma: no cover
 
 
 def get_plugins() -> dict[str, 'Plugin']:

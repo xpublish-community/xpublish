@@ -1,8 +1,8 @@
-import cachey
 import xarray as xr
 from fastapi import FastAPI
 
 from .rest import SingleDatasetRest
+from .utils.cache import CacheyCache
 
 
 class _BaseRestAccessor:
@@ -40,8 +40,8 @@ class _BaseRestAccessor:
         return self
 
     @property
-    def cache(self) -> cachey.Cache:
-        """Returns the :class:`cachey.Cache` instance used by the FastAPI application."""
+    def cache(self) -> CacheyCache:
+        """Returns the cache used by the FastAPI application."""
         return self._get_rest_obj().cache
 
     @property

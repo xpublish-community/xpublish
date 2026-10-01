@@ -1,6 +1,5 @@
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, MutableMapping
 
-import cachey  # type: ignore
 import pluggy  # type: ignore
 import xarray as xr
 from fastapi import APIRouter
@@ -8,12 +7,14 @@ from pydantic import BaseModel, Field
 
 from ..dependencies import (
     get_cache,
+    get_cache_store,
     get_dataset,
     get_dataset_ids,
     get_datatree,
     get_plugin_manager,
     get_plugins,
 )
+from ..utils.cache import CacheProtocol
 
 # Decorator helper to mark functions as Xpublish hook specifications
 hookspec = pluggy.HookspecMarker('xpublish')
@@ -99,9 +100,16 @@ class Dependencies(BaseModel):
             '``{group_path:path}`` if present in the route).'
         ),
     )
-    cache: Callable[..., cachey.Cache] = Field(
+    cache: Callable[..., CacheProtocol] = Field(
         get_cache,
-        description='Provide access to :py:class:`cachey.Cache`',
+        description='Provide access to the application cache (:py:class:`xpublish.CacheProtocol`)',
+    )
+    cache_store: Callable[..., MutableMapping] = Field(
+        get_cache_store,
+        description=(
+            'The raw mapping behind the application cache, for plugins that want to '
+            'layer their own policy over the shared store'
+        ),
     )
     plugins: Callable[..., dict[str, Plugin]] = Field(
         get_plugins,
@@ -181,6 +189,20 @@ class PluginSpec(Plugin):
         consulted first.
 
         If the plugin does not have the dataset, return ``None``.
+        """
+
+    @hookspec(firstresult=True)
+    # type: ignore
+    def get_cache(self, available_bytes: float) -> MutableMapping | None:
+        """Return the backing store for the application cache, or ``None`` to defer.
+
+        Usually a ``cachetools.Cache`` subclass (``LRUCache``, ``TTLCache``, ...),
+        but any ``MutableMapping`` works, for instance a CacheToolsUtils
+        ``TwoLevelCache`` over Redis. Xpublish wraps the store in
+        :class:`xpublish.CacheyCache` for ``deps.cache`` and hands the bare
+        instance to plugins as ``deps.cache_store``. ``available_bytes`` is
+        the resolved cache size (1e6 by default, overridden by
+        ``XPUBLISH_CACHE_BYTES``) so a provider can honour the configured size.
         """
 
     @hookspec

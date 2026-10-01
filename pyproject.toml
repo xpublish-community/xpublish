@@ -34,7 +34,7 @@ classifiers = [
 ]
 dynamic = [ "version" ]
 dependencies = [
-  "cachey>=0.2.1",
+  "cachetools>=5",
   "fastapi>=0.115",
   "numpy>=1.26",
   "pluggy>=1",
@@ -51,6 +51,7 @@ entry-points."xpublish.plugin".plugin_info = "xpublish.plugins.included.plugin_i
 
 [dependency-groups]
 dev = [
+  "cachetoolsutils",
   "fsspec",
   # Starlette's TestClient imports httpx2 on recent releases and plain httpx on
   # older ones; keep both so the suite runs across the supported fastapi range
@@ -145,7 +146,7 @@ lint.isort.known-first-party = [
   "xpublish",
 ]
 lint.isort.known-third-party = [
-  "cachey",
+  "cachetools",
   "fastapi",
   "numpy",
   "pandas",

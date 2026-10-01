@@ -1,0 +1,752 @@
+import collections
+import contextlib
+import logging
+import pickle
+import sys
+from concurrent.futures import ThreadPoolExecutor
+
+import cachetools
+import numpy as np
+import pytest
+from starlette.testclient import TestClient
+
+from xpublish import Plugin, Rest, hookimpl
+from xpublish.plugins.included.dataset_info import DatasetInfoPlugin
+from xpublish.utils.cache import (
+    CACHE_BYTES_ENV,
+    CacheEntry,
+    CacheProtocol,
+    CacheyCache,
+    LockedMapping,
+    SerializedMapping,
+    entry_size,
+    lru_bytes_cache,
+    lru_bytes_store,
+    nbytes,
+)
+
+
+class RecordingLock:
+    """A context manager that counts how many times it was entered."""
+
+    def __init__(self):
+        self.entered = 0
+
+    def __enter__(self):
+        self.entered += 1
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+
+class CountingDict(dict):
+    """A dict that records how many times each key was written."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.writes = collections.Counter()
+
+    def __setitem__(self, key, value):
+        self.writes[key] += 1
+        super().__setitem__(key, value)
+
+
+def test_lru_bytes_cache_satisfies_protocol():
+    assert isinstance(lru_bytes_cache(1), CacheProtocol)
+
+
+def test_object_without_put_is_not_a_cache():
+    class OnlyGet:
+        def get(self, key, default=None):
+            return default
+
+    assert not isinstance(OnlyGet(), CacheProtocol)
+
+
+def test_object_with_get_and_put_is_a_cache():
+    class Custom:
+        def get(self, key, default=None):
+            return default
+
+        def put(self, key, value, cost, nbytes=None):
+            pass
+
+    assert isinstance(Custom(), CacheProtocol)
+
+
+def test_protocol_cannot_be_instantiated():
+    with pytest.raises(TypeError):
+        CacheProtocol()
+
+
+def test_dict_store_round_trip():
+    cache = CacheyCache({})
+
+    cache.put('key', 'value', 1.0)
+
+    assert cache.get('key') == 'value'
+
+
+def test_miss_returns_default():
+    cache = CacheyCache({})
+
+    assert cache.get('missing') is None
+    assert cache.get('missing', 'fallback') == 'fallback'
+
+
+def test_store_with_broken_get_still_misses_cleanly():
+    class NoGetDict(dict):
+        def get(self, key, default=None):
+            raise AssertionError('CacheyCache must not call mapping.get()')
+
+    cache = CacheyCache(NoGetDict())
+
+    assert cache.get('missing') is None
+
+    cache.put('key', 'value', 1.0)
+    assert cache.get('key') == 'value'
+
+
+def test_oversize_put_is_dropped_silently():
+    cache = lru_bytes_cache(10)
+
+    cache.put('big', b'x' * 100, 1.0)
+
+    assert cache.get('big') is None
+    assert len(cache) == 0
+
+
+def test_min_cost_gating():
+    cache = CacheyCache({}, min_cost=0.5)
+
+    cache.put('cheap', 'value', 0.1)
+    assert cache.get('cheap') is None
+
+    cache.put('pricey', 'value', 0.9)
+    assert cache.get('pricey') == 'value'
+
+
+def test_max_nbytes_gating():
+    cache = CacheyCache({}, max_nbytes=4)
+
+    cache.put('big', b'abcdefgh', 1.0)
+    assert cache.get('big') is None
+
+    cache.put('small', b'ab', 1.0)
+    assert cache.get('small') == b'ab'
+
+
+def test_hit_and_miss_callbacks():
+    hits = []
+    misses = []
+    cache = CacheyCache({}, hit=hits.append, miss=misses.append)
+
+    assert cache.get('key') is None
+    assert misses == ['key']
+    assert hits == []
+
+    cache.put('key', 'value', 1.0)
+    assert cache.get('key') == 'value'
+    assert hits == ['key']
+    assert misses == ['key']
+
+
+def test_put_without_nbytes_uses_the_helper():
+    store = {}
+    cache = CacheyCache(store)
+
+    cache.put('bytes', b'abc', 1.0)
+    assert store['bytes'][1] == 3
+
+    array = np.ones(10, dtype='i4')
+    cache.put('array', array, 1.0)
+    assert store['array'][1] == array.nbytes
+
+
+def test_put_with_explicit_nbytes():
+    store = {}
+    cache = CacheyCache(store)
+
+    cache.put('key', b'abc', 1.0, nbytes=1234)
+
+    assert store['key'][1] == 1234
+
+
+def test_nbytes_helper():
+    assert nbytes(b'abc') == 3
+    assert nbytes(bytearray(b'abcd')) == 4
+    assert nbytes('hello') == 5
+    assert nbytes(np.ones(5, dtype='i4')) == 20
+
+    assert nbytes(['ab', 'cd']) >= 4
+    assert nbytes(['ab', 'cd']) > nbytes([])
+    assert nbytes({'a': 'bcd'}) >= 4
+    assert nbytes((1, 2, 3)) > nbytes(())
+    assert nbytes({'a', 'bb'}) > nbytes(set())
+
+    assert nbytes(object()) == sys.getsizeof(object())
+
+
+def test_nbytes_helper_pandas():
+    pd = pytest.importorskip('pandas')
+
+    series = pd.Series(['a string', 'another string'] * 10)
+
+    assert nbytes(series) > 0
+
+
+def test_serialized_mapping_round_trip():
+    store = {}
+    mapping = SerializedMapping(store)
+
+    array = np.arange(5)
+    mapping['bytes'] = b'raw'
+    mapping['array'] = array
+    mapping['dict'] = {'a': 1}
+
+    assert mapping['bytes'] == b'raw'
+    np.testing.assert_array_equal(mapping['array'], array)
+    assert mapping['dict'] == {'a': 1}
+
+    assert all(isinstance(value, bytes) for value in store.values())
+    assert pickle.loads(store['bytes']) == b'raw'
+
+    assert len(mapping) == 3
+    assert set(mapping) == {'bytes', 'array', 'dict'}
+
+    del mapping['bytes']
+    assert 'bytes' not in mapping
+    assert len(mapping) == 2
+
+
+def test_serialized_mapping_backs_a_cache():
+    store = {}
+    cache = CacheyCache(SerializedMapping(store))
+
+    cache.put('key', {'a': 1}, 1.0)
+
+    assert cache.get('key') == {'a': 1}
+    assert isinstance(store['key'], bytes)
+
+
+def test_lock_is_acquired_by_get_and_put():
+    lock = RecordingLock()
+    cache = CacheyCache({}, lock=lock)
+
+    cache.put('key', 'value', 1.0)
+    assert lock.entered == 1
+
+    cache.get('key')
+    assert lock.entered == 2
+
+
+def test_lock_false_disables_locking():
+    cache = CacheyCache({}, lock=False)
+
+    assert isinstance(cache._lock, contextlib.nullcontext)
+
+    cache.put('key', 'value', 1.0)
+    assert cache.get('key') == 'value'
+
+
+def test_lru_bytes_cache_evicts_oldest():
+    cache = lru_bytes_cache(10)
+
+    cache.put('a', b'aaaa', 1.0)
+    cache.put('b', b'bbbb', 1.0)
+    cache.put('c', b'cccc', 1.0)
+
+    assert cache.get('a') is None
+    assert cache.get('b') == b'bbbb'
+    assert cache.get('c') == b'cccc'
+    assert cache.mapping.currsize == 8
+    assert cache.mapping.maxsize == 10
+
+
+def test_retire_clear_contains_and_len():
+    cache = CacheyCache({})
+
+    cache.put('a', 1, 1.0)
+    cache.put('b', 2, 1.0)
+
+    assert 'a' in cache
+    assert 'z' not in cache
+    assert len(cache) == 2
+
+    cache.retire('a')
+    assert 'a' not in cache
+    assert len(cache) == 1
+
+    # retiring a missing key is a no-op
+    cache.retire('a')
+
+    cache.clear()
+    assert len(cache) == 0
+
+
+def test_mapping_property_exposes_the_raw_store():
+    store = {}
+    cache = CacheyCache(store)
+
+    assert cache.mapping is store
+
+
+def test_concurrent_access_keeps_the_store_consistent():
+    cache = lru_bytes_cache(1000)
+
+    def worker(thread_id):
+        for i in range(200):
+            key = f'{thread_id}-{i % 25}'
+            cache.put(key, b'x' * 16, 1.0)
+            cache.get(key)
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(worker, range(8)))
+
+    mapping = cache.mapping
+    assert mapping.currsize <= mapping.maxsize
+    assert mapping.currsize == sum(entry_size(value) for value in mapping.values())
+
+
+def test_locked_mapping_round_trip():
+    mapping = LockedMapping({})
+
+    mapping['key'] = 'value'
+    assert mapping['key'] == 'value'
+    assert 'key' in mapping
+    assert len(mapping) == 1
+
+    del mapping['key']
+    assert 'key' not in mapping
+    assert len(mapping) == 0
+
+
+def test_locked_mapping_key_error_on_miss():
+    mapping = LockedMapping({})
+
+    with pytest.raises(KeyError):
+        mapping['missing']
+
+
+def test_locked_mapping_forwards_attributes_from_the_inner_store():
+    inner = cachetools.LRUCache(maxsize=10, getsizeof=lambda item: item[1])
+    mapping = LockedMapping(inner)
+
+    assert mapping.maxsize == 10
+
+    mapping['a'] = ('x', 4)
+    assert mapping.currsize == 4
+
+
+def test_locked_mapping_guards_against_recursion_before_init():
+    mapping = LockedMapping.__new__(LockedMapping)
+
+    with pytest.raises(AttributeError):
+        _ = mapping.maxsize
+
+
+def test_locked_mapping_acquires_the_lock():
+    lock = RecordingLock()
+    mapping = LockedMapping({}, lock=lock)
+
+    mapping['key'] = 'value'
+    assert lock.entered == 1
+
+    assert mapping['key'] == 'value'
+    assert lock.entered == 2
+
+    assert 'key' in mapping
+    assert lock.entered == 3
+
+    assert len(mapping) == 1
+    assert lock.entered == 4
+
+    del mapping['key']
+    assert lock.entered == 5
+
+
+def test_locked_mapping_iter_is_a_snapshot_safe_to_mutate_during():
+    mapping = LockedMapping({'a': 1, 'b': 2, 'c': 3})
+
+    seen = []
+    for key in mapping:
+        seen.append(key)
+        del mapping[key]
+
+    assert set(seen) == {'a', 'b', 'c'}
+    assert len(mapping) == 0
+
+
+def test_locked_mapping_oversize_value_error_propagates():
+    inner = cachetools.LRUCache(maxsize=10, getsizeof=lambda item: item[1])
+    mapping = LockedMapping(inner)
+
+    with pytest.raises(ValueError):
+        mapping['big'] = ('x', 100)
+
+
+def test_cacheycache_swallows_the_locked_mappings_oversize_error():
+    cache = CacheyCache(lru_bytes_store(10))
+
+    cache.put('big', b'x' * 100, 1.0)
+
+    assert cache.get('big') is None
+    assert len(cache) == 0
+
+
+def test_cacheycache_shares_the_locked_mappings_lock():
+    mapping = LockedMapping({})
+    cache = CacheyCache(mapping)
+
+    assert cache._lock is mapping.lock
+
+
+def test_lru_bytes_cache_builds_a_locked_mapping():
+    assert isinstance(lru_bytes_cache(10).mapping, LockedMapping)
+
+
+def test_locked_mapping_concurrent_access_stays_consistent():
+    store = lru_bytes_store(1000)
+    cache = CacheyCache(store)
+
+    def worker(thread_id):
+        for i in range(200):
+            key = f'{thread_id}-{i % 25}'
+            if thread_id % 2 == 0:
+                store[key] = (b'x' * 16, 16)
+            else:
+                cache.put(key, b'x' * 16, 1.0)
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(worker, range(8)))
+
+    assert store.currsize <= store.maxsize
+    assert store.currsize == sum(entry_size(value) for value in store.mapping.values())
+
+
+def test_cache_kwarg_accepts_a_mapping(airtemp_ds):
+    store = {}
+    rest = Rest({'airtemp': airtemp_ds}, cache=store)
+
+    client = TestClient(rest.app)
+    assert client.get('/datasets/airtemp/info').status_code == 200
+
+    assert 'airtemp/info' in store
+    assert isinstance(rest.cache, CacheyCache)
+    assert rest.cache_store is store
+
+
+def test_cache_kwarg_rejects_other_objects(airtemp_ds):
+    with pytest.raises(TypeError, match='MutableMapping'):
+        Rest({'airtemp': airtemp_ds}, cache=object())
+
+
+def test_cache_kwarg_rejects_a_get_put_only_object(airtemp_ds):
+    class OnlyGetPut:
+        def get(self, key, default=None):
+            return default
+
+        def put(self, key, value, cost, nbytes=None):
+            pass
+
+    with pytest.raises(TypeError, match='MutableMapping'):
+        Rest({'airtemp': airtemp_ds}, cache=OnlyGetPut())
+
+
+def test_cache_and_cache_kws_are_mutually_exclusive(airtemp_ds):
+    with pytest.raises(ValueError, match='cache_kws'):
+        Rest({'airtemp': airtemp_ds}, cache={}, cache_kws={'available_bytes': 999})
+
+
+def test_cache_store_dependency_matches_the_default_cache(airtemp_ds):
+    rest = Rest({'airtemp': airtemp_ds})
+
+    assert rest.dependencies().cache_store() is rest.cache.mapping
+
+
+def test_cache_kwarg_via_the_accessor(airtemp_ds):
+    store = cachetools.LRUCache(maxsize=1e6, getsizeof=lambda item: item[1])
+    accessor = airtemp_ds.copy().rest(cache=store)
+
+    assert accessor.cache.mapping is store
+
+    client = TestClient(accessor.app)
+    assert client.get('/info').status_code == 200
+    assert '/info' in store
+
+
+def test_cache_kwarg_with_a_mapping_ignores_the_env_var(airtemp_ds, monkeypatch, caplog):
+    monkeypatch.setenv(CACHE_BYTES_ENV, '12345')
+    store = {}
+
+    with caplog.at_level(logging.WARNING, logger='xpublish.rest'):
+        rest = Rest({'airtemp': airtemp_ds}, cache=store)
+
+    assert CACHE_BYTES_ENV in caplog.text
+    assert rest.cache.mapping is store
+
+
+def test_cache_kwarg_ignores_a_malformed_env_var(airtemp_ds, monkeypatch, caplog):
+    monkeypatch.setenv(CACHE_BYTES_ENV, 'not-a-number')
+
+    with caplog.at_level(logging.WARNING, logger='xpublish.rest'):
+        rest = Rest({'airtemp': airtemp_ds}, cache={})
+
+    assert CACHE_BYTES_ENV in caplog.text
+    assert isinstance(rest.cache, CacheyCache)
+
+
+def test_two_apps_can_share_one_store(airtemp_ds):
+    store = CountingDict()
+
+    for _ in range(2):
+        rest = Rest({'airtemp': airtemp_ds}, cache=store)
+        client = TestClient(rest.app)
+        assert client.get('/datasets/airtemp/info').status_code == 200
+
+    assert store.writes['airtemp/info'] == 1
+
+
+def cache_plugin(store, calls=None):
+    """Build a plugin whose get_cache hook returns ``store``.
+
+    The store is captured in a closure rather than held as a pydantic field so
+    that arbitrary mapping types can be used.
+    """
+
+    class CacheProviderPlugin(Plugin):
+        name: str = 'cache_provider'
+
+        @hookimpl
+        def get_cache(self, available_bytes):
+            """Provide the backing store for the application cache."""
+            if calls is not None:
+                calls.append(available_bytes)
+            return store
+
+    return CacheProviderPlugin()
+
+
+def plugins_with(plugin):
+    """Plugins for a Rest app: the cache provider plus /info."""
+    return {'dataset_info': DatasetInfoPlugin(), 'cache_provider': plugin}
+
+
+def test_plugin_can_provide_the_cache_store(airtemp_ds):
+    store = cachetools.LRUCache(maxsize=1e6, getsizeof=lambda item: item[1])
+    rest = Rest({'airtemp': airtemp_ds}, plugins=plugins_with(cache_plugin(store)))
+
+    assert isinstance(rest.cache, CacheyCache)
+    assert rest.cache.mapping is store
+    assert rest.dependencies().cache_store() is store
+
+    client = TestClient(rest.app)
+    assert client.get('/datasets/airtemp/info').status_code == 200
+    assert 'airtemp/info' in store
+
+
+def test_plugin_can_provide_a_plain_dict(airtemp_ds):
+    store = {}
+    rest = Rest({'airtemp': airtemp_ds}, plugins=plugins_with(cache_plugin(store)))
+
+    client = TestClient(rest.app)
+    assert client.get('/datasets/airtemp/info').status_code == 200
+    assert 'airtemp/info' in store
+
+
+def test_plugin_returning_none_falls_back_to_the_default(airtemp_ds):
+    with pytest.warns(FutureWarning, match='cache_kws'):
+        rest = Rest(
+            {'airtemp': airtemp_ds},
+            plugins=plugins_with(cache_plugin(None)),
+            cache_kws={'available_bytes': 999},
+        )
+
+    assert isinstance(rest.cache.mapping, LockedMapping)
+    assert isinstance(rest.cache.mapping.mapping, cachetools.LRUCache)
+    assert rest.cache.mapping.maxsize == 999
+
+
+def test_explicit_cache_beats_the_plugin(airtemp_ds):
+    explicit = {}
+    from_plugin = {}
+    rest = Rest(
+        {'airtemp': airtemp_ds},
+        plugins=plugins_with(cache_plugin(from_plugin)),
+        cache=explicit,
+    )
+
+    assert rest.cache.mapping is explicit
+
+    client = TestClient(rest.app)
+    assert client.get('/datasets/airtemp/info').status_code == 200
+    assert 'airtemp/info' in explicit
+    assert from_plugin == {}
+
+
+def test_plugin_hook_receives_the_resolved_available_bytes(airtemp_ds):
+    calls = []
+
+    rest = Rest({'airtemp': airtemp_ds}, plugins=plugins_with(cache_plugin({}, calls)))
+    _ = rest.cache
+
+    assert calls == [1e6]
+
+
+def test_plugin_hook_receives_the_env_var_override(airtemp_ds, monkeypatch):
+    monkeypatch.setenv(CACHE_BYTES_ENV, '12345')
+    calls = []
+
+    rest = Rest({'airtemp': airtemp_ds}, plugins=plugins_with(cache_plugin({}, calls)))
+    _ = rest.cache
+
+    assert calls == [12345.0]
+
+
+# -- CacheEntry / entry_size: raw values written directly to xpublish stores --
+
+
+def _by_kind(kind):
+    return {'float': 1.5, 'dict': {'a': 1}, 'str': 'hello', 'tuple': ('x', 5)}[kind]
+
+
+def test_cachetools_cached_accepts_raw_values_of_any_type():
+    store = lru_bytes_store(1e6)
+
+    @cachetools.cached(store)
+    def compute(kind):
+        return _by_kind(kind)
+
+    assert compute('float') == 1.5
+    assert compute('dict') == {'a': 1}
+    assert compute('str') == 'hello'
+    assert compute('tuple') == ('x', 5)
+
+    # a raw 2-tuple is measured by nbytes(), not treated as a (value, nbytes)
+    # pair, so it is no longer silently sized as 5 bytes
+    assert entry_size(('x', 5)) != 5
+
+    assert store.currsize == sum(entry_size(value) for value in store.values())
+
+
+def test_cachetools_cached_via_prefixed_cache_accepts_raw_values():
+    ctu = pytest.importorskip('CacheToolsUtils')
+
+    store = lru_bytes_store(1e6)
+    prefixed = ctu.PrefixedCache(store, 'p:')
+
+    @cachetools.cached(prefixed, key=lambda kind: f'g/{kind}')
+    def compute(kind):
+        return _by_kind(kind)
+
+    assert compute('float') == 1.5
+    assert compute('dict') == {'a': 1}
+    assert compute('str') == 'hello'
+    assert compute('tuple') == ('x', 5)
+
+    assert store.currsize == sum(entry_size(value) for value in store.values())
+
+
+def test_mixed_raw_and_cacheycache_entries_evict_lru_by_bytes():
+    store = lru_bytes_store(10)
+    cache = CacheyCache(store)
+
+    cache.put('a', b'aaaa', 1.0)  # CacheEntry, 4 bytes
+    store['b'] = b'bbbb'  # raw value written directly, 4 bytes
+    cache.put('c', b'cc', 1.0)  # CacheEntry, 2 bytes; store is now full (10)
+
+    # touch 'b' so it is more recently used than 'a'
+    assert store['b'] == b'bbbb'
+
+    # inserting another 4-byte entry evicts the least-recently-used ('a')
+    cache.put('d', b'dddd', 1.0)
+
+    assert 'a' not in store
+    assert store['b'] == b'bbbb'
+    assert cache.get('c') == b'cc'
+    assert cache.get('d') == b'dddd'
+
+
+def test_oversize_raw_value_via_cachetools_cached_is_dropped_silently():
+    store = lru_bytes_store(10)
+
+    @cachetools.cached(store)
+    def big():
+        return b'x' * 100
+
+    assert big() == b'x' * 100
+    assert len(store) == 0
+
+
+def test_cacheycache_get_returns_a_raw_value_written_directly():
+    store = {}
+    store['key'] = 'raw-value'
+    cache = CacheyCache(store)
+
+    assert cache.get('key') == 'raw-value'
+
+
+def test_cacheycache_put_stores_a_cache_entry():
+    store = {}
+    cache = CacheyCache(store)
+
+    cache.put('key', 'value', 1.0)
+
+    assert isinstance(store['key'], CacheEntry)
+    assert store['key'] == ('value', nbytes('value'), 1.0)
+
+
+def test_put_records_the_cost():
+    store = {}
+    cache = CacheyCache(store)
+
+    cache.put('key', 'value', 2.5)
+
+    assert store['key'].cost == 2.5
+
+
+def test_cache_entry_round_trips_through_serialized_mapping():
+    store = {}
+    mapping = SerializedMapping(store)
+
+    mapping['key'] = CacheEntry('value', 5, 2.5)
+
+    result = mapping['key']
+    assert isinstance(result, CacheEntry)
+    assert result == ('value', 5, 2.5)
+
+
+class CostAwareCache(cachetools.Cache):
+    """A cachetools cache that evicts the entry with the lowest cost per byte.
+
+    Treats a raw (non-:class:`CacheEntry`) value as costing nothing, and
+    floors ``nbytes`` at 1 to avoid dividing by zero.
+    """
+
+    def popitem(self):
+        """Evict the entry with the lowest cost per byte."""
+
+        def cost_per_byte(key):
+            entry = self[key]
+            cost = entry.cost if isinstance(entry, CacheEntry) else 0
+            size = entry.nbytes if isinstance(entry, CacheEntry) else entry_size(entry)
+            return cost / max(size, 1)
+
+        key = min(self, key=cost_per_byte)
+        return key, self.pop(key)
+
+
+def test_cost_aware_eviction_keeps_the_expensive_entry():
+    store = LockedMapping(CostAwareCache(maxsize=10, getsizeof=entry_size))
+    cache = CacheyCache(store)
+
+    cache.put('cheap', b'aaaa', cost=0.1)
+    cache.put('expensive', b'bbbb', cost=10.0)
+
+    # a third entry forces an eviction: cheap + expensive + third is 12
+    # bytes, over the 10-byte budget
+    cache.put('third', b'cccc', cost=1.0)
+
+    assert cache.get('expensive') == b'bbbb'
+    assert cache.get('cheap') is None
