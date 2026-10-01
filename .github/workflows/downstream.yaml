@@ -1,0 +1,69 @@
+name: Downstream
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  schedule:
+    - cron: "0 7 * * 1" # Weekly, to catch breakage from the plugin side too
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  list:
+    name: Discover downstream sessions
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      sessions: ${{ steps.sessions.outputs.sessions }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+
+      - name: List downstream sessions
+        id: sessions
+        run: |
+          sessions=$(uv run noxfile.py -t downstream --list --json | jq -c '[.[].session]')
+          echo "sessions=$sessions" >> "$GITHUB_OUTPUT"
+
+  test:
+    name: ${{ matrix.session }}
+    needs: list
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    continue-on-error: true
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        session: ${{ fromJSON(needs.list.outputs.sessions) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          # setuptools-scm needs tags to derive xpublish's version; without
+          # them it builds as 0.1.devN, which fails plugin floors like
+          # xpublish>=0.5.2.
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          enable-cache: true
+
+      - name: Run downstream session
+        env:
+          SESSION: ${{ matrix.session }}
+        run: uv run noxfile.py -s "$SESSION"
