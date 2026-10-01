@@ -44,9 +44,9 @@ A few conventions are worth following:
   application shares one cache, so prefix keys with
   `ds.attrs[DATASET_ID_ATTR_KEY]` (the built-in `/info` route uses
   `<dataset_id>/info`). Include anything else that changes the result, such as
-  a group path or query parameters. While Xpublish by default will set `DATASET_ID_ATTR_KEY` to the `<dataset_id>` in the URL, dataset provider plugins can explicitly set the ID. This allows dataset provider plugins to expire a dataset's caches by generating a new `DATASET_ID_ATTR_KEY` when a dataset is updated.
-- **Time the work with {py:class}`xpublish.utils.cache.CostTimer`.** The
-  elapsed time is a reasonable `cost` to pass to `put`.
+  query parameters. While Xpublish by default will set `DATASET_ID_ATTR_KEY` to the `<dataset_id>` (and `<group_path>`) in the URL, dataset provider plugins can explicitly set the ID. This allows dataset provider plugins to expire a dataset's caches by generating a new `DATASET_ID_ATTR_KEY` when a dataset is updated.
+- **Time the work with {py:class}`xpublish.utils.cache.CostTimer` for the default cache.** The
+  elapsed time as a `cost` allows the default cache to expire the calculations that are cheap to repeat.
 - **Always handle a miss.** A cache is free to drop or refuse any value. It may
   be evicted to stay inside its budget, be too large to ever fit, or have
   expired. `get` returning `None` right after a `put` is normal, so never treat
