@@ -456,7 +456,7 @@ def test_group_info_is_not_shared_between_groups(simple_tree):
     assert list(client.get('/datasets/tree/info').json()['variables']) == []
 
     # One entry per node actually requested, not one shared by all of them.
-    assert sorted(rest.cache.data) == [
+    assert sorted(rest.cache_store) == [
         'tree/a/b/info',
         'tree/a/info',
         'tree/c/info',
@@ -474,7 +474,7 @@ def test_group_info_served_from_cache(simple_tree):
 
     # Mutating the cached entry is visible on the next request only if that
     # request is served from the cache.
-    rest.cache.data['tree/a/info']['dimensions'] = {'sentinel': 1}
+    rest.cache.get('tree/a/info')['dimensions'] = {'sentinel': 1}
 
     second = client.get('/datasets/tree/groups/a/info')
     assert second.json()['dimensions'] == {'sentinel': 1}
@@ -515,7 +515,7 @@ def test_bumping_the_root_id_changes_the_group_cache_keys(simple_tree):
     client = TestClient(rest.app)
 
     client.get('/datasets/tree/groups/a/info')
-    assert 'tree/a/info' in rest.cache.data
+    assert 'tree/a/info' in rest.cache_store
 
     # The dataset is refreshed and the provider versions its id.
     rest._datasets['tree'].dataset = rest._datasets['tree'].dataset.assign_attrs(
@@ -523,4 +523,4 @@ def test_bumping_the_root_id_changes_the_group_cache_keys(simple_tree):
     )
 
     client.get('/datasets/tree/groups/a/info')
-    assert 'tree@v2/a/info' in rest.cache.data
+    assert 'tree@v2/a/info' in rest.cache_store
