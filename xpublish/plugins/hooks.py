@@ -1,4 +1,5 @@
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, MutableMapping
+from typing import Any
 
 import cachey  # type: ignore
 import pluggy  # type: ignore
@@ -186,3 +187,33 @@ class PluginSpec(Plugin):
     @hookspec
     def register_hookspec(self):  # type: ignore
         """Return additional hookspec class to register with the plugin manager."""
+
+    @hookspec(firstresult=True)
+    def get_lru_cache(  # type: ignore
+        self,
+        namespace: str,
+        maxsize: int,
+        getsizeof: Callable[[Any], float] | None,
+    ) -> MutableMapping | None:
+        """Provide an LRU cache for ``namespace``, or ``None`` to decline.
+
+        Implementations return a :py:class:`collections.abc.MutableMapping`.
+        The same namespace should yield the same cache.
+        ``maxsize`` and ``getsizeof`` are hints a provider may ignore, and
+        providers may serialize values. Returning ``None`` falls back to
+        the next provider and finally to xpublish's built-in local cache.
+        """
+
+    @hookspec(firstresult=True)
+    def get_ttl_cache(  # type: ignore
+        self,
+        namespace: str,
+        maxsize: int,
+        ttl: float,
+        getsizeof: Callable[[Any], float] | None,
+    ) -> MutableMapping | None:
+        """Provide a time-expiring cache for ``namespace``, or ``None`` to decline.
+
+        Same contract as :meth:`get_lru_cache`, with entries expiring ``ttl``
+        seconds after they were written.
+        """

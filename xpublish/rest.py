@@ -1,5 +1,9 @@
+import logging
+import threading
+from collections.abc import MutableMapping
 from typing import (
     Annotated,
+    Any,
     Literal,
 )
 
@@ -31,6 +35,7 @@ from .plugins import (
     load_default_plugins,
 )
 from .routers import dataset_collection_router
+from .utils.cache import LockedMapping, build_cache
 from .utils.api import (
     DATASET_ID_ATTR_KEY,
     SingleDatasetOpenAPIOverrider,
@@ -38,6 +43,8 @@ from .utils.api import (
     normalize_app_routers,
     normalize_datasets,
 )
+
+logger = logging.getLogger(__name__)
 
 RouterKwargs = dict
 RouterAndKwargs = tuple[APIRouter, RouterKwargs]
@@ -329,9 +336,56 @@ class Rest:
             cache_kws: Dictionary of cache keyword arguments.
         """
         self._cache = None
+        self._local_caches: dict[tuple[str, str], LockedMapping] = {}
+        self._local_cache_params: dict[tuple[str, str], dict[str, Any]] = {}
+        self._cache_lock = threading.RLock()
         self._cache_kws = {'available_bytes': 1e6}
         if cache_kws is not None:
             self._cache_kws.update(cache_kws)
+
+    def _get_cache(
+        self,
+        kind: Literal['lru', 'ttl'],
+        namespace: str,
+        **params: Any,
+    ) -> MutableMapping:
+        """Return the cache for ``(kind, namespace)``.
+
+        Local fallback caches already created are returned first, then
+        ``get_<kind>_cache`` provider plugins are asked, and finally a locked
+        cachetools cache is built and memoized. Providers memoize themselves.
+
+        Args:
+            kind: ``'lru'`` or ``'ttl'``.
+            namespace: Name identifying the cache; callers sharing a name share the cache.
+            **params: ``maxsize``, ``getsizeof`` and (for ``'ttl'``) ``ttl``.
+
+        Returns:
+            A mutable mapping.
+        """
+        key = (kind, namespace)
+        with self._cache_lock:
+            existing = self._local_caches.get(key)
+            if existing is not None:
+                if params != self._local_cache_params[key]:
+                    logger.warning(
+                        'Cache %r (%s) was already created with %s; ignoring new parameters %s',
+                        namespace,
+                        kind,
+                        self._local_cache_params[key],
+                        params,
+                    )
+                return existing
+
+            hook = getattr(self.pm.hook, f'get_{kind}_cache')
+            provided = hook(namespace=namespace, **{'getsizeof': None, **params})
+            if provided is not None:
+                return provided
+
+            cache = LockedMapping(build_cache(kind, **params))
+            self._local_caches[key] = cache
+            self._local_cache_params[key] = params
+            return cache
 
     def init_app_kwargs(self, app_kws: dict | None) -> None:
         """Set up FastAPI application kwargs.
