@@ -152,9 +152,7 @@ def test_rest_dependencies_hand_out_memoized_caches():
     rest = make_rest()
     deps = rest.dependencies()
     assert deps.get_lru_cache('ns', maxsize=3) is deps.get_lru_cache('ns', maxsize=3)
-    assert deps.get_lru_cache('ns', maxsize=3) is rest.dependencies().get_lru_cache(
-        'ns', maxsize=3
-    )
+    assert deps.get_lru_cache('ns', maxsize=3) is rest.dependencies().get_lru_cache('ns', maxsize=3)
     ttl = deps.get_ttl_cache('ns', maxsize=3, ttl=5)
     assert ttl is not deps.get_lru_cache('ns', maxsize=3)
     assert ttl.mapping.ttl == 5
@@ -240,7 +238,7 @@ def test_legacy_cache_warns_once(fresh_legacy_warning):
     assert rest.cache is cache
     with warnings.catch_warnings():
         warnings.simplefilter('error')
-        make_rest().cache
+        assert make_rest().cache is not None
 
 
 def test_legacy_cache_get_put(fresh_legacy_warning):
@@ -252,9 +250,10 @@ def test_legacy_cache_get_put(fresh_legacy_warning):
     cache.put('k', 'v', 123)
     assert cache.get('k') == 'v'
     # lives in the shared 'xpublish' LRU namespace
-    assert rest._get_cache('lru', 'xpublish', maxsize=cache.available_bytes, getsizeof=nbytes)[
-        'k'
-    ] == 'v'
+    assert (
+        rest._get_cache('lru', 'xpublish', maxsize=cache.available_bytes, getsizeof=nbytes)['k']
+        == 'v'
+    )
 
 
 def test_legacy_cache_honors_available_bytes_and_drops_large(fresh_legacy_warning):

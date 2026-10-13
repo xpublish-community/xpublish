@@ -36,7 +36,7 @@ The same accessor is registered on {py:class}`xarray.DataTree` — `dt.rest`
 works exactly like `ds.rest`. See the [DataTrees tutorial](./datatrees.md) for
 how hierarchical data is served and navigated.
 
-Optional customization of the underlying [FastAPI application](https://fastapi.tiangolo.com) or the server-side [cache](https://github.com/dask/cachey) is possible, e.g.,
+Optional customization of the underlying [FastAPI application](https://fastapi.tiangolo.com) or the server-side cache is possible, e.g.,
 
 ```python
 ds.rest(

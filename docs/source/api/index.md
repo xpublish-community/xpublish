@@ -29,6 +29,8 @@ The main interfaces to Xpublish that many users may use.
    Rest
    Rest.app
    Rest.cache
+   LockedMapping
+   nbytes
    Rest.plugins
    Rest.serve
    Rest.register_plugin
