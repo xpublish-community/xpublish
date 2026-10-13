@@ -339,6 +339,10 @@ an {py:class}`xarray.DataTree` if it knows about the requested dataset/group, ot
 `None` so that Xpublish continues looking to the next plugin or the directly-registered
 datasets. The returned tree's **root** corresponds to the requested `group`.
 
+Each of these hooks may also declare a positional `deps` parameter to get the
+Xpublish {py:class}`~xpublish.plugins.hooks.Dependencies`, for example to cache opened
+datasets with `deps.get_lru_cache`. See [Caching](caching.md).
+
 ````{important}
 **Pluggy gotcha:** [Pluggy](https://pluggy.readthedocs.io/) does **not** forward
 arguments that have a default value in the hookimpl signature. Always declare

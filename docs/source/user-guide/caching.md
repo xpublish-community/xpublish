@@ -163,6 +163,45 @@ class RemoteCatalog(Plugin):
         return router
 ```
 
+### Caching datasets in a provider
+
+[Dataset provider](plugins.md#dataset-provider-plugins) hooks (`get_datasets`,
+`get_datatree` and `get_dataset`) can also declare a positional `deps`
+parameter to reach the caches. This suits the expensive work providers do,
+such as opening a remote catalog or Zarr store. Providers that omit `deps`
+keep working unchanged.
+
+```python
+class Remote(Plugin):
+    name: str = "remote"
+
+    @hookimpl
+    def get_datasets(self, deps):
+        ids = deps.get_ttl_cache(f"{self.name}/remote_ids", maxsize=1, ttl=60)
+        if "ids" not in ids:
+            ids["ids"] = list(open_catalog().keys())
+        return ids["ids"]
+
+    @hookimpl
+    def get_datatree(self, dataset_id, group, deps):
+        trees = deps.get_lru_cache(
+            f"{self.name}/remote_trees", maxsize=2**28, getsizeof=xpublish.nbytes
+        )
+        key = f"{dataset_id}/{group}"
+        if key not in trees:
+            trees[key] = open_tree(dataset_id, group)
+        return trees[key]
+```
+
+```{warning}
+Do not call `deps.dataset`, `deps.datatree` or `deps.dataset_ids` from inside
+these hooks: they resolve through the same hooks and would recurse.
+```
+
+Opened datasets usually can't be pickled, so a remote cache provider should
+exclude that namespace (for example with xpublish-redis-cache's
+`exclude_namespaces`) and let it fall back to the local cache.
+
 ### Sharing a cache between plugins
 
 Plugins that request the same kind of cache under the same namespace get the

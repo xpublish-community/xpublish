@@ -273,3 +273,80 @@ def test_legacy_cache_ignores_other_kws_with_warning(fresh_legacy_warning, caplo
     assert 'cost_threshold' in caplog.text
     with pytest.warns(DeprecationWarning):
         assert rest.cache.available_bytes == 100
+
+
+# dataset provider hooks receive deps
+
+
+class CachingProvider(Plugin):
+    name: str = 'caching_provider'
+    opened: list = []
+    seen_deps: list = []
+
+    @hookimpl
+    def get_datasets(self, deps):
+        self.seen_deps.append(deps)
+        cache = deps.get_ttl_cache(self.name + '_ids', maxsize=1, ttl=60)
+        if 'ids' not in cache:
+            cache['ids'] = ['cached']
+        return cache['ids']
+
+    @hookimpl
+    def get_datatree(self, dataset_id, group, deps):
+        self.seen_deps.append(deps)
+        if dataset_id != 'cached':
+            return None
+        cache = deps.get_lru_cache(self.name, maxsize=2**24, getsizeof=nbytes)
+        key = f'{dataset_id}/{group}'
+        if key not in cache:
+            self.opened.append(key)
+            cache[key] = xr.DataTree(dataset=xr.Dataset({'a': ('x', np.arange(3))}))
+        return cache[key]
+
+
+def test_get_datatree_provider_can_cache_via_deps():
+    provider = CachingProvider(opened=[], seen_deps=[])
+    rest = Rest({}, plugins={'p': provider})
+    for _ in range(3):
+        rest.get_dataset_from_plugins('cached')
+    assert provider.opened == ['cached/']
+    assert rest.get_datasets_from_plugins() == ['cached']
+    assert len({id(d) for d in provider.seen_deps}) == 1
+    assert provider.seen_deps[0] is rest._get_provider_deps()
+
+
+def test_get_dataset_provider_receives_deps():
+    seen = []
+
+    class Flat(Plugin):
+        name: str = 'flat'
+
+        @hookimpl
+        def get_dataset(self, dataset_id, deps):
+            seen.append(deps)
+            cache = deps.get_lru_cache('flat', maxsize=4)
+            cache[dataset_id] = 1
+            return xr.Dataset({'a': ('x', [1])})
+
+    rest = Rest({}, plugins={'flat': Flat()})
+    rest.get_dataset_from_plugins('anything')
+    rest.get_dataset_from_plugins('anything')
+    assert len(seen) == 2 and seen[0] is seen[1]
+    assert 'anything' in rest._get_provider_deps().get_lru_cache('flat', maxsize=4)
+
+
+def test_legacy_provider_without_deps_still_works():
+    class Legacy(Plugin):
+        name: str = 'legacy'
+
+        @hookimpl
+        def get_datasets(self):
+            return ['old']
+
+        @hookimpl
+        def get_dataset(self, dataset_id):
+            return xr.Dataset({'a': ('x', [1])}) if dataset_id == 'old' else None
+
+    rest = Rest({}, plugins={'legacy': Legacy()})
+    assert rest.get_datasets_from_plugins() == ['old']
+    assert 'a' in rest.get_dataset_from_plugins('old')

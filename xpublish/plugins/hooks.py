@@ -160,12 +160,34 @@ class PluginSpec(Plugin):
         """
 
     @hookspec
-    def get_datasets(self) -> Iterable[str]:  # type: ignore
-        """Return an iterable of dataset ids that the plugin can provide."""
+    def get_datasets(self, deps: Dependencies) -> Iterable[str]:  # type: ignore
+        """Return an iterable of dataset ids that the plugin can provide.
+
+        ``deps`` is optional: declare it in your implementation to reach
+        :meth:`Dependencies.get_lru_cache` and :meth:`Dependencies.get_ttl_cache`,
+        and omit it otherwise (pluggy only passes the arguments you declare).
+        Declare it as a positional parameter. Do not call ``deps.dataset``,
+        ``deps.datatree`` or ``deps.dataset_ids`` from inside this hook: they
+        resolve through the provider hooks and would recurse.
+
+        Example, caching the listing for a minute::
+
+            @hookimpl
+            def get_datasets(self, deps):
+                cache = deps.get_ttl_cache(self.name, maxsize=1, ttl=60)
+                if "ids" not in cache:
+                    cache["ids"] = list(self._list_remote_ids())
+                return cache["ids"]
+        """
 
     @hookspec(firstresult=True)
     # type: ignore
-    def get_datatree(self, dataset_id: str, group: str) -> xr.DataTree | None:
+    def get_datatree(
+        self,
+        dataset_id: str,
+        group: str,
+        deps: Dependencies,
+    ) -> xr.DataTree | None:
         """Return a :py:class:`xarray.DataTree` for ``dataset_id`` rooted at ``group``.
 
         Implementations should declare ``group`` as a positional parameter
@@ -182,11 +204,28 @@ class PluginSpec(Plugin):
         The returned tree's root corresponds to the requested ``group``.
 
         If the plugin does not have the dataset, return ``None``.
+
+        ``deps`` is optional: declare it in your implementation to reach
+        :meth:`Dependencies.get_lru_cache` and :meth:`Dependencies.get_ttl_cache`,
+        and omit it otherwise (pluggy only passes the arguments you declare).
+        Declare it as a positional parameter. Do not call ``deps.dataset``,
+        ``deps.datatree`` or ``deps.dataset_ids`` from inside this hook: they
+        resolve through the provider hooks and would recurse.
+
+        Example, caching opened trees::
+
+            @hookimpl
+            def get_datatree(self, dataset_id, group, deps):
+                cache = deps.get_lru_cache(self.name, maxsize=2**28, getsizeof=nbytes)
+                key = f"{dataset_id}/{group}"
+                if key not in cache:
+                    cache[key] = self._open(dataset_id, group)
+                return cache[key]
         """
 
     @hookspec(firstresult=True)
     # type: ignore
-    def get_dataset(self, dataset_id: str) -> xr.Dataset | None:
+    def get_dataset(self, dataset_id: str, deps: Dependencies) -> xr.Dataset | None:
         """Return a :py:class:`xarray.Dataset` for ``dataset_id``.
 
         Use this hook when your provider only serves flat datasets — Xpublish
@@ -198,6 +237,13 @@ class PluginSpec(Plugin):
         consulted first.
 
         If the plugin does not have the dataset, return ``None``.
+
+        ``deps`` is optional: declare it in your implementation to reach
+        :meth:`Dependencies.get_lru_cache` and :meth:`Dependencies.get_ttl_cache`,
+        and omit it otherwise (pluggy only passes the arguments you declare).
+        Declare it as a positional parameter. Do not call ``deps.dataset``,
+        ``deps.datatree`` or ``deps.dataset_ids`` from inside this hook: they
+        resolve through the provider hooks and would recurse.
         """
 
     @hookspec

@@ -159,7 +159,7 @@ class Rest:
         """
         dataset_ids = list(self._datasets)
 
-        for plugin_dataset_ids in self.pm.hook.get_datasets():
+        for plugin_dataset_ids in self.pm.hook.get_datasets(deps=self._get_provider_deps()):
             dataset_ids.extend(plugin_dataset_ids)
 
         return dataset_ids
@@ -179,6 +179,7 @@ class Rest:
             tree: xr.DataTree | None = self.pm.hook.get_datatree(
                 dataset_id=dataset_id,
                 group=group,
+                deps=self._get_provider_deps(),
             )
         except KeyError as err:
             raise HTTPException(
@@ -187,7 +188,10 @@ class Rest:
             ) from err
 
         if tree is None:
-            legacy_ds: xr.Dataset | None = self.pm.hook.get_dataset(dataset_id=dataset_id)
+            legacy_ds: xr.Dataset | None = self.pm.hook.get_dataset(
+                dataset_id=dataset_id,
+                deps=self._get_provider_deps(),
+            )
             if legacy_ds is not None:
                 if group:
                     raise HTTPException(
@@ -474,6 +478,13 @@ class Rest:
             dataset_routers.append((router, {}))
 
         return app_routers, dataset_routers
+
+    def _get_provider_deps(self) -> Dependencies:
+        """Return the memoized :class:`Dependencies` passed to provider hooks."""
+        deps = getattr(self, '_provider_deps', None)
+        if deps is None:
+            deps = self._provider_deps = self.dependencies()
+        return deps
 
     def dependencies(self) -> Dependencies:
         """FastAPI dependencies to pass to plugin router methods.
