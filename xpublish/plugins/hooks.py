@@ -1,7 +1,6 @@
 from collections.abc import Callable, Iterable, MutableMapping
 from typing import Any
 
-import cachey  # type: ignore
 import pluggy  # type: ignore
 import xarray as xr
 from fastapi import APIRouter
@@ -17,6 +16,7 @@ from ..dependencies import (
     get_plugins,
     get_ttl_cache,
 )
+from ..utils.cache import LegacyCache
 
 # Decorator helper to mark functions as Xpublish hook specifications
 hookspec = pluggy.HookspecMarker('xpublish')
@@ -102,9 +102,9 @@ class Dependencies(BaseModel):
             '``{group_path:path}`` if present in the route).'
         ),
     )
-    cache: Callable[..., cachey.Cache] = Field(
+    cache: Callable[..., LegacyCache] = Field(
         get_cache,
-        description='Provide access to :py:class:`cachey.Cache`',
+        description='Deprecated: cachey-style ``get``/``put`` cache. Use ``get_lru_cache`` or ``get_ttl_cache``.',
     )
     get_lru_cache: Callable[..., MutableMapping] = Field(
         get_lru_cache,

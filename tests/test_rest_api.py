@@ -109,9 +109,10 @@ def hook_implementation_plugin():
     return HookImplementationPlugin()
 
 
-def test_init_cache_kws(airtemp_ds):
+def test_init_cache_kws(airtemp_ds, fresh_legacy_warning):
     rest = Rest({'airtemp': airtemp_ds}, cache_kws={'available_bytes': 999})
-    assert rest.cache.available_bytes == 999
+    with pytest.warns(DeprecationWarning):
+        assert rest.cache.available_bytes == 999
 
 
 def test_init_app_kws(airtemp_ds):
@@ -387,13 +388,14 @@ def test_rest_accessor(airtemp_ds):
     assert response.status_code == 200
 
 
-def test_rest_accessor_kws(airtemp_ds):
+def test_rest_accessor_kws(airtemp_ds, fresh_legacy_warning):
     airtemp_ds.rest(
         app_kws={'docs_url': '/data-docs'},
         cache_kws={'available_bytes': 1e9},
     )
 
-    assert airtemp_ds.rest.cache.available_bytes == 1e9
+    with pytest.warns(DeprecationWarning):
+        assert airtemp_ds.rest.cache.available_bytes == 1e9
 
     client = TestClient(airtemp_ds.rest.app)
 

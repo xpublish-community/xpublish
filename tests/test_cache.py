@@ -1,6 +1,7 @@
 # ruff: noqa: D101, D102
 import logging
 import time
+import warnings
 
 import cachetools
 import numpy as np
@@ -227,3 +228,49 @@ def test_plugins_with_different_namespaces_are_isolated():
     client = TestClient(rest.app)
     client.get('/datasets/ds/hit')
     assert client.get('/datasets/ds/peek').json() == {'n': 0}
+
+
+# legacy deps.cache
+
+
+def test_legacy_cache_warns_once(fresh_legacy_warning):
+    rest = make_rest()
+    with pytest.warns(DeprecationWarning, match='get_lru_cache'):
+        cache = rest.cache
+    assert rest.cache is cache
+    with warnings.catch_warnings():
+        warnings.simplefilter('error')
+        make_rest().cache
+
+
+def test_legacy_cache_get_put(fresh_legacy_warning):
+    rest = make_rest()
+    with pytest.warns(DeprecationWarning):
+        cache = rest.cache
+    assert cache.get('k') is None
+    assert cache.get('k', 'dflt') == 'dflt'
+    cache.put('k', 'v', 123)
+    assert cache.get('k') == 'v'
+    # lives in the shared 'xpublish' LRU namespace
+    assert rest._get_cache('lru', 'xpublish', maxsize=cache.available_bytes, getsizeof=nbytes)[
+        'k'
+    ] == 'v'
+
+
+def test_legacy_cache_honors_available_bytes_and_drops_large(fresh_legacy_warning):
+    rest = Rest({}, plugins={}, cache_kws={'available_bytes': 100})
+    with pytest.warns(DeprecationWarning):
+        cache = rest.cache
+    assert cache.available_bytes == 100
+    cache.put('big', b'x' * 1000, 1)
+    assert cache.get('big') is None
+    cache.put('small', b'x' * 10, 1)
+    assert cache.get('small') == b'x' * 10
+
+
+def test_legacy_cache_ignores_other_kws_with_warning(fresh_legacy_warning, caplog):
+    with caplog.at_level(logging.WARNING):
+        rest = Rest({}, plugins={}, cache_kws={'available_bytes': 100, 'cost_threshold': 5})
+    assert 'cost_threshold' in caplog.text
+    with pytest.warns(DeprecationWarning):
+        assert rest.cache.available_bytes == 100

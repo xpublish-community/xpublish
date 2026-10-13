@@ -3,12 +3,11 @@
 from collections.abc import Callable, MutableMapping
 from typing import TYPE_CHECKING, Any
 
-import cachey
 import pluggy
 import xarray as xr
 from fastapi import Request
 
-from .utils.cache import LockedMapping, build_cache
+from .utils.cache import LegacyCache, LockedMapping, build_cache, nbytes
 
 if TYPE_CHECKING:
     from .plugins import Plugin  # pragma: no cover
@@ -92,8 +91,10 @@ def get_datatree(dataset_id: str) -> xr.DataTree:
     return xr.DataTree()  # pragma: no cover
 
 
-def get_cache() -> cachey.Cache:
-    """FastAPI dependency for accessing the application's cache.
+def get_cache() -> LegacyCache:
+    """Deprecated FastAPI dependency for accessing the application's cache.
+
+    Use ``deps.get_lru_cache`` / ``deps.get_ttl_cache`` instead.
 
     Use this callable as dependency in any FastAPI path operation
     function where you need access to the cache provided with the
@@ -103,7 +104,7 @@ def get_cache() -> cachey.Cache:
     application.
 
     """
-    return cachey.Cache(available_bytes=1e6)  # pragma: no cover
+    return LegacyCache(build_cache('lru', 1e6, getsizeof=nbytes))  # pragma: no cover
 
 
 def get_lru_cache(

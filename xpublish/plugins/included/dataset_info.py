@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends
 from starlette.responses import HTMLResponse  # type: ignore
 
 from xpublish.utils.api import DATASET_ID_ATTR_KEY, JSONResponse
+from xpublish.utils.cache import nbytes
 
 from .. import Dependencies, Plugin, hookimpl
 
@@ -45,6 +46,8 @@ class DatasetInfoPlugin(Plugin):
             tags=list(self.dataset_router_tags),
         )
 
+        info_cache = deps.get_lru_cache(self.name, maxsize=2**24, getsizeof=nbytes)
+
         def html_representation(
             dataset=Depends(deps.dataset),
         ) -> HTMLResponse:
@@ -66,11 +69,10 @@ class DatasetInfoPlugin(Plugin):
 
         def info(
             dataset=Depends(deps.dataset),
-            cache=Depends(deps.cache),
         ) -> dict:
             """Dataset schema (close to the NCO-JSON schema)."""
             cache_key = dataset.attrs.get(DATASET_ID_ATTR_KEY, '') + '/' + 'info'
-            info = cache.get(cache_key)
+            info = info_cache.get(cache_key)
 
             if info is None:
                 info = {
@@ -89,7 +91,10 @@ class DatasetInfoPlugin(Plugin):
                 global_attrs.pop(DATASET_ID_ATTR_KEY, None)
                 info['global_attributes'] = _jsonable(global_attrs)
 
-                cache.put(cache_key, info, 99999)
+                try:
+                    info_cache[cache_key] = info
+                except ValueError:  # too large to ever fit; serve it uncached
+                    pass
 
             return JSONResponse(info)
 

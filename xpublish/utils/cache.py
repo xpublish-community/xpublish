@@ -1,6 +1,7 @@
 import sys
 import threading
 import time
+import warnings
 from collections.abc import Callable, Iterator, MutableMapping
 from typing import Any, Literal
 
@@ -161,3 +162,59 @@ def build_cache(
     if kind == 'ttl':
         return cachetools.TTLCache(maxsize=maxsize, ttl=ttl, timer=_now, getsizeof=getsizeof)
     raise ValueError(f'Unknown cache kind {kind!r}')  # pragma: no cover
+
+
+class LegacyCache:
+    """Deprecated cachey-style ``get``/``put`` interface over any mapping.
+
+    Kept so plugins using ``deps.cache`` keep working. ``cost`` is ignored,
+    and values the underlying cachetools cache refuses as too large are
+    dropped silently, as cachey did. New code should request a cache with
+    ``deps.get_lru_cache`` or ``deps.get_ttl_cache`` instead.
+
+    Args:
+        mapping: The underlying store.
+    """
+
+    _warned = False
+
+    def __init__(self, mapping: MutableMapping):
+        if not LegacyCache._warned:
+            LegacyCache._warned = True
+            warnings.warn(
+                '`deps.cache` is deprecated; use `deps.get_lru_cache(namespace, ...)` '
+                'or `deps.get_ttl_cache(namespace, ...)` instead.',
+                DeprecationWarning,
+                stacklevel=3,
+            )
+        self._mapping = mapping
+
+    @property
+    def mapping(self) -> MutableMapping:
+        """The underlying store."""
+        return self._mapping
+
+    @property
+    def data(self) -> MutableMapping:
+        """Alias for :attr:`mapping`, mirroring ``cachey.Cache.data``."""
+        return self._mapping
+
+    @property
+    def available_bytes(self) -> float:
+        """Maximum size of the underlying store."""
+        return self._mapping.maxsize  # type: ignore[attr-defined]
+
+    def get(self, key: Any, default: Any = None) -> Any:
+        """Return the value cached under ``key``, or ``default`` if absent."""
+        try:
+            return self._mapping[key]
+        except KeyError:
+            return default
+
+    def put(self, key: Any, value: Any, cost: float, nbytes: int | None = None) -> None:
+        """Store ``value`` under ``key``. ``cost`` and ``nbytes`` are ignored."""
+        try:
+            self._mapping[key] = value
+        except ValueError:
+            # cachetools raises for items that can never fit; cachey dropped them
+            pass
