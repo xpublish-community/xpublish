@@ -12,8 +12,10 @@ from ..dependencies import (
     get_dataset,
     get_dataset_ids,
     get_datatree,
+    get_lru_cache,
     get_plugin_manager,
     get_plugins,
+    get_ttl_cache,
 )
 
 # Decorator helper to mark functions as Xpublish hook specifications
@@ -103,6 +105,20 @@ class Dependencies(BaseModel):
     cache: Callable[..., cachey.Cache] = Field(
         get_cache,
         description='Provide access to :py:class:`cachey.Cache`',
+    )
+    get_lru_cache: Callable[..., MutableMapping] = Field(
+        get_lru_cache,
+        description=(
+            'Call ``deps.get_lru_cache(namespace, maxsize=128, *, getsizeof=None)`` to get a '
+            'mutable mapping with LRU eviction. Not a ``Depends`` target.'
+        ),
+    )
+    get_ttl_cache: Callable[..., MutableMapping] = Field(
+        get_ttl_cache,
+        description=(
+            'Call ``deps.get_ttl_cache(namespace, maxsize=128, ttl=600, *, getsizeof=None)`` to get '
+            'a mutable mapping whose entries expire. Not a ``Depends`` target.'
+        ),
     )
     plugins: Callable[..., dict[str, Plugin]] = Field(
         get_plugins,

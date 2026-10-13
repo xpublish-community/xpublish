@@ -1,11 +1,14 @@
 """Helper functions to use a FastAPI dependencies."""
 
-from typing import TYPE_CHECKING
+from collections.abc import Callable, MutableMapping
+from typing import TYPE_CHECKING, Any
 
 import cachey
 import pluggy
 import xarray as xr
 from fastapi import Request
+
+from .utils.cache import LockedMapping, build_cache
 
 if TYPE_CHECKING:
     from .plugins import Plugin  # pragma: no cover
@@ -101,6 +104,56 @@ def get_cache() -> cachey.Cache:
 
     """
     return cachey.Cache(available_bytes=1e6)  # pragma: no cover
+
+
+def get_lru_cache(
+    namespace: str,
+    maxsize: int = 128,
+    *,
+    getsizeof: Callable[[Any], float] | None = None,
+) -> MutableMapping:
+    """Return an LRU cache for ``namespace``.
+
+    This is a plain callable, not a FastAPI dependency: call it from a
+    plugin's router hooks as ``deps.get_lru_cache(...)``. When running in
+    :class:`xpublish.Rest` the real implementation memoizes one cache per
+    namespace and may be backed by a provider plugin; this default returns a
+    fresh, unshared cache.
+
+    Args:
+        namespace: Name of the cache. Plugins normally pass their own name;
+            plugins passing the same name share the cache.
+        maxsize: Maximum size of the cache, in items or in units of ``getsizeof``.
+        getsizeof: Optional callable measuring the size of a value, such as
+            :func:`xpublish.nbytes`. Providers may ignore it.
+
+    Returns:
+        A mutable mapping. Providers may serialize values, so cache picklable values.
+    """
+    return LockedMapping(build_cache('lru', maxsize, getsizeof=getsizeof))
+
+
+def get_ttl_cache(
+    namespace: str,
+    maxsize: int = 128,
+    ttl: float = 600,
+    *,
+    getsizeof: Callable[[Any], float] | None = None,
+) -> MutableMapping:
+    """Return a cache whose entries expire ``ttl`` seconds after being written.
+
+    See :func:`get_lru_cache` for the contract.
+
+    Args:
+        namespace: Name of the cache.
+        maxsize: Maximum size of the cache, in items or in units of ``getsizeof``.
+        ttl: Seconds an entry lives.
+        getsizeof: Optional callable measuring the size of a value.
+
+    Returns:
+        A mutable mapping.
+    """
+    return LockedMapping(build_cache('ttl', maxsize, ttl, getsizeof=getsizeof))
 
 
 def get_plugins() -> dict[str, 'Plugin']:

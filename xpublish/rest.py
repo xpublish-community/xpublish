@@ -1,6 +1,7 @@
 import logging
 import threading
-from collections.abc import MutableMapping
+from collections.abc import Callable, MutableMapping
+from functools import partial
 from typing import (
     Annotated,
     Any,
@@ -387,6 +388,21 @@ class Rest:
             self._local_cache_params[key] = params
             return cache
 
+    def _get_cache_for_deps(
+        self,
+        kind: Literal['lru', 'ttl'],
+        namespace: str,
+        maxsize: int = 128,
+        ttl: float = 600,
+        *,
+        getsizeof: Callable[[Any], float] | None = None,
+    ) -> MutableMapping:
+        """Implement ``deps.get_lru_cache`` / ``deps.get_ttl_cache``."""
+        params: dict[str, Any] = {'maxsize': maxsize, 'getsizeof': getsizeof}
+        if kind == 'ttl':
+            params['ttl'] = ttl
+        return self._get_cache(kind, namespace, **params)
+
     def init_app_kwargs(self, app_kws: dict | None) -> None:
         """Set up FastAPI application kwargs.
 
@@ -459,6 +475,8 @@ class Rest:
             dataset=self._get_dataset_func,
             datatree=self._get_datatree_func,
             cache=lambda: self.cache,
+            get_lru_cache=partial(self._get_cache_for_deps, 'lru'),
+            get_ttl_cache=partial(self._get_cache_for_deps, 'ttl'),
             plugins=lambda: self.plugins,
             plugin_manager=lambda: self.pm,
         )
