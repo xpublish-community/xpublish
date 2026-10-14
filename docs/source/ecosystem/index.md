@@ -31,6 +31,8 @@ Xpublish has a channel (`#xpublish`) on [ESIP](https://www.esipfed.org/)'s (Eart
 - [OpenDAP](https://github.com/xpublish-community/xpublish-opendap/)
   [![PyPI](https://img.shields.io/pypi/v/xpublish-opendap)](https://pypi.org/project/xpublish-opendap/)
   [![Conda Version](https://img.shields.io/conda/vn/conda-forge/xpublish-opendap.svg)](https://anaconda.org/conda-forge/xpublish-opendap)
+- [ERDDAP](https://github.com/xpublish-community/xpublish-erddap)
+  [![PyPI](https://img.shields.io/pypi/v/xpublish-erddap)](https://pypi.org/project/xpublish-erddap/)
 - [WMS](https://github.com/xpublish-community/xpublish-wms)
   [![PyPI](https://img.shields.io/pypi/v/xpublish-wms)](https://pypi.org/project/xpublish-wms/)
   [![Conda Version](https://img.shields.io/conda/vn/conda-forge/xpublish-wms.svg)](https://anaconda.org/conda-forge/xpublish-wms)
