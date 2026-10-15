@@ -34,7 +34,7 @@ classifiers = [
 ]
 dynamic = [ "version" ]
 dependencies = [
-  "cachey>=0.2.1",
+  "cachetools>=5",
   "fastapi>=0.115",
   "numpy>=1.26",
   "pluggy>=1",
@@ -145,7 +145,7 @@ lint.isort.known-first-party = [
   "xpublish",
 ]
 lint.isort.known-third-party = [
-  "cachey",
+  "cachetools",
   "fastapi",
   "numpy",
   "pandas",

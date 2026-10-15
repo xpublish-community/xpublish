@@ -1,6 +1,6 @@
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, MutableMapping
+from typing import Any
 
-import cachey  # type: ignore
 import pluggy  # type: ignore
 import xarray as xr
 from fastapi import APIRouter
@@ -11,9 +11,12 @@ from ..dependencies import (
     get_dataset,
     get_dataset_ids,
     get_datatree,
+    get_lru_cache,
     get_plugin_manager,
     get_plugins,
+    get_ttl_cache,
 )
+from ..utils.cache import LegacyCache
 
 # Decorator helper to mark functions as Xpublish hook specifications
 hookspec = pluggy.HookspecMarker('xpublish')
@@ -99,9 +102,23 @@ class Dependencies(BaseModel):
             '``{group_path:path}`` if present in the route).'
         ),
     )
-    cache: Callable[..., cachey.Cache] = Field(
+    cache: Callable[..., LegacyCache] = Field(
         get_cache,
-        description='Provide access to :py:class:`cachey.Cache`',
+        description='Deprecated: cachey-style ``get``/``put`` cache. Use ``get_lru_cache`` or ``get_ttl_cache``.',
+    )
+    get_lru_cache: Callable[..., MutableMapping] = Field(
+        get_lru_cache,
+        description=(
+            'Call ``deps.get_lru_cache(namespace, maxsize=128, *, getsizeof=None)`` to get a '
+            'mutable mapping with LRU eviction. Not a ``Depends`` target.'
+        ),
+    )
+    get_ttl_cache: Callable[..., MutableMapping] = Field(
+        get_ttl_cache,
+        description=(
+            'Call ``deps.get_ttl_cache(namespace, maxsize=128, ttl=600, *, getsizeof=None)`` to get '
+            'a mutable mapping whose entries expire. Not a ``Depends`` target.'
+        ),
     )
     plugins: Callable[..., dict[str, Plugin]] = Field(
         get_plugins,
@@ -143,12 +160,34 @@ class PluginSpec(Plugin):
         """
 
     @hookspec
-    def get_datasets(self) -> Iterable[str]:  # type: ignore
-        """Return an iterable of dataset ids that the plugin can provide."""
+    def get_datasets(self, deps: Dependencies) -> Iterable[str]:  # type: ignore
+        """Return an iterable of dataset ids that the plugin can provide.
+
+        ``deps`` is optional: declare it in your implementation to reach
+        :meth:`Dependencies.get_lru_cache` and :meth:`Dependencies.get_ttl_cache`,
+        and omit it otherwise (pluggy only passes the arguments you declare).
+        Declare it as a positional parameter. Do not call ``deps.dataset``,
+        ``deps.datatree`` or ``deps.dataset_ids`` from inside this hook: they
+        resolve through the provider hooks and would recurse.
+
+        Example, caching the listing for a minute::
+
+            @hookimpl
+            def get_datasets(self, deps):
+                cache = deps.get_ttl_cache(self.name, maxsize=1, ttl=60)
+                if "ids" not in cache:
+                    cache["ids"] = list(self._list_remote_ids())
+                return cache["ids"]
+        """
 
     @hookspec(firstresult=True)
     # type: ignore
-    def get_datatree(self, dataset_id: str, group: str) -> xr.DataTree | None:
+    def get_datatree(
+        self,
+        dataset_id: str,
+        group: str,
+        deps: Dependencies,
+    ) -> xr.DataTree | None:
         """Return a :py:class:`xarray.DataTree` for ``dataset_id`` rooted at ``group``.
 
         Implementations should declare ``group`` as a positional parameter
@@ -165,11 +204,28 @@ class PluginSpec(Plugin):
         The returned tree's root corresponds to the requested ``group``.
 
         If the plugin does not have the dataset, return ``None``.
+
+        ``deps`` is optional: declare it in your implementation to reach
+        :meth:`Dependencies.get_lru_cache` and :meth:`Dependencies.get_ttl_cache`,
+        and omit it otherwise (pluggy only passes the arguments you declare).
+        Declare it as a positional parameter. Do not call ``deps.dataset``,
+        ``deps.datatree`` or ``deps.dataset_ids`` from inside this hook: they
+        resolve through the provider hooks and would recurse.
+
+        Example, caching opened trees::
+
+            @hookimpl
+            def get_datatree(self, dataset_id, group, deps):
+                cache = deps.get_lru_cache(self.name, maxsize=2**28, getsizeof=nbytes)
+                key = f"{dataset_id}/{group}"
+                if key not in cache:
+                    cache[key] = self._open(dataset_id, group)
+                return cache[key]
         """
 
     @hookspec(firstresult=True)
     # type: ignore
-    def get_dataset(self, dataset_id: str) -> xr.Dataset | None:
+    def get_dataset(self, dataset_id: str, deps: Dependencies) -> xr.Dataset | None:
         """Return a :py:class:`xarray.Dataset` for ``dataset_id``.
 
         Use this hook when your provider only serves flat datasets — Xpublish
@@ -181,8 +237,45 @@ class PluginSpec(Plugin):
         consulted first.
 
         If the plugin does not have the dataset, return ``None``.
+
+        ``deps`` is optional: declare it in your implementation to reach
+        :meth:`Dependencies.get_lru_cache` and :meth:`Dependencies.get_ttl_cache`,
+        and omit it otherwise (pluggy only passes the arguments you declare).
+        Declare it as a positional parameter. Do not call ``deps.dataset``,
+        ``deps.datatree`` or ``deps.dataset_ids`` from inside this hook: they
+        resolve through the provider hooks and would recurse.
         """
 
     @hookspec
     def register_hookspec(self):  # type: ignore
         """Return additional hookspec class to register with the plugin manager."""
+
+    @hookspec(firstresult=True)
+    def get_lru_cache(  # type: ignore
+        self,
+        namespace: str,
+        maxsize: int,
+        getsizeof: Callable[[Any], float] | None,
+    ) -> MutableMapping | None:
+        """Provide an LRU cache for ``namespace``, or ``None`` to decline.
+
+        Implementations return a :py:class:`collections.abc.MutableMapping`.
+        The same namespace should yield the same cache.
+        ``maxsize`` and ``getsizeof`` are hints a provider may ignore, and
+        providers may serialize values. Returning ``None`` falls back to
+        the next provider and finally to xpublish's built-in local cache.
+        """
+
+    @hookspec(firstresult=True)
+    def get_ttl_cache(  # type: ignore
+        self,
+        namespace: str,
+        maxsize: int,
+        ttl: float,
+        getsizeof: Callable[[Any], float] | None,
+    ) -> MutableMapping | None:
+        """Provide a time-expiring cache for ``namespace``, or ``None`` to decline.
+
+        Same contract as :meth:`get_lru_cache`, with entries expiring ``ttl``
+        seconds after they were written.
+        """
