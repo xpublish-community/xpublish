@@ -15,3 +15,10 @@ def airtemp_ds():
 @pytest.fixture(autouse=True)
 def setup():
     np.random.seed(0)
+
+
+@pytest.fixture
+def fresh_legacy_warning(monkeypatch):
+    from xpublish.utils.cache import LegacyCache
+
+    monkeypatch.setattr(LegacyCache, '_warned', False)

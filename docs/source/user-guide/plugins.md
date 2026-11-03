@@ -205,6 +205,10 @@ class DatasetAttrs(Plugin):
 it includes — notably {py:meth}`xpublish.Dependencies.datatree`, which returns
 the full {py:class}`xarray.DataTree` for the resolved dataset id.
 
+Plugins can also request namespaced LRU or TTL caches with
+`deps.get_lru_cache(namespace, ...)` and `deps.get_ttl_cache(namespace, ...)`;
+see [Caching](caching.md).
+
 #### Hierarchical data and the `{group_path:path}` URL convention
 
 Internally, Xpublish stores every published object as an {py:class}`xarray.DataTree`
@@ -334,6 +338,10 @@ The second is provided a `dataset_id` and a `group` path. The plugin should retu
 an {py:class}`xarray.DataTree` if it knows about the requested dataset/group, otherwise
 `None` so that Xpublish continues looking to the next plugin or the directly-registered
 datasets. The returned tree's **root** corresponds to the requested `group`.
+
+Each of these hooks may also declare a positional `deps` parameter to get the
+Xpublish {py:class}`~xpublish.plugins.hooks.Dependencies`, for example to cache opened
+datasets with `deps.get_lru_cache`. See [Caching](caching.md).
 
 ````{important}
 **Pluggy gotcha:** [Pluggy](https://pluggy.readthedocs.io/) does **not** forward

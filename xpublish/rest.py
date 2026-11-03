@@ -1,9 +1,13 @@
+import logging
+import threading
+from collections.abc import Callable, MutableMapping
+from functools import partial
 from typing import (
     Annotated,
+    Any,
     Literal,
 )
 
-import cachey
 import pluggy
 import uvicorn
 import xarray as xr
@@ -38,6 +42,9 @@ from .utils.api import (
     normalize_app_routers,
     normalize_datasets,
 )
+from .utils.cache import LegacyCache, LockedMapping, build_cache, nbytes
+
+logger = logging.getLogger(__name__)
 
 RouterKwargs = dict
 RouterAndKwargs = tuple[APIRouter, RouterKwargs]
@@ -90,9 +97,8 @@ class Rest:
                 the 1st tuple element is a :class:`fastapi.APIRouter` instance and
                 the 2nd element is a dictionary that is used to pass keyword
                 arguments to :meth:`fastapi.FastAPI.include_router`.
-            cache_kws: Dictionary of keyword arguments to be passed to
-                :meth:`cachey.Cache.__init__()`. By default, the cache size is set
-                to 1MB, but this can be changed with ``available_bytes``.
+            cache_kws: Options for the deprecated ``cache``. Only ``available_bytes``
+                (default 1MB) is used; other keys are ignored with a warning.
             app_kws: Dictionary of keyword arguments to be passed to
                 :meth:`fastapi.FastAPI.__init__()`.
             plugins: Optional dictionary of loaded, configured plugins. Overrides
@@ -153,7 +159,7 @@ class Rest:
         """
         dataset_ids = list(self._datasets)
 
-        for plugin_dataset_ids in self.pm.hook.get_datasets():
+        for plugin_dataset_ids in self.pm.hook.get_datasets(deps=self._get_provider_deps()):
             dataset_ids.extend(plugin_dataset_ids)
 
         return dataset_ids
@@ -173,6 +179,7 @@ class Rest:
             tree: xr.DataTree | None = self.pm.hook.get_datatree(
                 dataset_id=dataset_id,
                 group=group,
+                deps=self._get_provider_deps(),
             )
         except KeyError as err:
             raise HTTPException(
@@ -181,7 +188,10 @@ class Rest:
             ) from err
 
         if tree is None:
-            legacy_ds: xr.Dataset | None = self.pm.hook.get_dataset(dataset_id=dataset_id)
+            legacy_ds: xr.Dataset | None = self.pm.hook.get_dataset(
+                dataset_id=dataset_id,
+                deps=self._get_provider_deps(),
+            )
             if legacy_ds is not None:
                 if group:
                     raise HTTPException(
@@ -328,10 +338,75 @@ class Rest:
         Args:
             cache_kws: Dictionary of cache keyword arguments.
         """
-        self._cache = None
+        self._cache: LegacyCache | None = None
+        self._local_caches: dict[tuple[str, str], LockedMapping] = {}
+        self._local_cache_params: dict[tuple[str, str], dict[str, Any]] = {}
+        self._cache_lock = threading.RLock()
         self._cache_kws = {'available_bytes': 1e6}
         if cache_kws is not None:
-            self._cache_kws.update(cache_kws)
+            unused = set(cache_kws) - {'available_bytes'}
+            if unused:
+                logger.warning('Ignoring unsupported cache_kws: %s', sorted(unused))
+            self._cache_kws.update({k: v for k, v in cache_kws.items() if k not in unused})
+
+    def _get_cache(
+        self,
+        kind: Literal['lru', 'ttl'],
+        namespace: str,
+        **params: Any,
+    ) -> MutableMapping:
+        """Return the cache for ``(kind, namespace)``.
+
+        Local fallback caches already created are returned first, then
+        ``get_<kind>_cache`` provider plugins are asked, and finally a locked
+        cachetools cache is built and memoized. Providers memoize themselves.
+
+        Args:
+            kind: ``'lru'`` or ``'ttl'``.
+            namespace: Name identifying the cache; callers sharing a name share the cache.
+            **params: ``maxsize``, ``getsizeof`` and (for ``'ttl'``) ``ttl``.
+
+        Returns:
+            A mutable mapping.
+        """
+        key = (kind, namespace)
+        with self._cache_lock:
+            existing = self._local_caches.get(key)
+            if existing is not None:
+                if params != self._local_cache_params[key]:
+                    logger.warning(
+                        'Cache %r (%s) was already created with %s; ignoring new parameters %s',
+                        namespace,
+                        kind,
+                        self._local_cache_params[key],
+                        params,
+                    )
+                return existing
+
+            hook = getattr(self.pm.hook, f'get_{kind}_cache')
+            provided = hook(namespace=namespace, **{'getsizeof': None, **params})
+            if provided is not None:
+                return provided
+
+            cache = LockedMapping(build_cache(kind, **params))
+            self._local_caches[key] = cache
+            self._local_cache_params[key] = params
+            return cache
+
+    def _get_cache_for_deps(
+        self,
+        kind: Literal['lru', 'ttl'],
+        namespace: str,
+        maxsize: int = 128,
+        ttl: float = 600,
+        *,
+        getsizeof: Callable[[Any], float] | None = None,
+    ) -> MutableMapping:
+        """Implement ``deps.get_lru_cache`` / ``deps.get_ttl_cache``."""
+        params: dict[str, Any] = {'maxsize': maxsize, 'getsizeof': getsizeof}
+        if kind == 'ttl':
+            params['ttl'] = ttl
+        return self._get_cache(kind, namespace, **params)
 
     def init_app_kwargs(self, app_kws: dict | None) -> None:
         """Set up FastAPI application kwargs.
@@ -345,10 +420,20 @@ class Rest:
             self._app_kws.update(app_kws)
 
     @property
-    def cache(self) -> cachey.Cache:
-        """Returns the :class:`cachey.Cache` instance used by the FastAPI application."""
+    def cache(self) -> LegacyCache:
+        """Deprecated cachey-style ``get``/``put`` cache.
+
+        Use ``deps.get_lru_cache`` / ``deps.get_ttl_cache`` in plugins instead.
+        """
         if self._cache is None:
-            self._cache = cachey.Cache(**self._cache_kws)
+            self._cache = LegacyCache(
+                self._get_cache(
+                    'lru',
+                    'xpublish',
+                    maxsize=self._cache_kws['available_bytes'],
+                    getsizeof=nbytes,
+                )
+            )
         return self._cache
 
     @property
@@ -394,6 +479,13 @@ class Rest:
 
         return app_routers, dataset_routers
 
+    def _get_provider_deps(self) -> Dependencies:
+        """Return the memoized :class:`Dependencies` passed to provider hooks."""
+        deps = getattr(self, '_provider_deps', None)
+        if deps is None:
+            deps = self._provider_deps = self.dependencies()
+        return deps
+
     def dependencies(self) -> Dependencies:
         """FastAPI dependencies to pass to plugin router methods.
 
@@ -405,6 +497,8 @@ class Rest:
             dataset=self._get_dataset_func,
             datatree=self._get_datatree_func,
             cache=lambda: self.cache,
+            get_lru_cache=partial(self._get_cache_for_deps, 'lru'),
+            get_ttl_cache=partial(self._get_cache_for_deps, 'ttl'),
             plugins=lambda: self.plugins,
             plugin_manager=lambda: self.pm,
         )
@@ -505,9 +599,8 @@ class SingleDatasetRest(Rest):
                 the 1st tuple element is a :class:`fastapi.APIRouter` instance and
                 the 2nd element is a dictionary that is used to pass keyword
                 arguments to :meth:`fastapi.FastAPI.include_router`.
-            cache_kws: Dictionary of keyword arguments to be passed to
-                :meth:`cachey.Cache.__init__()`. By default, the cache size is set
-                to 1MB, but this can be changed with ``available_bytes``.
+            cache_kws: Options for the deprecated ``cache``. Only ``available_bytes``
+                (default 1MB) is used; other keys are ignored with a warning.
             app_kws: Dictionary of keyword arguments to be passed to
                 :meth:`fastapi.FastAPI.__init__()`.
             plugins: Optional dictionary of loaded, configured plugins. Overrides
